@@ -7,51 +7,77 @@ import {
   MinLength,
 } from 'class-validator';
 
+/**
+ * Authentication DTOs (Data Transfer Objects)
+ *
+ * Defines the structure and validation rules for authentication requests/responses.
+ * Uses class-validator decorators for automatic validation.
+ */
+
+/**
+ * Register DTO
+ *
+ * Data required to create a new user account.
+ * Validates username format, email validity, and password strength.
+ */
 export class RegisterDto {
-  @ApiProperty({ example: 'johndoe' })
+  @ApiProperty({ example: 'johndoe' }) // Swagger documentation
   @IsString()
-  @MinLength(3)
-  @MaxLength(30)
+  @MinLength(3) // Minimum 3 characters
+  @MaxLength(30) // Maximum 30 characters
   @Matches(/^[a-zA-Z0-9_-]+$/, {
+    // Only alphanumeric, underscore, and hyphen allowed
     message:
       'Username can only contain letters, numbers, underscores, and hyphens',
   })
   username: string;
 
   @ApiProperty({ example: 'john@example.com' })
-  @IsEmail()
+  @IsEmail() // Validates email format
   email: string;
 
   @ApiProperty({ example: 'StrongP@ssw0rd!' })
   @IsString()
-  @MinLength(8)
-  @MaxLength(128)
+  @MinLength(8) // Minimum 8 characters for security
+  @MaxLength(128) // Maximum 128 characters
   @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
+    // Must contain uppercase, lowercase, and number
     message:
       'Password must contain at least one uppercase letter, one lowercase letter, and one number',
   })
   password: string;
 }
 
+/**
+ * Login DTO
+ *
+ * Credentials required to authenticate an existing user.
+ */
 export class LoginDto {
   @ApiProperty({ example: 'john@example.com' })
-  @IsEmail()
+  @IsEmail() // Validates email format
   email: string;
 
   @ApiProperty({ example: 'StrongP@ssw0rd!' })
   @IsString()
-  password: string;
+  password: string; // No validation rules - any string accepted during login
 }
 
+/**
+ * Auth Response DTO
+ *
+ * Structure of successful authentication response.
+ * Contains JWT token and user information.
+ */
 export class AuthResponseDto {
-  @ApiProperty()
+  @ApiProperty() // JWT access token for subsequent authenticated requests
   accessToken: string;
 
-  @ApiProperty()
+  @ApiProperty() // Basic user information (no sensitive data like password)
   user: {
-    id: string;
-    email: string;
-    username: string;
-    avatarUrl?: string;
+    id: string; // Unique user identifier
+    email: string; // User's email address
+    username: string; // User's username
+    avatarUrl?: string; // Optional profile picture URL
   };
 }

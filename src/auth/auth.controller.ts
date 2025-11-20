@@ -18,13 +18,35 @@ import { CurrentUser, Public } from './decorators/auth.decorators';
 import { AuthResponseDto, LoginDto, RegisterDto } from './dto/auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
-@ApiTags('auth')
-@Controller('auth')
+/**
+ * Authentication Controller
+ *
+ * Handles user registration, login, and profile retrieval.
+ * All routes under /api/auth
+ *
+ * Public routes (no auth required):
+ * - POST /register - Create new account
+ * - POST /login - Authenticate user
+ *
+ * Protected routes (JWT required):
+ * - GET /me - Get current user profile
+ */
+@ApiTags('auth') // Group in Swagger docs
+@Controller('auth') // Base route: /api/auth
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Public()
-  @Post('register')
+  /**
+   * Register a new user
+   *
+   * Creates a new user account with hashed password.
+   * Returns JWT token for immediate authentication.
+   *
+   * @param registerDto - User registration data (username, email, password)
+   * @returns JWT token and user profile
+   */
+  @Public() // No authentication required
+  @Post('register') // POST /api/auth/register
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({
     status: 201,
@@ -36,9 +58,17 @@ export class AuthController {
     return this.authService.register(registerDto);
   }
 
-  @Public()
-  @Post('login')
-  @HttpCode(HttpStatus.OK)
+  /**
+   * Login existing user
+   *
+   * Validates credentials and returns JWT token.
+   *
+   * @param loginDto - Login credentials (email, password)
+   * @returns JWT token and user profile
+   */
+  @Public() // No authentication required
+  @Post('login') // POST /api/auth/login
+  @HttpCode(HttpStatus.OK) // Return 200 instead of default 201
   @ApiOperation({ summary: 'Login user' })
   @ApiResponse({
     status: 200,
@@ -50,13 +80,22 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
-  @Get('me')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth('access-token')
+  /**
+   * Get current authenticated user
+   *
+   * Returns profile information for the logged-in user.
+   * Requires valid JWT token in Authorization header.
+   *
+   * @param user - Current user (injected by @CurrentUser decorator)
+   * @returns User profile information
+   */
+  @Get('me') // GET /api/auth/me
+  @UseGuards(JwtAuthGuard) // Requires authentication
+  @ApiBearerAuth('access-token') // Swagger: requires Bearer token
   @ApiOperation({ summary: 'Get current user' })
   @ApiResponse({ status: 200, description: 'Current user info' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getMe(@CurrentUser() user: any) {
-    return user;
+    return user; // User object from JWT token
   }
 }

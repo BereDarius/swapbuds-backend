@@ -1,33 +1,48 @@
+/**
+ * Application Configuration
+ *
+ * Centralizes all environment variables and configuration settings.
+ * Uses NestJS ConfigModule to load and validate environment variables.
+ *
+ * @returns Configuration object with all app settings
+ */
 export default () => ({
-  port: parseInt(process.env.PORT, 10) || 3001,
-  nodeEnv: process.env.NODE_ENV || 'development',
+  // Server configuration
+  port: parseInt(process.env.PORT, 10) || 3001, // Port the server listens on
+  nodeEnv: process.env.NODE_ENV || 'development', // Current environment (development/production)
 
+  // Database connection settings
   database: {
-    url: process.env.DATABASE_URL,
+    url: process.env.DATABASE_URL, // PostgreSQL connection string
   },
 
+  // JWT authentication settings
   jwt: {
-    secret: process.env.JWT_SECRET,
-    expiresIn: process.env.JWT_EXPIRATION || '24h',
+    secret: process.env.JWT_SECRET, // Secret key for signing tokens
+    expiresIn: process.env.JWT_EXPIRATION || '24h', // Token expiration time
   },
 
+  // Cloudinary image storage settings
   cloudinary: {
-    cloudName: process.env.CLOUDINARY_CLOUD_NAME,
-    apiKey: process.env.CLOUDINARY_API_KEY,
-    apiSecret: process.env.CLOUDINARY_API_SECRET,
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME, // Cloudinary account name
+    apiKey: process.env.CLOUDINARY_API_KEY, // API key for authentication
+    apiSecret: process.env.CLOUDINARY_API_SECRET, // API secret for authentication
   },
 
+  // Redis cache settings
   redis: {
-    url: process.env.REDIS_URL || 'redis://localhost:6379',
+    url: process.env.REDIS_URL || 'redis://localhost:6379', // Redis connection URL
   },
 
+  // CORS (Cross-Origin Resource Sharing) settings
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-    credentials: true,
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000', // Allowed origin for requests
+    credentials: true, // Allow cookies and authorization headers
   },
 
+  // Rate limiting settings (prevents API abuse)
   throttle: {
-    ttl: 60000, // 1 minute
-    limit: 100, // 100 requests per minute
+    ttl: 60000, // Time window in milliseconds (1 minute)
+    limit: 100, // Maximum requests per time window (100 requests/minute)
   },
 });
