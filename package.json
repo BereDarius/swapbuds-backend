@@ -1,8 +1,8 @@
 {
   "name": "swapbuds-backend",
-  "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "version": "0.2.0",
+  "description": "SWAPBUDS Backend API - NestJS REST API for trading platform",
+  "author": "BereDarius",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
