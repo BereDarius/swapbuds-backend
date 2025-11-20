@@ -327,30 +327,7 @@ docker-compose restart redis
 
 ---
 
-## 📬 Support
-
-For issues and questions:
-
-- Open an issue on [GitHub](https://github.com/BereDarius/swapbuds-backend/issues)
-- Check the [main project](https://github.com/BereDarius/swapbuds)
-
----
-
 <div align="center">
   <p>Part of the <a href="https://github.com/BereDarius/swapbuds">SWAPBUDS</a> project</p>
   <p>Made with ❤️ using NestJS</p>
 </div>
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](LICENSE).
