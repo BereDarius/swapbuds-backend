@@ -1,3 +1,6 @@
+import { AuthService } from '@auth/auth.service';
+import { CurrentUser, Public } from '@auth/decorators/auth.decorators';
+import { AuthResponseDto, LoginDto, RegisterDto } from '@auth/dto/auth.dto';
 import {
   Body,
   Controller,
@@ -13,9 +16,6 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { AuthService } from './auth.service';
-import { CurrentUser, Public } from './decorators/auth.decorators';
-import { AuthResponseDto, LoginDto, RegisterDto } from './dto/auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 /**

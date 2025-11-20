@@ -1,14 +1,14 @@
+import { AppController } from '@/app.controller';
+import { AppService } from '@/app.service';
+import { AuthModule } from '@auth/auth.module';
+import configuration from '@config/configuration';
 import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { PrismaModule } from '@prisma/prisma.module';
 import { redisStore } from 'cache-manager-redis-yet';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { AuthModule } from './auth/auth.module';
-import configuration from './config/configuration';
-import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
   imports: [

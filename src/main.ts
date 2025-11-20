@@ -1,3 +1,4 @@
+import { AppModule } from '@/app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
@@ -6,7 +7,6 @@ import * as compression from 'compression';
 import helmet from 'helmet';
 import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
-import { AppModule } from './app.module';
 
 async function bootstrap() {
   // Winston Logger Configuration
