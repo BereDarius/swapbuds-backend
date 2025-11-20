@@ -1,0 +1,304 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USER MODEL
+// ============================================
+model User {
+  id        String  @id @default(cuid())
+  email     String  @unique
+  username  String  @unique
+  password  String // Hashed
+  avatarUrl String?
+  bio       String?
+  location  String?
+
+  // Reputation
+  reputationScore Float @default(0)
+
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLoginAt DateTime?
+
+  // Status
+  isActive   Boolean @default(true)
+  isVerified Boolean @default(false)
+
+  // Relations
+  items           Item[]
+  tradesProposed  Trade[]        @relation("TradeProposer")
+  tradesReceived  Trade[]        @relation("TradeResponder")
+  reviewsGiven    Review[]       @relation("ReviewAuthor")
+  reviewsReceived Review[]       @relation("ReviewTarget")
+  messages        Message[]
+  notifications   Notification[]
+  likes           Like[]
+  comments        Comment[]
+
+  @@index([email])
+  @@index([username])
+  @@index([createdAt])
+  @@map("users")
+}
+
+// ============================================
+// ITEM MODEL
+// ============================================
+enum ItemCondition {
+  NEW
+  LIKE_NEW
+  EXCELLENT
+  GOOD
+  FAIR
+  POOR
+}
+
+enum ItemStatus {
+  AVAILABLE
+  IN_TRADE
+  TRADED
+  REMOVED
+}
+
+model Item {
+  id          String        @id @default(cuid())
+  title       String
+  description String
+  condition   ItemCondition
+  category    String
+  status      ItemStatus    @default(AVAILABLE)
+
+  // Ownership
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Media
+  images ItemImage[]
+
+  // Engagement
+  likes     Like[]
+  comments  Comment[]
+  viewCount Int       @default(0)
+
+  // Trading
+  tradesOffered   Trade[] @relation("TradeItemOffered")
+  tradesRequested Trade[] @relation("TradeItemRequested")
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([category])
+  @@index([status])
+  @@index([createdAt])
+  @@map("items")
+}
+
+// ============================================
+// ITEM IMAGE MODEL
+// ============================================
+model ItemImage {
+  id       String @id @default(cuid())
+  url      String
+  publicId String // Cloudinary public ID
+  order    Int    @default(0)
+
+  itemId String
+  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([itemId])
+  @@map("item_images")
+}
+
+// ============================================
+// TRADE MODEL
+// ============================================
+enum TradeStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+model Trade {
+  id     String      @id @default(cuid())
+  status TradeStatus @default(PENDING)
+
+  // Participants
+  proposerId String
+  proposer   User   @relation("TradeProposer", fields: [proposerId], references: [id], onDelete: Cascade)
+
+  responderId String
+  responder   User   @relation("TradeResponder", fields: [responderId], references: [id], onDelete: Cascade)
+
+  // Items
+  itemOfferedId String
+  itemOffered   Item   @relation("TradeItemOffered", fields: [itemOfferedId], references: [id], onDelete: Cascade)
+
+  itemRequestedId String
+  itemRequested   Item   @relation("TradeItemRequested", fields: [itemRequestedId], references: [id], onDelete: Cascade)
+
+  // Additional info
+  message String?
+
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime?
+
+  // Relations
+  messages Message[]
+  reviews  Review[]
+
+  @@index([proposerId])
+  @@index([responderId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("trades")
+}
+
+// ============================================
+// MESSAGE MODEL
+// ============================================
+model Message {
+  id      String @id @default(cuid())
+  content String
+
+  // Sender
+  senderId String
+  sender   User   @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  // Trade context
+  tradeId String
+  trade   Trade  @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+
+  // Status
+  isRead Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([tradeId])
+  @@index([senderId])
+  @@index([createdAt])
+  @@map("messages")
+}
+
+// ============================================
+// REVIEW MODEL
+// ============================================
+model Review {
+  id      String  @id @default(cuid())
+  rating  Int // 1-5 stars
+  comment String?
+
+  // Author
+  authorId String
+  author   User   @relation("ReviewAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  // Target user
+  targetId String
+  target   User   @relation("ReviewTarget", fields: [targetId], references: [id], onDelete: Cascade)
+
+  // Trade context
+  tradeId String
+  trade   Trade  @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([authorId, tradeId]) // One review per user per trade
+  @@index([targetId])
+  @@index([authorId])
+  @@map("reviews")
+}
+
+// ============================================
+// LIKE MODEL
+// ============================================
+model Like {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  itemId String
+  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, itemId]) // One like per user per item
+  @@index([itemId])
+  @@index([userId])
+  @@map("likes")
+}
+
+// ============================================
+// COMMENT MODEL
+// ============================================
+model Comment {
+  id      String @id @default(cuid())
+  content String
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  itemId String
+  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([itemId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("comments")
+}
+
+// ============================================
+// NOTIFICATION MODEL
+// ============================================
+enum NotificationType {
+  TRADE_PROPOSAL
+  TRADE_ACCEPTED
+  TRADE_REJECTED
+  TRADE_COMPLETED
+  NEW_MESSAGE
+  NEW_COMMENT
+  NEW_LIKE
+  NEW_REVIEW
+}
+
+model Notification {
+  id      String           @id @default(cuid())
+  type    NotificationType
+  title   String
+  message String
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Metadata
+  metadata Json? // Flexible field for additional data
+
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
