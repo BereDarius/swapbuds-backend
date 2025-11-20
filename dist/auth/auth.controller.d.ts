@@ -1,5 +1,5 @@
-import { AuthService } from './auth.service';
-import { AuthResponseDto, LoginDto, RegisterDto } from './dto/auth.dto';
+import { AuthService } from '@/auth/auth.service';
+import { AuthResponseDto, LoginDto, RegisterDto } from '@/auth/dto/auth.dto';
 export declare class AuthController {
     private readonly authService;
     constructor(authService: AuthService);

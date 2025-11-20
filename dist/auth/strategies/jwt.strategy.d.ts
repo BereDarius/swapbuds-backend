@@ -1,6 +1,6 @@
+import { PrismaService } from '@/prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { Strategy } from 'passport-jwt';
-import { PrismaService } from '../../prisma/prisma.service';
 export interface JwtPayload {
     sub: string;
     email: string;

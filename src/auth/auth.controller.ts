@@ -1,6 +1,6 @@
-import { AuthService } from '@auth/auth.service';
-import { CurrentUser, Public } from '@auth/decorators/auth.decorators';
-import { AuthResponseDto, LoginDto, RegisterDto } from '@auth/dto/auth.dto';
+import { AuthService } from '@/auth/auth.service';
+import { CurrentUser, Public } from '@/auth/decorators/auth.decorators';
+import { AuthResponseDto, LoginDto, RegisterDto } from '@/auth/dto/auth.dto';
 import {
   Body,
   Controller,
