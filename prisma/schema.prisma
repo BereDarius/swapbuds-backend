@@ -1,5 +1,10 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
+//
+// NOTE: This schema uses Prisma 5.22.0 syntax.
+// If VS Code shows an error on line 10 about `url` being deprecated,
+// it's a false positive from the Prisma extension using Prisma 7 validation.
+// The schema is valid and works correctly with Prisma 5.
 
 generator client {
   provider = "prisma-client-js"
