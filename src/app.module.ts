@@ -9,6 +9,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { redisStore } from 'cache-manager-redis-yet';
+import { ItemsModule } from './items/items.module';
 
 @Module({
   imports: [
@@ -53,6 +54,8 @@ import { redisStore } from 'cache-manager-redis-yet';
 
     // Auth
     AuthModule,
+
+    ItemsModule,
   ],
   controllers: [AppController],
   providers: [
