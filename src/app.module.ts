@@ -11,6 +11,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { redisStore } from 'cache-manager-redis-yet';
 import { ItemsModule } from './items/items.module';
 import { UploadModule } from './upload/upload.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -59,6 +60,8 @@ import { UploadModule } from './upload/upload.module';
     ItemsModule,
 
     UploadModule,
+
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [
