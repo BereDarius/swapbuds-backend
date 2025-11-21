@@ -1,6 +1,7 @@
 import { mockConfigService } from '@/test/mocks/config.mock';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
+import { v2 as cloudinary } from 'cloudinary';
 import { UploadService } from './upload.service';
 
 // Mock cloudinary
@@ -39,8 +40,6 @@ describe('UploadService', () => {
   });
 
   it('should configure cloudinary on module init', () => {
-    const cloudinary = require('cloudinary').v2;
-
     service.onModuleInit();
 
     expect(cloudinary.config).toHaveBeenCalledWith({
