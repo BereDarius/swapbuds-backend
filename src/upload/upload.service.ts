@@ -31,10 +31,18 @@ export class UploadService implements OnModuleInit {
     file: Express.Multer.File,
     folder: string = 'swapbuds/items',
   ): Promise<UploadApiResponse> {
+    // TODO: Add environment prefix to folder path (e.g., dev/swapbuds/items, prod/swapbuds/items)
+    // This is temporary to test environment separation
+    // In the future, use separate Cloudinary accounts for dev/stage/prod
+    const env = this.configService.get<string>('NODE_ENV') || 'development';
+    const envPrefix =
+      env === 'production' ? 'prod' : env === 'staging' ? 'stage' : 'dev';
+    const folderWithEnv = `${envPrefix}/${folder}`;
+
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
-          folder,
+          folder: folderWithEnv,
           resource_type: 'image',
           transformation: [
             { width: 1200, height: 1200, crop: 'limit' },
