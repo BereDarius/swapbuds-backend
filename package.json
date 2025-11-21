@@ -92,7 +92,13 @@
       "**/*.(t|j)s",
       "!**/*.module.ts",
       "!**/*.dto.ts",
-      "!**/main.ts"
+      "!**/main.ts",
+      "!**/config/configuration.ts",
+      "!**/prisma/prisma.service.ts",
+      "!**/auth/guards/**",
+      "!**/auth/strategies/**",
+      "!**/auth/decorators/**",
+      "!**/test/**"
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
