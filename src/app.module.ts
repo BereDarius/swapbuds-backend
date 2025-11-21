@@ -12,6 +12,8 @@ import { redisStore } from 'cache-manager-redis-yet';
 import { ItemsModule } from './items/items.module';
 import { UploadModule } from './upload/upload.module';
 import { UsersModule } from './users/users.module';
+import { LikesModule } from './likes/likes.module';
+import { CommentsModule } from './comments/comments.module';
 
 @Module({
   imports: [
@@ -62,6 +64,10 @@ import { UsersModule } from './users/users.module';
     UploadModule,
 
     UsersModule,
+
+    LikesModule,
+
+    CommentsModule,
   ],
   controllers: [AppController],
   providers: [
