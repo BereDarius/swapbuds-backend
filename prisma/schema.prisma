@@ -52,6 +52,7 @@ model User {
   notificationPreferences NotificationPreferences?
   likes                   Like[]
   comments                Comment[]
+  counterOffers           CounterOffer[]
 
   @@index([email])
   @@index([username])
@@ -110,8 +111,9 @@ model Item {
   viewCount Int       @default(0)
 
   // Trading
-  tradesOffered   Trade[] @relation("TradeItemOffered")
-  tradesRequested Trade[] @relation("TradeItemRequested")
+  tradesOffered      Trade[]        @relation("TradeItemOffered")
+  tradesRequested    Trade[]        @relation("TradeItemRequested")
+  counterOffersUsing CounterOffer[]
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -180,14 +182,56 @@ model Trade {
   completedAt DateTime?
 
   // Relations
-  conversation Conversation?
-  reviews      Review[]
+  conversation  Conversation?
+  reviews       Review[]
+  counterOffers CounterOffer[]
 
   @@index([proposerId])
   @@index([responderId])
   @@index([status])
   @@index([createdAt])
   @@map("trades")
+}
+
+// ============================================
+// COUNTER OFFER MODEL
+// ============================================
+enum CounterOfferStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+model CounterOffer {
+  id     String             @id @default(cuid())
+  status CounterOfferStatus @default(PENDING)
+
+  // Trade this counter-offer belongs to
+  tradeId String
+  trade   Trade  @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+
+  // Who created the counter-offer (either proposer or responder)
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  // Alternative item being offered
+  alternativeItemId String
+  alternativeItem   Item   @relation(fields: [alternativeItemId], references: [id], onDelete: Cascade)
+
+  // Optional message
+  message String?
+
+  // Timestamps
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  expiresAt DateTime?
+
+  @@index([tradeId])
+  @@index([createdById])
+  @@index([status])
+  @@index([createdAt])
+  @@map("counter_offers")
 }
 
 // ============================================

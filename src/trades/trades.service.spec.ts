@@ -691,4 +691,412 @@ describe('TradesService', () => {
       );
     });
   });
+
+  describe('createCounterOffer', () => {
+    const mockCounterOffer = {
+      id: 'counter-offer-123',
+      status: 'PENDING',
+      tradeId: 'trade-123',
+      createdById: 'user-456',
+      alternativeItemId: 'item-789',
+      message: 'How about this item instead?',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      expiresAt: null,
+      createdBy: {
+        id: 'user-456',
+        username: 'john_doe',
+        avatarUrl: 'https://example.com/avatar.jpg',
+      },
+      alternativeItem: {
+        id: 'item-789',
+        title: 'Alternative Item',
+        description: 'A great alternative',
+        condition: 'EXCELLENT',
+        category: 'ELECTRONICS',
+        images: [{ url: 'https://example.com/image.jpg' }],
+      },
+    };
+
+    it('should create a counter-offer successfully', async () => {
+      const userId = 'user-456'; // responder
+      const tradeId = 'trade-123';
+      const createDto = {
+        alternativeItemId: 'item-789',
+        message: 'How about this item instead?',
+      };
+
+      const mockAlternativeItem = {
+        id: 'item-789',
+        userId: 'user-456',
+        title: 'Alternative Item',
+        description: 'A great alternative',
+        condition: 'EXCELLENT',
+        category: 'ELECTRONICS',
+        status: ItemStatus.AVAILABLE,
+        images: [{ url: 'https://example.com/image.jpg', order: 0 }],
+      };
+
+      mockPrismaService.trade.findUnique.mockResolvedValue(
+        mockTradeWithRelations,
+      );
+      mockPrismaService.item.findUnique.mockResolvedValue(mockAlternativeItem);
+      mockPrismaService.counterOffer.create.mockResolvedValue(mockCounterOffer);
+
+      const result = await service.createCounterOffer(
+        userId,
+        tradeId,
+        createDto,
+      );
+
+      expect(result).toBeDefined();
+      expect(result.alternativeItem.id).toBe('item-789');
+      expect(mockNotificationsService.createNotification).toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException if trade does not exist', async () => {
+      mockPrismaService.trade.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.createCounterOffer('user-123', 'trade-123', {
+          alternativeItemId: 'item-789',
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw BadRequestException if trade is not pending', async () => {
+      mockPrismaService.trade.findUnique.mockResolvedValue(mockAcceptedTrade);
+
+      await expect(
+        service.createCounterOffer('user-123', 'trade-123', {
+          alternativeItemId: 'item-789',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw ForbiddenException if user is not part of trade', async () => {
+      mockPrismaService.trade.findUnique.mockResolvedValue(
+        mockTradeWithRelations,
+      );
+
+      await expect(
+        service.createCounterOffer('user-999', 'trade-123', {
+          alternativeItemId: 'item-789',
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw NotFoundException if alternative item does not exist', async () => {
+      mockPrismaService.trade.findUnique.mockResolvedValue(
+        mockTradeWithRelations,
+      );
+      mockPrismaService.item.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.createCounterOffer('user-456', 'trade-123', {
+          alternativeItemId: 'item-789',
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw ForbiddenException if alternative item not owned by user', async () => {
+      mockPrismaService.trade.findUnique.mockResolvedValue(
+        mockTradeWithRelations,
+      );
+      mockPrismaService.item.findUnique.mockResolvedValue({
+        ...mockItem,
+        userId: 'other-user',
+      });
+
+      await expect(
+        service.createCounterOffer('user-456', 'trade-123', {
+          alternativeItemId: 'item-789',
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw BadRequestException if alternative item not available', async () => {
+      mockPrismaService.trade.findUnique.mockResolvedValue(
+        mockTradeWithRelations,
+      );
+      mockPrismaService.item.findUnique.mockResolvedValue({
+        ...mockItem,
+        userId: 'user-456',
+        status: ItemStatus.TRADED,
+      });
+
+      await expect(
+        service.createCounterOffer('user-456', 'trade-123', {
+          alternativeItemId: 'item-789',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('acceptCounterOffer', () => {
+    const mockCounterOfferWithTrade = {
+      id: 'counter-offer-123',
+      status: 'PENDING',
+      tradeId: 'trade-123',
+      createdById: 'user-456',
+      alternativeItemId: 'item-789',
+      message: 'How about this?',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      expiresAt: null,
+      trade: mockTradeWithRelations,
+      createdBy: {
+        id: 'user-456',
+        username: 'john_doe',
+        avatarUrl: 'https://example.com/avatar.jpg',
+      },
+      alternativeItem: {
+        id: 'item-789',
+        title: 'Alternative Item',
+        description: 'A great alternative',
+        condition: 'EXCELLENT',
+        category: 'ELECTRONICS',
+        images: [{ url: 'https://example.com/image.jpg', order: 0 }],
+      },
+    };
+
+    it('should accept a counter-offer successfully', async () => {
+      const userId = 'user-123'; // proposer (other party)
+      const counterOfferId = 'counter-offer-123';
+
+      mockPrismaService.counterOffer.findUnique
+        .mockResolvedValueOnce(mockCounterOfferWithTrade)
+        .mockResolvedValueOnce({
+          ...mockCounterOfferWithTrade,
+          status: 'ACCEPTED',
+        });
+
+      mockPrismaService.$transaction.mockImplementation(async (operations) => {
+        return Promise.all(operations);
+      });
+
+      mockPrismaService.trade.update.mockResolvedValue(mockTrade);
+
+      const result = await service.acceptCounterOffer(userId, counterOfferId);
+
+      expect(result).toBeDefined();
+      expect(mockPrismaService.$transaction).toHaveBeenCalled();
+      expect(mockPrismaService.trade.update).toHaveBeenCalled();
+      expect(mockNotificationsService.createNotification).toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException if counter-offer does not exist', async () => {
+      mockPrismaService.counterOffer.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.acceptCounterOffer('user-123', 'counter-offer-123'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw ForbiddenException if user created the counter-offer', async () => {
+      mockPrismaService.counterOffer.findUnique.mockResolvedValue(
+        mockCounterOfferWithTrade,
+      );
+
+      await expect(
+        service.acceptCounterOffer('user-456', 'counter-offer-123'),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw BadRequestException if counter-offer not pending', async () => {
+      mockPrismaService.counterOffer.findUnique.mockResolvedValue({
+        ...mockCounterOfferWithTrade,
+        status: 'ACCEPTED',
+      });
+
+      await expect(
+        service.acceptCounterOffer('user-123', 'counter-offer-123'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException if trade not pending', async () => {
+      mockPrismaService.counterOffer.findUnique.mockResolvedValue({
+        ...mockCounterOfferWithTrade,
+        trade: mockAcceptedTrade,
+      });
+
+      await expect(
+        service.acceptCounterOffer('user-123', 'counter-offer-123'),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('rejectCounterOffer', () => {
+    const mockCounterOfferWithTrade = {
+      id: 'counter-offer-123',
+      status: 'PENDING',
+      tradeId: 'trade-123',
+      createdById: 'user-456',
+      alternativeItemId: 'item-789',
+      message: 'How about this?',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      expiresAt: null,
+      trade: mockTradeWithRelations,
+      createdBy: {
+        id: 'user-456',
+        username: 'john_doe',
+        avatarUrl: 'https://example.com/avatar.jpg',
+      },
+      alternativeItem: {
+        id: 'item-789',
+        title: 'Alternative Item',
+        description: 'A great alternative',
+        condition: 'EXCELLENT',
+        category: 'ELECTRONICS',
+        images: [{ url: 'https://example.com/image.jpg', order: 0 }],
+      },
+    };
+
+    it('should reject a counter-offer successfully', async () => {
+      const userId = 'user-123'; // proposer (other party)
+      const counterOfferId = 'counter-offer-123';
+
+      mockPrismaService.counterOffer.findUnique.mockResolvedValue(
+        mockCounterOfferWithTrade,
+      );
+
+      mockPrismaService.counterOffer.update.mockResolvedValue({
+        ...mockCounterOfferWithTrade,
+        status: 'REJECTED',
+      });
+
+      const result = await service.rejectCounterOffer(userId, counterOfferId);
+
+      expect(result).toBeDefined();
+      expect(mockPrismaService.counterOffer.update).toHaveBeenCalledWith({
+        where: { id: counterOfferId },
+        data: { status: 'REJECTED' },
+        include: expect.any(Object),
+      });
+      expect(mockNotificationsService.createNotification).toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException if counter-offer does not exist', async () => {
+      mockPrismaService.counterOffer.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.rejectCounterOffer('user-123', 'counter-offer-123'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw ForbiddenException if user created the counter-offer', async () => {
+      mockPrismaService.counterOffer.findUnique.mockResolvedValue(
+        mockCounterOfferWithTrade,
+      );
+
+      await expect(
+        service.rejectCounterOffer('user-456', 'counter-offer-123'),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw BadRequestException if counter-offer not pending', async () => {
+      mockPrismaService.counterOffer.findUnique.mockResolvedValue({
+        ...mockCounterOfferWithTrade,
+        status: 'REJECTED',
+      });
+
+      await expect(
+        service.rejectCounterOffer('user-123', 'counter-offer-123'),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('getTradeCounterOffers', () => {
+    const mockCounterOffers = [
+      {
+        id: 'counter-offer-1',
+        status: 'PENDING',
+        tradeId: 'trade-123',
+        createdById: 'user-456',
+        alternativeItemId: 'item-789',
+        message: 'First offer',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        expiresAt: null,
+        createdBy: {
+          id: 'user-456',
+          username: 'john_doe',
+          avatarUrl: 'https://example.com/avatar.jpg',
+        },
+        alternativeItem: {
+          id: 'item-789',
+          title: 'Alternative Item 1',
+          description: 'First alternative',
+          condition: 'EXCELLENT',
+          category: 'ELECTRONICS',
+          images: [{ url: 'https://example.com/image1.jpg', order: 0 }],
+        },
+      },
+      {
+        id: 'counter-offer-2',
+        status: 'REJECTED',
+        tradeId: 'trade-123',
+        createdById: 'user-123',
+        alternativeItemId: 'item-999',
+        message: 'Second offer',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        expiresAt: null,
+        createdBy: {
+          id: 'user-123',
+          username: 'jane_smith',
+          avatarUrl: 'https://example.com/avatar2.jpg',
+        },
+        alternativeItem: {
+          id: 'item-999',
+          title: 'Alternative Item 2',
+          description: 'Second alternative',
+          condition: 'GOOD',
+          category: 'BOOKS',
+          images: [{ url: 'https://example.com/image2.jpg', order: 0 }],
+        },
+      },
+    ];
+
+    it('should get all counter-offers for a trade', async () => {
+      const tradeId = 'trade-123';
+      const userId = 'user-123';
+
+      mockPrismaService.trade.findUnique.mockResolvedValue(
+        mockTradeWithRelations,
+      );
+      mockPrismaService.counterOffer.findMany.mockResolvedValue(
+        mockCounterOffers,
+      );
+
+      const result = await service.getTradeCounterOffers(tradeId, userId);
+
+      expect(result).toBeDefined();
+      expect(result).toHaveLength(2);
+      expect(mockPrismaService.counterOffer.findMany).toHaveBeenCalledWith({
+        where: { tradeId },
+        include: expect.any(Object),
+        orderBy: { createdAt: 'desc' },
+      });
+    });
+
+    it('should throw NotFoundException if trade does not exist', async () => {
+      mockPrismaService.trade.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.getTradeCounterOffers('trade-123', 'user-123'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw ForbiddenException if user not part of trade', async () => {
+      mockPrismaService.trade.findUnique.mockResolvedValue(
+        mockTradeWithRelations,
+      );
+
+      await expect(
+        service.getTradeCounterOffers('trade-123', 'user-999'),
+      ).rejects.toThrow(ForbiddenException);
+    });
+  });
 });

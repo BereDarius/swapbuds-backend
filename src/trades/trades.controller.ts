@@ -20,6 +20,8 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { CounterOfferResponseDto } from './dto/counter-offer-response.dto';
+import { CreateCounterOfferDto } from './dto/create-counter-offer.dto';
 import { CreateTradeDto } from './dto/create-trade.dto';
 import { TradeFilterDto } from './dto/trade-filter.dto';
 import { TradeResponseDto } from './dto/trade-response.dto';
@@ -190,5 +192,107 @@ export class TradesController {
     @CurrentUser('sub') userId: string,
   ): Promise<TradeResponseDto> {
     return this.tradesService.cancelTrade(tradeId, userId);
+  }
+
+  /**
+   * Create a counter-offer for a trade
+   */
+  @Post(':id/counter-offers')
+  @ApiOperation({ summary: 'Create a counter-offer for a trade' })
+  @ApiParam({ name: 'id', description: 'Trade ID' })
+  @ApiResponse({
+    status: 201,
+    description: 'Counter-offer created successfully',
+    type: CounterOfferResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - not part of trade' })
+  @ApiResponse({ status: 404, description: 'Trade or item not found' })
+  async createCounterOffer(
+    @Param('id') tradeId: string,
+    @CurrentUser('sub') userId: string,
+    @Body() createDto: CreateCounterOfferDto,
+  ): Promise<CounterOfferResponseDto> {
+    return this.tradesService.createCounterOffer(userId, tradeId, createDto);
+  }
+
+  /**
+   * Get all counter-offers for a trade
+   */
+  @Get(':id/counter-offers')
+  @ApiOperation({ summary: 'Get all counter-offers for a trade' })
+  @ApiParam({ name: 'id', description: 'Trade ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Counter-offers retrieved successfully',
+    type: [CounterOfferResponseDto],
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - not part of trade' })
+  @ApiResponse({ status: 404, description: 'Trade not found' })
+  async getTradeCounterOffers(
+    @Param('id') tradeId: string,
+    @CurrentUser('sub') userId: string,
+  ): Promise<CounterOfferResponseDto[]> {
+    return this.tradesService.getTradeCounterOffers(tradeId, userId);
+  }
+
+  /**
+   * Accept a counter-offer
+   */
+  @Patch('counter-offers/:id/accept')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Accept a counter-offer' })
+  @ApiParam({ name: 'id', description: 'Counter-offer ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Counter-offer accepted successfully',
+    type: CounterOfferResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - counter-offer not pending',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - not authorized to accept',
+  })
+  @ApiResponse({ status: 404, description: 'Counter-offer not found' })
+  async acceptCounterOffer(
+    @Param('id') counterOfferId: string,
+    @CurrentUser('sub') userId: string,
+  ): Promise<CounterOfferResponseDto> {
+    return this.tradesService.acceptCounterOffer(userId, counterOfferId);
+  }
+
+  /**
+   * Reject a counter-offer
+   */
+  @Patch('counter-offers/:id/reject')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reject a counter-offer' })
+  @ApiParam({ name: 'id', description: 'Counter-offer ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Counter-offer rejected successfully',
+    type: CounterOfferResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - counter-offer not pending',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - not authorized to reject',
+  })
+  @ApiResponse({ status: 404, description: 'Counter-offer not found' })
+  async rejectCounterOffer(
+    @Param('id') counterOfferId: string,
+    @CurrentUser('sub') userId: string,
+  ): Promise<CounterOfferResponseDto> {
+    return this.tradesService.rejectCounterOffer(userId, counterOfferId);
   }
 }

@@ -8,6 +8,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ItemStatus, NotificationType, TradeStatus } from '@prisma/client';
+import { CounterOfferResponseDto } from './dto/counter-offer-response.dto';
+import { CreateCounterOfferDto } from './dto/create-counter-offer.dto';
 import { CreateTradeDto } from './dto/create-trade.dto';
 import { TradeFilterDto } from './dto/trade-filter.dto';
 import { TradeResponseDto } from './dto/trade-response.dto';
@@ -713,6 +715,418 @@ export class TradesService {
   }
 
   /**
+   * Create a counter-offer for a trade
+   * @param userId - ID of user creating counter-offer
+   * @param tradeId - ID of trade to counter
+   * @param createDto - Counter-offer details
+   * @returns Created counter-offer
+   */
+  @CacheInvalidate((userId: string, tradeId: string) => [
+    `trades:${tradeId}`,
+    `users:${userId}:trades:*`,
+  ])
+  async createCounterOffer(
+    userId: string,
+    tradeId: string,
+    createDto: CreateCounterOfferDto,
+  ): Promise<CounterOfferResponseDto> {
+    const { alternativeItemId, message } = createDto;
+
+    // Validate trade exists and is pending
+    const trade = await this.prisma.trade.findUnique({
+      where: { id: tradeId },
+      include: {
+        proposer: true,
+        responder: true,
+      },
+    });
+
+    if (!trade) {
+      throw new NotFoundException('Trade not found');
+    }
+
+    if (trade.status !== TradeStatus.PENDING) {
+      throw new BadRequestException(
+        'Cannot create counter-offers for non-pending trades',
+      );
+    }
+
+    // Validate user is part of this trade
+    if (trade.proposerId !== userId && trade.responderId !== userId) {
+      throw new ForbiddenException(
+        'You can only create counter-offers for your own trades',
+      );
+    }
+
+    // Validate alternative item exists and is owned by user
+    const alternativeItem = await this.prisma.item.findUnique({
+      where: { id: alternativeItemId },
+      include: {
+        images: {
+          select: { url: true },
+          orderBy: { order: 'asc' },
+        },
+      },
+    });
+
+    if (!alternativeItem) {
+      throw new NotFoundException('Alternative item not found');
+    }
+
+    if (alternativeItem.userId !== userId) {
+      throw new ForbiddenException(
+        'You can only offer your own items in counter-offers',
+      );
+    }
+
+    // Validate alternative item is available
+    if (alternativeItem.status !== ItemStatus.AVAILABLE) {
+      throw new BadRequestException(
+        'Alternative item is not available for trading',
+      );
+    }
+
+    // Create counter-offer
+    const counterOffer = await this.prisma.counterOffer.create({
+      data: {
+        tradeId,
+        createdById: userId,
+        alternativeItemId,
+        message,
+      },
+      include: {
+        createdBy: {
+          select: {
+            id: true,
+            username: true,
+            avatarUrl: true,
+          },
+        },
+        alternativeItem: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            condition: true,
+            category: true,
+            images: {
+              select: { url: true },
+              orderBy: { order: 'asc' },
+            },
+          },
+        },
+      },
+    });
+
+    // Notify the other party
+    const otherUserId =
+      userId === trade.proposerId ? trade.responderId : trade.proposerId;
+    await this.notificationsService.createNotification({
+      userId: otherUserId,
+      type: NotificationType.TRADE_PROPOSAL,
+      title: 'Counter-Offer Received',
+      message: `${counterOffer.createdBy.username} sent a counter-offer for your trade`,
+      metadata: { tradeId, counterOfferId: counterOffer.id },
+    });
+
+    return this.formatCounterOfferResponse(counterOffer);
+  }
+
+  /**
+   * Accept a counter-offer
+   * @param userId - ID of user accepting
+   * @param counterOfferId - ID of counter-offer
+   * @returns Updated counter-offer
+   */
+  @CacheInvalidate((userId: string) => [`trades:*`, `users:${userId}:trades:*`])
+  async acceptCounterOffer(
+    userId: string,
+    counterOfferId: string,
+  ): Promise<CounterOfferResponseDto> {
+    // Find counter-offer with trade details
+    const counterOffer = await this.prisma.counterOffer.findUnique({
+      where: { id: counterOfferId },
+      include: {
+        trade: {
+          include: {
+            proposer: true,
+            responder: true,
+          },
+        },
+        createdBy: {
+          select: {
+            id: true,
+            username: true,
+            avatarUrl: true,
+          },
+        },
+        alternativeItem: {
+          include: {
+            images: {
+              select: { url: true },
+              orderBy: { order: 'asc' },
+            },
+          },
+        },
+      },
+    });
+
+    if (!counterOffer) {
+      throw new NotFoundException('Counter-offer not found');
+    }
+
+    // Validate user is the other party (not the one who created counter-offer)
+    const { trade } = counterOffer;
+    const otherUserId =
+      counterOffer.createdById === trade.proposerId
+        ? trade.responderId
+        : trade.proposerId;
+
+    if (userId !== otherUserId) {
+      throw new ForbiddenException(
+        'Only the other party can accept this counter-offer',
+      );
+    }
+
+    // Validate counter-offer is pending
+    if (counterOffer.status !== 'PENDING') {
+      throw new BadRequestException('This counter-offer is no longer pending');
+    }
+
+    // Validate trade is still pending
+    if (trade.status !== TradeStatus.PENDING) {
+      throw new BadRequestException('The trade is no longer pending');
+    }
+
+    // Update counter-offer status and reject other pending counter-offers
+    await this.prisma.$transaction([
+      this.prisma.counterOffer.update({
+        where: { id: counterOfferId },
+        data: { status: 'ACCEPTED' },
+      }),
+      this.prisma.counterOffer.updateMany({
+        where: {
+          tradeId: trade.id,
+          id: { not: counterOfferId },
+          status: 'PENDING',
+        },
+        data: { status: 'REJECTED' },
+      }),
+    ]);
+
+    // Update trade to use the alternative item
+    // If proposer created counter-offer, update itemOffered
+    // If responder created counter-offer, update itemRequested
+    const updateData =
+      counterOffer.createdById === trade.proposerId
+        ? { itemOfferedId: counterOffer.alternativeItemId }
+        : { itemRequestedId: counterOffer.alternativeItemId };
+
+    await this.prisma.trade.update({
+      where: { id: trade.id },
+      data: updateData,
+    });
+
+    // Notify counter-offer creator
+    await this.notificationsService.createNotification({
+      userId: counterOffer.createdById,
+      type: NotificationType.TRADE_ACCEPTED,
+      title: 'Counter-Offer Accepted',
+      message: `Your counter-offer was accepted`,
+      metadata: { tradeId: trade.id, counterOfferId },
+    });
+
+    // Fetch updated counter-offer
+    const updated = await this.prisma.counterOffer.findUnique({
+      where: { id: counterOfferId },
+      include: {
+        createdBy: {
+          select: {
+            id: true,
+            username: true,
+            avatarUrl: true,
+          },
+        },
+        alternativeItem: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            condition: true,
+            category: true,
+            images: {
+              select: { url: true },
+              orderBy: { order: 'asc' },
+            },
+          },
+        },
+      },
+    });
+
+    return this.formatCounterOfferResponse(updated!);
+  }
+
+  /**
+   * Reject a counter-offer
+   * @param userId - ID of user rejecting
+   * @param counterOfferId - ID of counter-offer
+   * @returns Updated counter-offer
+   */
+  @CacheInvalidate((userId: string) => [`trades:*`, `users:${userId}:trades:*`])
+  async rejectCounterOffer(
+    userId: string,
+    counterOfferId: string,
+  ): Promise<CounterOfferResponseDto> {
+    // Find counter-offer with trade details
+    const counterOffer = await this.prisma.counterOffer.findUnique({
+      where: { id: counterOfferId },
+      include: {
+        trade: {
+          include: {
+            proposer: true,
+            responder: true,
+          },
+        },
+        createdBy: {
+          select: {
+            id: true,
+            username: true,
+            avatarUrl: true,
+          },
+        },
+        alternativeItem: {
+          include: {
+            images: {
+              select: { url: true },
+              orderBy: { order: 'asc' },
+            },
+          },
+        },
+      },
+    });
+
+    if (!counterOffer) {
+      throw new NotFoundException('Counter-offer not found');
+    }
+
+    // Validate user is the other party (not the one who created counter-offer)
+    const { trade } = counterOffer;
+    const otherUserId =
+      counterOffer.createdById === trade.proposerId
+        ? trade.responderId
+        : trade.proposerId;
+
+    if (userId !== otherUserId) {
+      throw new ForbiddenException(
+        'Only the other party can reject this counter-offer',
+      );
+    }
+
+    // Validate counter-offer is pending
+    if (counterOffer.status !== 'PENDING') {
+      throw new BadRequestException('This counter-offer is no longer pending');
+    }
+
+    // Update counter-offer status
+    const updated = await this.prisma.counterOffer.update({
+      where: { id: counterOfferId },
+      data: { status: 'REJECTED' },
+      include: {
+        createdBy: {
+          select: {
+            id: true,
+            username: true,
+            avatarUrl: true,
+          },
+        },
+        alternativeItem: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            condition: true,
+            category: true,
+            images: {
+              select: { url: true },
+              orderBy: { order: 'asc' },
+            },
+          },
+        },
+      },
+    });
+
+    // Notify counter-offer creator
+    await this.notificationsService.createNotification({
+      userId: counterOffer.createdById,
+      type: NotificationType.TRADE_REJECTED,
+      title: 'Counter-Offer Rejected',
+      message: `Your counter-offer was rejected`,
+      metadata: { tradeId: trade.id, counterOfferId },
+    });
+
+    return this.formatCounterOfferResponse(updated);
+  }
+
+  /**
+   * Get all counter-offers for a trade
+   * @param tradeId - Trade ID
+   * @param userId - User ID (for authorization)
+   * @returns List of counter-offers
+   */
+  @Cacheable({
+    keyGenerator: (tradeId: string) => `trades:${tradeId}:counter-offers`,
+  })
+  async getTradeCounterOffers(
+    tradeId: string,
+    userId: string,
+  ): Promise<CounterOfferResponseDto[]> {
+    // Validate trade exists and user is part of it
+    const trade = await this.prisma.trade.findUnique({
+      where: { id: tradeId },
+    });
+
+    if (!trade) {
+      throw new NotFoundException('Trade not found');
+    }
+
+    if (trade.proposerId !== userId && trade.responderId !== userId) {
+      throw new ForbiddenException(
+        'You can only view counter-offers for your own trades',
+      );
+    }
+
+    // Fetch counter-offers
+    const counterOffers = await this.prisma.counterOffer.findMany({
+      where: { tradeId },
+      include: {
+        createdBy: {
+          select: {
+            id: true,
+            username: true,
+            avatarUrl: true,
+          },
+        },
+        alternativeItem: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            condition: true,
+            category: true,
+            images: {
+              select: { url: true },
+              orderBy: { order: 'asc' },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return counterOffers.map((co) => this.formatCounterOfferResponse(co));
+  }
+
+  /**
    * Format trade response with proper structure
    */
   private formatTradeResponse(trade: any): TradeResponseDto {
@@ -735,6 +1149,32 @@ export class TradesService {
       createdAt: trade.createdAt,
       updatedAt: trade.updatedAt,
       completedAt: trade.completedAt,
+    };
+  }
+
+  /**
+   * Format counter-offer response with proper structure
+   */
+  private formatCounterOfferResponse(
+    counterOffer: any,
+  ): CounterOfferResponseDto {
+    return {
+      id: counterOffer.id,
+      status: counterOffer.status,
+      tradeId: counterOffer.tradeId,
+      createdBy: counterOffer.createdBy,
+      alternativeItem: {
+        id: counterOffer.alternativeItem.id,
+        title: counterOffer.alternativeItem.title,
+        description: counterOffer.alternativeItem.description,
+        condition: counterOffer.alternativeItem.condition,
+        category: counterOffer.alternativeItem.category,
+        images: counterOffer.alternativeItem.images.map((img: any) => img.url),
+      },
+      message: counterOffer.message,
+      createdAt: counterOffer.createdAt,
+      updatedAt: counterOffer.updatedAt,
+      expiresAt: counterOffer.expiresAt,
     };
   }
 }

@@ -87,6 +87,15 @@ export const mockPrismaService = {
     delete: jest.fn(),
     count: jest.fn(),
   },
+  counterOffer: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    updateMany: jest.fn(),
+    delete: jest.fn(),
+    count: jest.fn(),
+  },
   $transaction: jest.fn(),
 };
 
