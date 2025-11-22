@@ -32,9 +32,11 @@ This is the backend API for SWAPBUDS, providing secure authentication, item mana
 
 ### In Progress
 
-- 🚧 Trading system
+- 🚧 Trading system (v0.6.0+)
 - 🚧 Real-time chat
-- 🚧 Notifications
+- ✅ Notifications system (v0.7.0)
+- ✅ WebSocket real-time notifications (v0.8.0)
+- ✅ Email notifications (v0.8.0)
 - 🚧 Likes and comments
 
 ---
@@ -92,6 +94,16 @@ CLOUDINARY_CLOUD_NAME="your-cloud-name"
 CLOUDINARY_API_KEY="your-api-key"
 CLOUDINARY_API_SECRET="your-api-secret"
 
+# Email (optional - for notifications)
+MAIL_HOST="smtp.gmail.com"
+MAIL_PORT=587
+MAIL_USER="your-email@gmail.com"
+MAIL_PASSWORD="your-app-password"
+MAIL_FROM="SwapBuds <noreply@swapbuds.com>"
+
+# Frontend URL (for email links and WebSocket CORS)
+FRONTEND_URL="http://localhost:3000"
+
 # Server
 PORT=3001
 NODE_ENV=development
@@ -121,6 +133,7 @@ yarn start:prod
 - **API:** http://localhost:3001/api
 - **Swagger Docs:** http://localhost:3001/api/docs
 - **Health Check:** http://localhost:3001/api/health
+- **WebSocket:** ws://localhost:3001/notifications
 
 ---
 
@@ -176,6 +189,107 @@ Interactive Swagger documentation available at:
 - `GET /api/items/user/:userId` - Get user's items (public)
 - `PATCH /api/items/:id` - Update item (owner only)
 - `DELETE /api/items/:id` - Delete item (owner only)
+
+#### Notifications
+
+- `GET /api/notifications` - List user notifications (protected)
+- `GET /api/notifications/unread-count` - Get unread count (protected)
+- `PATCH /api/notifications/:id/read` - Mark as read (protected)
+- `PATCH /api/notifications/read-all` - Mark all as read (protected)
+- `DELETE /api/notifications/:id` - Delete notification (protected)
+- `GET /api/notifications/preferences` - Get preferences (protected)
+- `PUT /api/notifications/preferences` - Update preferences (protected)
+
+---
+
+## 🔔 Real-time Features
+
+### WebSocket Notifications
+
+Connect to the WebSocket server for real-time notification updates:
+
+```typescript
+import { io } from 'socket.io-client';
+
+const socket = io('ws://localhost:3001/notifications', {
+  auth: {
+    token: 'your-jwt-token',
+  },
+});
+
+// Subscribe to notifications
+socket.emit('subscribe', userId);
+
+// Listen for events
+socket.on('notification', (notification) => {
+  console.log('New notification:', notification);
+});
+
+socket.on('notificationRead', ({ notificationId }) => {
+  console.log('Notification marked as read:', notificationId);
+});
+
+socket.on('allNotificationsRead', ({ count }) => {
+  console.log(`${count} notifications marked as read`);
+});
+
+socket.on('notificationDeleted', ({ notificationId }) => {
+  console.log('Notification deleted:', notificationId);
+});
+```
+
+### Email Notifications
+
+Email notifications are automatically sent for:
+
+- **Trade Proposals** - When someone proposes a trade
+- **Trade Accepted** - When a trade is accepted
+- **Trade Rejected** - When a trade is declined
+- **Trade Cancelled** - When a trade is cancelled
+- **Welcome Email** - When a new user registers
+
+#### Email Configuration
+
+For Gmail, enable 2FA and use an App Password:
+
+1. Go to Google Account Settings → Security
+2. Enable 2-Step Verification
+3. Generate App Password for "Mail"
+4. Use the generated password in `MAIL_PASSWORD`
+
+#### Disabling Email
+
+Email is optional. If `MAIL_USER` or `MAIL_PASSWORD` is not set, the system gracefully disables email sending without affecting other functionality.
+
+### Notification Preferences
+
+Users can control which notifications they receive via push (in-app) and email:
+
+```typescript
+{
+  // Email preferences
+  emailTradeProposal: true,
+  emailTradeAccepted: true,
+  emailTradeRejected: true,
+  emailTradeCancelled: true,
+  emailNewMessage: true,
+  emailNewComment: true,
+  emailNewLike: true,
+  emailNewReview: true,
+
+  // Push/in-app preferences
+  pushTradeProposal: true,
+  pushTradeAccepted: true,
+  pushTradeRejected: true,
+  pushTradeCancelled: true,
+  pushNewMessage: true,
+  pushNewComment: true,
+  pushNewLike: true,
+  pushNewReview: true
+}
+```
+
+All preferences default to `true` (opt-out model).
 
 ---
 
