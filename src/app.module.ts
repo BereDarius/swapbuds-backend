@@ -18,6 +18,7 @@ import { LikesModule } from './likes/likes.module';
 import { MailModule } from './mail/mail.module';
 import { MessagesModule } from './messages/messages.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { ReviewsModule } from './reviews/reviews.module';
 import { TradesModule } from './trades/trades.module';
 import { UploadModule } from './upload/upload.module';
 import { UsersModule } from './users/users.module';
@@ -85,6 +86,8 @@ import { UsersModule } from './users/users.module';
     CommentsModule,
 
     TradesModule,
+
+    ReviewsModule,
 
     NotificationsModule,
 

@@ -34,11 +34,13 @@ export const mockTradeWithRelations = {
   itemOffered: {
     id: 'item-123',
     title: 'Nintendo Switch',
+    category: 'Electronics',
     images: [{ url: 'https://cloudinary.com/switch.jpg' }],
   },
   itemRequested: {
     id: 'item-456',
     title: 'Pokemon Cards',
+    category: 'Collectibles',
     images: [{ url: 'https://cloudinary.com/cards.jpg' }],
   },
 };

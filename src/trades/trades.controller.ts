@@ -9,16 +9,19 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { CreateTradeDto } from './dto/create-trade.dto';
+import { TradeFilterDto } from './dto/trade-filter.dto';
 import { TradeResponseDto } from './dto/trade-response.dto';
 import { TradesService } from './trades.service';
 
@@ -55,20 +58,48 @@ export class TradesController {
   }
 
   /**
-   * Get all trades for current user
+   * Get all trades for current user (with optional filters)
    */
   @Get('my-trades')
-  @ApiOperation({ summary: 'Get all trades for current user' })
+  @ApiOperation({
+    summary: 'Get all trades for current user with filters and pagination',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['PENDING', 'ACCEPTED', 'REJECTED', 'CANCELLED'],
+  })
+  @ApiQuery({ name: 'startDate', required: false, type: String })
+  @ApiQuery({ name: 'endDate', required: false, type: String })
+  @ApiQuery({ name: 'category', required: false, type: String })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiResponse({
     status: 200,
     description: 'Trades retrieved successfully',
-    type: [TradeResponseDto],
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getMyTrades(
     @CurrentUser('sub') userId: string,
-  ): Promise<TradeResponseDto[]> {
-    return this.tradesService.getUserTrades(userId);
+    @Query() filters: TradeFilterDto,
+  ) {
+    // If no filters provided, use simple method
+    if (
+      !filters.status &&
+      !filters.startDate &&
+      !filters.endDate &&
+      !filters.category &&
+      !filters.search &&
+      !filters.page &&
+      !filters.limit
+    ) {
+      const trades = await this.tradesService.getUserTrades(userId);
+      return { trades, total: trades.length };
+    }
+
+    // Otherwise use filtered method
+    return this.tradesService.getUserTradesFiltered(userId, filters);
   }
 
   /**

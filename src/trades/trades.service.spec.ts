@@ -300,6 +300,164 @@ describe('TradesService', () => {
     });
   });
 
+  describe('getUserTradesFiltered', () => {
+    it('should return filtered trades with pagination', async () => {
+      const userId = 'user-123';
+      const filters = {
+        status: TradeStatus.PENDING,
+        page: 1,
+        limit: 10,
+      };
+
+      mockPrismaService.trade.count.mockResolvedValue(2);
+      mockPrismaService.trade.findMany.mockResolvedValue(mockTrades);
+
+      const result = await service.getUserTradesFiltered(userId, filters);
+
+      expect(result.trades).toHaveLength(mockTrades.length);
+      expect(result.total).toBe(2);
+      expect(result.page).toBe(1);
+      expect(result.limit).toBe(10);
+      expect(result.totalPages).toBe(1);
+      expect(prisma.trade.count).toHaveBeenCalled();
+      expect(prisma.trade.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          skip: 0,
+          take: 10,
+        }),
+      );
+    });
+
+    it('should filter by date range', async () => {
+      const userId = 'user-123';
+      const filters = {
+        startDate: '2024-01-01',
+        endDate: '2024-12-31',
+        page: 1,
+        limit: 20,
+      };
+
+      mockPrismaService.trade.count.mockResolvedValue(1);
+      mockPrismaService.trade.findMany.mockResolvedValue([
+        mockTradeWithRelations,
+      ]);
+
+      const result = await service.getUserTradesFiltered(userId, filters);
+
+      expect(result.trades).toHaveLength(1);
+      expect(prisma.trade.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            createdAt: expect.objectContaining({
+              gte: expect.any(Date),
+              lte: expect.any(Date),
+            }),
+          }),
+        }),
+      );
+    });
+
+    it('should filter by category', async () => {
+      const userId = 'user-123';
+      const filters = {
+        category: 'Electronics',
+        page: 1,
+        limit: 20,
+      };
+
+      mockPrismaService.trade.count.mockResolvedValue(1);
+      mockPrismaService.trade.findMany.mockResolvedValue([
+        mockTradeWithRelations,
+      ]);
+
+      const result = await service.getUserTradesFiltered(userId, filters);
+
+      expect(result.trades).toHaveLength(1);
+      expect(prisma.trade.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            AND: expect.arrayContaining([
+              expect.objectContaining({
+                OR: expect.any(Array),
+              }),
+            ]),
+          }),
+        }),
+      );
+    });
+
+    it('should search by item title', async () => {
+      const userId = 'user-123';
+      const filters = {
+        search: 'laptop',
+        page: 1,
+        limit: 20,
+      };
+
+      mockPrismaService.trade.count.mockResolvedValue(1);
+      mockPrismaService.trade.findMany.mockResolvedValue([
+        mockTradeWithRelations,
+      ]);
+
+      const result = await service.getUserTradesFiltered(userId, filters);
+
+      expect(result.trades).toHaveLength(1);
+      expect(prisma.trade.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            AND: expect.arrayContaining([
+              expect.objectContaining({
+                OR: expect.any(Array),
+              }),
+            ]),
+          }),
+        }),
+      );
+    });
+
+    it('should handle pagination correctly', async () => {
+      const userId = 'user-123';
+      const filters = {
+        page: 2,
+        limit: 5,
+      };
+
+      mockPrismaService.trade.count.mockResolvedValue(12);
+      mockPrismaService.trade.findMany.mockResolvedValue(mockTrades);
+
+      const result = await service.getUserTradesFiltered(userId, filters);
+
+      expect(result.page).toBe(2);
+      expect(result.limit).toBe(5);
+      expect(result.total).toBe(12);
+      expect(result.totalPages).toBe(3);
+      expect(prisma.trade.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          skip: 5,
+          take: 5,
+        }),
+      );
+    });
+
+    it('should return empty results when no trades match filters', async () => {
+      const userId = 'user-123';
+      const filters = {
+        status: TradeStatus.CANCELLED,
+        page: 1,
+        limit: 20,
+      };
+
+      mockPrismaService.trade.count.mockResolvedValue(0);
+      mockPrismaService.trade.findMany.mockResolvedValue([]);
+
+      const result = await service.getUserTradesFiltered(userId, filters);
+
+      expect(result.trades).toEqual([]);
+      expect(result.total).toBe(0);
+      expect(result.totalPages).toBe(0);
+    });
+  });
+
   describe('getTradeById', () => {
     it('should return trade when user is proposer', async () => {
       const tradeId = 'trade-123';

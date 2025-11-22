@@ -45,6 +45,7 @@ export const mockPrismaService = {
     create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
+    count: jest.fn(),
   },
   notification: {
     findUnique: jest.fn(),
@@ -74,6 +75,14 @@ export const mockPrismaService = {
     create: jest.fn(),
     update: jest.fn(),
     updateMany: jest.fn(),
+    delete: jest.fn(),
+    count: jest.fn(),
+  },
+  review: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
     delete: jest.fn(),
     count: jest.fn(),
   },

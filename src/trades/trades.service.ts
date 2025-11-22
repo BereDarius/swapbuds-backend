@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { ItemStatus, NotificationType, TradeStatus } from '@prisma/client';
 import { CreateTradeDto } from './dto/create-trade.dto';
+import { TradeFilterDto } from './dto/trade-filter.dto';
 import { TradeResponseDto } from './dto/trade-response.dto';
 
 /**
@@ -212,6 +213,139 @@ export class TradesService {
     });
 
     return trades.map((trade) => this.formatTradeResponse(trade));
+  }
+
+  /**
+   * Get filtered and paginated trades for a user
+   * @param userId - User ID
+   * @param filters - Filter and pagination parameters
+   */
+  async getUserTradesFiltered(
+    userId: string,
+    filters: TradeFilterDto,
+  ): Promise<{
+    trades: TradeResponseDto[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const {
+      status,
+      startDate,
+      endDate,
+      category,
+      search,
+      page = 1,
+      limit = 20,
+    } = filters;
+
+    // Build where clause
+    const where: any = {
+      OR: [{ proposerId: userId }, { responderId: userId }],
+    };
+
+    // Add status filter
+    if (status) {
+      where.status = status;
+    }
+
+    // Add date range filter
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) {
+        where.createdAt.gte = new Date(startDate);
+      }
+      if (endDate) {
+        where.createdAt.lte = new Date(endDate);
+      }
+    }
+
+    // Add category or search filter (on items)
+    if (category || search) {
+      where.AND = [];
+
+      if (category) {
+        where.AND.push({
+          OR: [{ itemOffered: { category } }, { itemRequested: { category } }],
+        });
+      }
+
+      if (search) {
+        where.AND.push({
+          OR: [
+            {
+              itemOffered: { title: { contains: search, mode: 'insensitive' } },
+            },
+            {
+              itemRequested: {
+                title: { contains: search, mode: 'insensitive' },
+              },
+            },
+          ],
+        });
+      }
+    }
+
+    // Get total count
+    const total = await this.prisma.trade.count({ where });
+
+    // Get paginated trades
+    const skip = (page - 1) * limit;
+    const trades = await this.prisma.trade.findMany({
+      where,
+      skip,
+      take: limit,
+      include: {
+        proposer: {
+          select: {
+            id: true,
+            username: true,
+            avatarUrl: true,
+          },
+        },
+        responder: {
+          select: {
+            id: true,
+            username: true,
+            avatarUrl: true,
+          },
+        },
+        itemOffered: {
+          select: {
+            id: true,
+            title: true,
+            category: true,
+            images: {
+              select: { url: true },
+              orderBy: { order: 'asc' },
+              take: 1,
+            },
+          },
+        },
+        itemRequested: {
+          select: {
+            id: true,
+            title: true,
+            category: true,
+            images: {
+              select: { url: true },
+              orderBy: { order: 'asc' },
+              take: 1,
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return {
+      trades: trades.map((trade) => this.formatTradeResponse(trade)),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   /**

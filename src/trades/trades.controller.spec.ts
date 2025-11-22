@@ -20,6 +20,7 @@ describe('TradesController', () => {
   const mockTradesService = {
     createTrade: jest.fn(),
     getUserTrades: jest.fn(),
+    getUserTradesFiltered: jest.fn(),
     getTradeById: jest.fn(),
     acceptTrade: jest.fn(),
     rejectTrade: jest.fn(),
@@ -124,25 +125,49 @@ describe('TradesController', () => {
   describe('getMyTrades', () => {
     it('should return all trades for user', async () => {
       const userId = 'user-123';
+      const filters = {};
 
       mockTradesService.getUserTrades.mockResolvedValue(mockTrades);
 
-      const result = await controller.getMyTrades(userId);
+      const result = await controller.getMyTrades(userId, filters);
 
-      expect(result).toEqual(mockTrades);
+      expect(result).toEqual({ trades: mockTrades, total: mockTrades.length });
       expect(tradesService.getUserTrades).toHaveBeenCalledWith(userId);
       expect(tradesService.getUserTrades).toHaveBeenCalledTimes(1);
     });
 
     it('should return empty array when no trades', async () => {
       const userId = 'user-123';
+      const filters = {};
 
       mockTradesService.getUserTrades.mockResolvedValue([]);
 
-      const result = await controller.getMyTrades(userId);
+      const result = await controller.getMyTrades(userId, filters);
 
-      expect(result).toEqual([]);
+      expect(result).toEqual({ trades: [], total: 0 });
       expect(tradesService.getUserTrades).toHaveBeenCalledWith(userId);
+    });
+
+    it('should use filtered method when filters provided', async () => {
+      const userId = 'user-123';
+      const filters = { status: 'PENDING', page: 1, limit: 10 };
+      const filteredResult = {
+        trades: mockTrades,
+        total: 2,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
+      };
+
+      mockTradesService.getUserTradesFiltered.mockResolvedValue(filteredResult);
+
+      const result = await controller.getMyTrades(userId, filters as any);
+
+      expect(result).toEqual(filteredResult);
+      expect(tradesService.getUserTradesFiltered).toHaveBeenCalledWith(
+        userId,
+        filters,
+      );
     });
   });
 
