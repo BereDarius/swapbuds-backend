@@ -168,17 +168,41 @@ describe('NotificationsService', () => {
   });
 
   describe('getUnreadCount', () => {
-    it('should return count of unread notifications', async () => {
-      const userId = 'user-456';
+    const userId = 'user-456';
 
+    it('should return cached count when cache hit', async () => {
+      mockCacheService.get.mockResolvedValue(5);
+
+      const result = await service.getUnreadCount(userId);
+
+      expect(mockCacheService.getUnreadNotificationsKey).toHaveBeenCalledWith(
+        userId,
+      );
+      expect(mockCacheService.get).toHaveBeenCalledWith(
+        `users:${userId}:notifications:unread`,
+      );
+      expect(prisma.notification.count).not.toHaveBeenCalled(); // DB not queried on cache hit
+      expect(result).toBe(5);
+    });
+
+    it('should query database and cache result when cache miss', async () => {
+      mockCacheService.get.mockResolvedValue(null); // Cache miss
       mockPrismaService.notification.count.mockResolvedValue(5);
 
       const result = await service.getUnreadCount(userId);
 
-      expect(result).toBe(5);
+      expect(mockCacheService.get).toHaveBeenCalledWith(
+        `users:${userId}:notifications:unread`,
+      );
       expect(prisma.notification.count).toHaveBeenCalledWith({
         where: { userId, isRead: false },
       });
+      expect(mockCacheService.set).toHaveBeenCalledWith(
+        `users:${userId}:notifications:unread`,
+        5,
+        60000, // 1 minute
+      );
+      expect(result).toBe(5);
     });
   });
 

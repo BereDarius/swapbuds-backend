@@ -49,7 +49,30 @@ describe('UsersService', () => {
   describe('getUserProfile', () => {
     const userId = 'user-1';
 
-    it('should return user profile with stats', async () => {
+    it('should return cached profile when cache hit', async () => {
+      const cachedProfile = {
+        id: userId,
+        username: mockUserWithProfile.username,
+        email: mockUserWithProfile.email,
+        bio: mockUserWithProfile.bio,
+        location: mockUserWithProfile.location,
+        avatarUrl: mockUserWithProfile.avatarUrl,
+        itemsCount: 5,
+        tradesCount: 3,
+        createdAt: mockUserWithProfile.createdAt,
+      };
+      mockCacheService.get.mockResolvedValue(cachedProfile);
+
+      const result = await service.getUserProfile(userId);
+
+      expect(mockCacheService.getUserKey).toHaveBeenCalledWith(userId);
+      expect(mockCacheService.get).toHaveBeenCalledWith(`users:${userId}`);
+      expect(prisma.user.findUnique).not.toHaveBeenCalled(); // DB not queried on cache hit
+      expect(result).toEqual(cachedProfile);
+    });
+
+    it('should query database and cache result when cache miss', async () => {
+      mockCacheService.get.mockResolvedValue(null); // Cache miss
       const userWithCounts = {
         ...mockUserWithProfile,
         _count: {
@@ -62,6 +85,7 @@ describe('UsersService', () => {
 
       const result = await service.getUserProfile(userId);
 
+      expect(mockCacheService.get).toHaveBeenCalledWith(`users:${userId}`);
       expect(prisma.user.findUnique).toHaveBeenCalledWith({
         where: { id: userId },
         include: {
@@ -75,6 +99,11 @@ describe('UsersService', () => {
           },
         },
       });
+      expect(mockCacheService.set).toHaveBeenCalledWith(
+        `users:${userId}`,
+        expect.any(Object),
+        600000, // 10 minutes
+      );
       expect(result.id).toBe(userId);
       expect(result.username).toBe(mockUserWithProfile.username);
       expect(result.itemsCount).toBe(5);

@@ -459,24 +459,50 @@ describe('MessagesService', () => {
   });
 
   describe('getUnreadCount', () => {
-    it('should return total unread message count', async () => {
+    const userId = 'user-1';
+
+    it('should return cached count when cache hit', async () => {
+      mockCacheService.get.mockResolvedValue(5);
+
+      const result = await service.getUnreadCount(userId);
+
+      expect(mockCacheService.getUnreadMessagesKey).toHaveBeenCalledWith(
+        userId,
+      );
+      expect(mockCacheService.get).toHaveBeenCalledWith(
+        `users:${userId}:messages:unread`,
+      );
+      expect(mockPrismaService.conversation.findMany).not.toHaveBeenCalled(); // DB not queried on cache hit
+      expect(result).toBe(5);
+    });
+
+    it('should query database and cache result when cache miss', async () => {
+      mockCacheService.get.mockResolvedValue(null); // Cache miss
       mockPrismaService.conversation.findMany.mockResolvedValue([
         { ...mockConversation, user1Id: 'user-1', user2Id: 'user-2' },
         { ...mockConversation, user1Id: 'user-3', user2Id: 'user-1' },
       ]);
       mockPrismaService.message.count.mockResolvedValue(5);
 
-      const result = await service.getUnreadCount('user-1');
+      const result = await service.getUnreadCount(userId);
 
-      expect(result).toBe(5);
+      expect(mockCacheService.get).toHaveBeenCalledWith(
+        `users:${userId}:messages:unread`,
+      );
       expect(mockPrismaService.message.count).toHaveBeenCalledWith({
         where: {
           conversationId: { in: expect.any(Array) },
-          senderId: { not: 'user-1' },
+          senderId: { not: userId },
           isRead: false,
           isDeleted: false,
         },
       });
+      expect(mockCacheService.set).toHaveBeenCalledWith(
+        `users:${userId}:messages:unread`,
+        5,
+        60000, // 1 minute
+      );
+      expect(result).toBe(5);
     });
 
     it('should return 0 if no conversations', async () => {

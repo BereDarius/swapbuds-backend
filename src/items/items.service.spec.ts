@@ -160,12 +160,45 @@ describe('ItemsService', () => {
   });
 
   describe('findByUser', () => {
-    it('should return items for a specific user', async () => {
-      const userId = 'user-1';
+    const userId = 'user-1';
+
+    it('should return cached items when cache hit', async () => {
+      const cachedItems = [
+        {
+          id: mockItemWithRelations.id,
+          title: mockItemWithRelations.title,
+          description: mockItemWithRelations.description,
+          condition: mockItemWithRelations.condition,
+          category: mockItemWithRelations.category,
+          createdAt: mockItemWithRelations.createdAt,
+          updatedAt: mockItemWithRelations.updatedAt,
+          owner: {
+            id: mockItemWithRelations.user.id,
+            username: mockItemWithRelations.user.username,
+            avatarUrl: mockItemWithRelations.user.avatarUrl,
+          },
+          images: mockItemWithRelations.images.map((img) => img.url),
+          likesCount: mockItemWithRelations._count.likes,
+          commentsCount: mockItemWithRelations._count.comments,
+        },
+      ];
+      cacheService.get.mockResolvedValue(cachedItems);
+
+      const result = await service.findByUser(userId);
+
+      expect(cacheService.getUserItemsKey).toHaveBeenCalledWith(userId);
+      expect(cacheService.get).toHaveBeenCalledWith(`users:${userId}:items`);
+      expect(prisma.item.findMany).not.toHaveBeenCalled(); // DB not queried on cache hit
+      expect(result).toEqual(cachedItems);
+    });
+
+    it('should query database and cache result when cache miss', async () => {
+      cacheService.get.mockResolvedValue(null); // Cache miss
       prisma.item.findMany.mockResolvedValue([mockItemWithRelations]);
 
       const result = await service.findByUser(userId);
 
+      expect(cacheService.get).toHaveBeenCalledWith(`users:${userId}:items`);
       expect(prisma.item.findMany).toHaveBeenCalledWith({
         where: { userId },
         include: {
@@ -186,6 +219,11 @@ describe('ItemsService', () => {
         },
         orderBy: { createdAt: 'desc' },
       });
+      expect(cacheService.set).toHaveBeenCalledWith(
+        `users:${userId}:items`,
+        expect.any(Array),
+        300000, // 5 minutes
+      );
       expect(result).toHaveLength(1);
     });
   });
@@ -193,11 +231,41 @@ describe('ItemsService', () => {
   describe('findOne', () => {
     const itemId = 'item-1';
 
-    it('should return an item by id', async () => {
+    it('should return cached item when cache hit', async () => {
+      const cachedItem = {
+        id: mockItemWithRelations.id,
+        title: mockItemWithRelations.title,
+        description: mockItemWithRelations.description,
+        condition: mockItemWithRelations.condition,
+        category: mockItemWithRelations.category,
+        createdAt: mockItemWithRelations.createdAt,
+        updatedAt: mockItemWithRelations.updatedAt,
+        owner: {
+          id: mockItemWithRelations.user.id,
+          username: mockItemWithRelations.user.username,
+          avatarUrl: mockItemWithRelations.user.avatarUrl,
+        },
+        images: mockItemWithRelations.images.map((img) => img.url),
+        likesCount: mockItemWithRelations._count.likes,
+        commentsCount: mockItemWithRelations._count.comments,
+      };
+      cacheService.get.mockResolvedValue(cachedItem);
+
+      const result = await service.findOne(itemId);
+
+      expect(cacheService.getItemKey).toHaveBeenCalledWith(itemId);
+      expect(cacheService.get).toHaveBeenCalledWith(`items:${itemId}`);
+      expect(prisma.item.findUnique).not.toHaveBeenCalled(); // DB not queried on cache hit
+      expect(result).toEqual(cachedItem);
+    });
+
+    it('should query database and cache result when cache miss', async () => {
+      cacheService.get.mockResolvedValue(null); // Cache miss
       prisma.item.findUnique.mockResolvedValue(mockItemWithRelations);
 
       const result = await service.findOne(itemId);
 
+      expect(cacheService.get).toHaveBeenCalledWith(`items:${itemId}`);
       expect(prisma.item.findUnique).toHaveBeenCalledWith({
         where: { id: itemId },
         include: {
@@ -217,6 +285,11 @@ describe('ItemsService', () => {
           },
         },
       });
+      expect(cacheService.set).toHaveBeenCalledWith(
+        `items:${itemId}`,
+        expect.any(Object),
+        300000, // 5 minutes
+      );
       expect(result.id).toBe(mockItemWithRelations.id);
     });
 
