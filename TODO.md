@@ -24,6 +24,11 @@ This roadmap is aligned with the [LAUNCH_ROADMAP.md](../plans/LAUNCH_ROADMAP.md)
 
 ### Features
 
+- [ ] **Google reCAPTCHA v3 (Invisible) Integration**
+- [ ] **Bot protection for registration and login**
+- [ ] **Score-based verification (0.0-1.0 scale)**
+- [ ] **Token verification with Google API**
+- [ ] **Configurable score thresholds per action**
 - [ ] Support for multiple trade delivery methods
 - [ ] Users can specify preferred delivery method for items
 - [ ] Delivery method filtering in search and matching
@@ -34,6 +39,25 @@ This roadmap is aligned with the [LAUNCH_ROADMAP.md](../plans/LAUNCH_ROADMAP.md)
 - [ ] **Similar value matching suggestions**
 
 ### Technical Implementation
+
+**reCAPTCHA v3 Implementation:**
+
+- [ ] Create `RecaptchaModule` and `RecaptchaService`
+- [ ] Install `axios` for Google API verification
+- [ ] Add environment variables: `RECAPTCHA_SECRET_KEY`, `RECAPTCHA_MIN_SCORE`
+- [ ] Implement token verification with Google reCAPTCHA API
+- [ ] Add score-based validation logic (configurable thresholds)
+- [ ] Update `RegisterDto` to include optional `recaptchaToken` field
+- [ ] Update `LoginDto` to include optional `recaptchaToken` field
+- [ ] Update `AuthService.register()` to verify reCAPTCHA token
+- [ ] Update `AuthService.login()` to verify reCAPTCHA token
+- [ ] Add IP tracking for verification requests
+- [ ] Create `RecaptchaLog` model for score tracking (optional)
+- [ ] Add logging for failed verifications (score too low, action mismatch)
+- [ ] Write unit tests for `RecaptchaService`
+- [ ] Document score thresholds and strategy
+
+**Delivery Methods & Value Fields:**
 
 - [ ] Add `deliveryMethods` enum field to Item model (array: PHYSICAL, MAIL, BOTH)
 - [ ] Add `preferredDeliveryMethod` field to User preferences
