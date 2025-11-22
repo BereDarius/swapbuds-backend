@@ -345,4 +345,110 @@ describe('UsersService', () => {
       );
     });
   });
+
+  describe('getUserStatistics', () => {
+    const userId = 'user-123';
+
+    it('should return user trade statistics', async () => {
+      prisma.user.findUnique.mockResolvedValue(mockUser);
+
+      // Mock all the count queries
+      prisma.trade.count
+        .mockResolvedValueOnce(10) // tradesInitiated
+        .mockResolvedValueOnce(15) // tradesReceived
+        .mockResolvedValueOnce(8) // completedTrades
+        .mockResolvedValueOnce(10) // acceptedTrades
+        .mockResolvedValueOnce(5) // rejectedTrades
+        .mockResolvedValueOnce(2) // cancelledTrades
+        .mockResolvedValueOnce(3) // expiredTrades
+        .mockResolvedValueOnce(4) // counterOffers
+        .mockResolvedValueOnce(2) // pendingAsProposer
+        .mockResolvedValueOnce(3); // pendingAsResponder
+
+      // Mock trades for average response time calculation
+      const mockTrades = [
+        {
+          createdAt: new Date('2024-01-01T10:00:00Z'),
+          updatedAt: new Date('2024-01-01T22:00:00Z'), // 12 hours later
+        },
+        {
+          createdAt: new Date('2024-01-02T10:00:00Z'),
+          updatedAt: new Date('2024-01-03T10:00:00Z'), // 24 hours later
+        },
+      ];
+      prisma.trade.findMany.mockResolvedValue(mockTrades);
+
+      const result = await service.getUserStatistics(userId);
+
+      expect(result).toEqual({
+        totalTradesInitiated: 10,
+        totalTradesReceived: 15,
+        totalCompletedTrades: 8,
+        totalAcceptedTrades: 10,
+        totalRejectedTrades: 5,
+        totalCancelledTrades: 2,
+        totalExpiredTrades: 3,
+        successRate: 32, // 8 / (10 + 15) * 100 = 32%
+        averageResponseTime: 18, // (12 + 24) / 2 = 18 hours
+        totalCounterOffers: 4,
+        pendingAsProposer: 2,
+        pendingAsResponder: 3,
+      });
+    });
+
+    it('should return null averageResponseTime if no responded trades', async () => {
+      prisma.user.findUnique.mockResolvedValue(mockUser);
+
+      prisma.trade.count
+        .mockResolvedValueOnce(5) // tradesInitiated
+        .mockResolvedValueOnce(0) // tradesReceived
+        .mockResolvedValueOnce(2) // completedTrades
+        .mockResolvedValueOnce(2) // acceptedTrades
+        .mockResolvedValueOnce(1) // rejectedTrades
+        .mockResolvedValueOnce(0) // cancelledTrades
+        .mockResolvedValueOnce(0) // expiredTrades
+        .mockResolvedValueOnce(0) // counterOffers
+        .mockResolvedValueOnce(2) // pendingAsProposer
+        .mockResolvedValueOnce(0); // pendingAsResponder
+
+      prisma.trade.findMany.mockResolvedValue([]); // No responded trades
+
+      const result = await service.getUserStatistics(userId);
+
+      expect(result.averageResponseTime).toBeNull();
+      expect(result.successRate).toBe(40); // 2 / 5 * 100 = 40%
+    });
+
+    it('should return 0 success rate if no trades', async () => {
+      prisma.user.findUnique.mockResolvedValue(mockUser);
+
+      prisma.trade.count
+        .mockResolvedValueOnce(0) // tradesInitiated
+        .mockResolvedValueOnce(0) // tradesReceived
+        .mockResolvedValueOnce(0) // completedTrades
+        .mockResolvedValueOnce(0) // acceptedTrades
+        .mockResolvedValueOnce(0) // rejectedTrades
+        .mockResolvedValueOnce(0) // cancelledTrades
+        .mockResolvedValueOnce(0) // expiredTrades
+        .mockResolvedValueOnce(0) // counterOffers
+        .mockResolvedValueOnce(0) // pendingAsProposer
+        .mockResolvedValueOnce(0); // pendingAsResponder
+
+      prisma.trade.findMany.mockResolvedValue([]);
+
+      const result = await service.getUserStatistics(userId);
+
+      expect(result.successRate).toBe(0);
+      expect(result.totalTradesInitiated).toBe(0);
+      expect(result.totalTradesReceived).toBe(0);
+    });
+
+    it('should throw NotFoundException if user not found', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+
+      await expect(service.getUserStatistics(userId)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
 });

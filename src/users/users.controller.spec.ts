@@ -14,6 +14,7 @@ describe('UsersController', () => {
     getUserProfile: jest.fn(),
     updateProfile: jest.fn(),
     uploadAvatar: jest.fn(),
+    getUserStatistics: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -303,6 +304,59 @@ describe('UsersController', () => {
 
       expect(result).toEqual(updatedProfile);
       expect(usersService.uploadAvatar).toHaveBeenCalledWith(userId, file);
+    });
+  });
+
+  describe('getUserStatistics', () => {
+    it('should return user trade statistics', async () => {
+      const userId = 'user-123';
+      const mockStatistics = {
+        totalTradesInitiated: 10,
+        totalTradesReceived: 15,
+        totalCompletedTrades: 8,
+        totalAcceptedTrades: 10,
+        totalRejectedTrades: 5,
+        totalCancelledTrades: 2,
+        totalExpiredTrades: 3,
+        successRate: 32.0,
+        averageResponseTime: 18.5,
+        totalCounterOffers: 4,
+        pendingAsProposer: 2,
+        pendingAsResponder: 3,
+      };
+
+      mockUsersService.getUserStatistics.mockResolvedValue(mockStatistics);
+
+      const result = await controller.getUserStatistics(userId);
+
+      expect(result).toEqual(mockStatistics);
+      expect(usersService.getUserStatistics).toHaveBeenCalledWith(userId);
+    });
+
+    it('should handle user with no trades', async () => {
+      const userId = 'new-user';
+      const mockStatistics = {
+        totalTradesInitiated: 0,
+        totalTradesReceived: 0,
+        totalCompletedTrades: 0,
+        totalAcceptedTrades: 0,
+        totalRejectedTrades: 0,
+        totalCancelledTrades: 0,
+        totalExpiredTrades: 0,
+        successRate: 0,
+        averageResponseTime: null,
+        totalCounterOffers: 0,
+        pendingAsProposer: 0,
+        pendingAsResponder: 0,
+      };
+
+      mockUsersService.getUserStatistics.mockResolvedValue(mockStatistics);
+
+      const result = await controller.getUserStatistics(userId);
+
+      expect(result).toEqual(mockStatistics);
+      expect(result.successRate).toBe(0);
+      expect(result.averageResponseTime).toBeNull();
     });
   });
 });

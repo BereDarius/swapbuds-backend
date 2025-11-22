@@ -2,9 +2,11 @@ import { Cacheable, CacheInvalidate } from '@/cache/cache.module';
 import { PrismaService } from '@/prisma/prisma.service';
 import { UploadService } from '@/upload/upload.service';
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { TradeStatus } from '@prisma/client';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UserFilterDto } from './dto/user-filter.dto';
 import { UserProfileDto } from './dto/user-profile.dto';
+import { UserStatisticsDto } from './dto/user-statistics.dto';
 
 /**
  * Service handling user profile operations
@@ -219,6 +221,149 @@ export class UsersService {
     });
 
     return this.getUserProfile(userId);
+  }
+
+  /**
+   * Get user trade statistics
+   * @param userId - User ID
+   * @returns Trade statistics for the user
+   */
+  @Cacheable({ ttl: 300 })
+  async getUserStatistics(userId: string): Promise<UserStatisticsDto> {
+    // Verify user exists
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Get trade counts by status and role
+    const [
+      tradesInitiated,
+      tradesReceived,
+      completedTrades,
+      acceptedTrades,
+      rejectedTrades,
+      cancelledTrades,
+      expiredTrades,
+      counterOffers,
+      pendingAsProposer,
+      pendingAsResponder,
+    ] = await Promise.all([
+      // Total trades initiated
+      this.prisma.trade.count({
+        where: { proposerId: userId },
+      }),
+      // Total trades received
+      this.prisma.trade.count({
+        where: { responderId: userId },
+      }),
+      // Completed trades
+      this.prisma.trade.count({
+        where: {
+          OR: [{ proposerId: userId }, { responderId: userId }],
+          status: TradeStatus.COMPLETED,
+        },
+      }),
+      // Accepted trades
+      this.prisma.trade.count({
+        where: {
+          OR: [{ proposerId: userId }, { responderId: userId }],
+          status: TradeStatus.ACCEPTED,
+        },
+      }),
+      // Rejected trades
+      this.prisma.trade.count({
+        where: {
+          OR: [{ proposerId: userId }, { responderId: userId }],
+          status: TradeStatus.REJECTED,
+        },
+      }),
+      // Cancelled trades
+      this.prisma.trade.count({
+        where: {
+          OR: [{ proposerId: userId }, { responderId: userId }],
+          status: TradeStatus.CANCELLED,
+        },
+      }),
+      // Expired trades
+      this.prisma.trade.count({
+        where: {
+          OR: [{ proposerId: userId }, { responderId: userId }],
+          status: TradeStatus.EXPIRED,
+        },
+      }),
+      // Counter-offers made
+      this.prisma.trade.count({
+        where: {
+          responderId: userId,
+          counterOffers: { some: {} },
+        },
+      }),
+      // Pending as proposer
+      this.prisma.trade.count({
+        where: {
+          proposerId: userId,
+          status: TradeStatus.PENDING,
+        },
+      }),
+      // Pending as responder
+      this.prisma.trade.count({
+        where: {
+          responderId: userId,
+          status: TradeStatus.PENDING,
+        },
+      }),
+    ]);
+
+    // Calculate success rate
+    const totalTrades = tradesInitiated + tradesReceived;
+    const successRate =
+      totalTrades > 0 ? (completedTrades / totalTrades) * 100 : 0;
+
+    // Calculate average response time for trades received
+    const respondedTrades = await this.prisma.trade.findMany({
+      where: {
+        responderId: userId,
+        status: { in: [TradeStatus.ACCEPTED, TradeStatus.REJECTED] },
+        updatedAt: { not: null },
+      },
+      select: {
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    let averageResponseTime: number | null = null;
+    if (respondedTrades.length > 0) {
+      const totalResponseTime = respondedTrades.reduce((sum, trade) => {
+        const responseTime =
+          trade.updatedAt.getTime() - trade.createdAt.getTime();
+        return sum + responseTime;
+      }, 0);
+
+      // Convert to hours and round to 2 decimal places
+      const hoursAverage =
+        totalResponseTime / respondedTrades.length / (1000 * 60 * 60);
+      averageResponseTime = Math.round(hoursAverage * 100) / 100;
+    }
+
+    return {
+      totalTradesInitiated: tradesInitiated,
+      totalTradesReceived: tradesReceived,
+      totalCompletedTrades: completedTrades,
+      totalAcceptedTrades: acceptedTrades,
+      totalRejectedTrades: rejectedTrades,
+      totalCancelledTrades: cancelledTrades,
+      totalExpiredTrades: expiredTrades,
+      successRate: Math.round(successRate * 100) / 100,
+      averageResponseTime,
+      totalCounterOffers: counterOffers,
+      pendingAsProposer,
+      pendingAsResponder,
+    };
   }
 
   /**

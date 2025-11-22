@@ -26,6 +26,7 @@ import {
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UserFilterDto } from './dto/user-filter.dto';
 import { UserProfileDto } from './dto/user-profile.dto';
+import { UserStatisticsDto } from './dto/user-statistics.dto';
 import { UsersService } from './users.service';
 
 /**
@@ -161,5 +162,32 @@ export class UsersController {
     }
 
     return this.usersService.uploadAvatar(userId, file);
+  }
+
+  /**
+   * Get trade statistics for a user (public)
+   * @param userId - User ID
+   * @returns Trade statistics
+   */
+  @Get(':id/statistics')
+  @Public()
+  @ApiOperation({
+    summary: 'Get trade statistics for a specific user',
+    description:
+      'Retrieves comprehensive trade statistics including success rate, response time, and trade counts',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Trade statistics retrieved successfully',
+    type: UserStatisticsDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+  })
+  async getUserStatistics(
+    @Param('id') userId: string,
+  ): Promise<UserStatisticsDto> {
+    return this.usersService.getUserStatistics(userId);
   }
 }
