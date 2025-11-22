@@ -1,6 +1,26 @@
-# SwapBuds Backend - Post v1.0.0 Roadmap
+# SwapBuds Backend - Launch Roadmap (16 Weeks)
 
-## Version 1.0.1 - Trade Delivery Methods & Estimated Value
+**Target Public Launch:** March 17, 2026
+**Current Status:** v1.0.0 Complete ✅ (484 tests passing)
+
+This roadmap is aligned with the [LAUNCH_ROADMAP.md](../plans/LAUNCH_ROADMAP.md) and organized by implementation timeline.
+
+---
+
+## 📅 Implementation Timeline
+
+### PHASE 1: Core Backend Enhancements (Weeks 1-6)
+
+**Focus:** Legal compliance, age verification, and essential features for MVP launch
+
+---
+
+## Week 1-2: Legal Compliance & Age Verification (HIGH PRIORITY)
+
+**Version 1.0.1 - GDPR Compliance & Age Verification**
+
+**Timeline:** Week 1-2 (Dec 2-15, 2025)
+**Priority:** CRITICAL - Required before any public launch
 
 ### Features
 
@@ -90,7 +110,100 @@ enum DeliveryMethod {
 
 ---
 
-## Version 1.0.2 - User ID Verification & Age Verification System
+## Week 3-6: Enhanced Features for MVP (MEDIUM PRIORITY)
+
+**Version 1.0.2 - Trade Delivery Methods & Estimated Value**
+
+**Timeline:** Week 3 (Dec 16-22, 2025)
+**Priority:** MEDIUM - Nice to have for launch, can be added post-launch if time constrained
+
+### Features
+
+- [ ] Support for multiple trade delivery methods
+- [ ] Users can specify preferred delivery method for items
+- [ ] Delivery method filtering in search and matching
+- [ ] Trade agreements include delivery method confirmation
+- [ ] User preferences for default delivery method
+- [ ] **Estimated price/value field for items**
+- [ ] **Value range filtering in search**
+- [ ] **Similar value matching suggestions**
+
+### Technical Implementation
+
+- [ ] Add `deliveryMethods` enum field to Item model (array: PHYSICAL, MAIL, BOTH)
+- [ ] Add `preferredDeliveryMethod` field to User preferences
+- [ ] **Add `estimatedValue` field to Item model (decimal, optional)**
+- [ ] **Add `currency` field to Item model (default: RON)**
+- [ ] Update ItemsService to filter by delivery method
+- [ ] **Update ItemsService to filter by value range**
+- [ ] Modify Trade model to include agreed delivery method
+- [ ] Update search/filter endpoints to support delivery method
+- [ ] **Update search/filter endpoints to support value range**
+- [ ] Add delivery method validation in trade creation
+- [ ] **Add value validation (must be positive, reasonable limits)**
+
+### API Endpoints
+
+- `PATCH /items/:id/delivery-methods` - Update item delivery methods
+- `GET /items?deliveryMethod=PHYSICAL|MAIL|BOTH` - Filter items by delivery method
+- **`GET /items?minValue=100&maxValue=500&currency=RON` - Filter items by value range**
+- `PATCH /users/me/preferences` - Update user delivery preferences (extend existing)
+- `POST /trades` - Include deliveryMethod in trade creation (extend existing)
+
+### Database Schema
+
+```prisma
+model Item {
+  // ... existing fields
+  deliveryMethods DeliveryMethod[] @default([PHYSICAL, MAIL]) // Default to both options
+  estimatedValue  Decimal?         // Optional estimated value
+  currency        String @default("RON") // RON, EUR, USD
+}
+
+model Trade {
+  // ... existing fields
+  deliveryMethod  DeliveryMethod // Agreed delivery method for this trade
+}
+
+model UserPreferences {
+  // ... existing fields
+  preferredDeliveryMethod DeliveryMethod @default(PHYSICAL)
+}
+
+enum DeliveryMethod {
+  PHYSICAL  // In-person exchange only
+  MAIL      // Ship through mail only
+  BOTH      // Flexible, either method works
+}
+```
+
+### Value Field Guidelines
+
+- **Optional field** - users can choose to provide estimated value
+- **Purpose:** Help match items of similar value for fair trades
+- **Display:** Show approximate value (e.g., "~500 RON") not exact price
+- **Not a selling price** - emphasize this is for matching purposes only
+- **Validation:**
+  - Min: 1 RON
+  - Max: 100,000 RON (adjust based on platform needs)
+  - Only positive numbers
+- **Privacy:** Users can hide value from public view (show only to potential traders)
+
+### Testing
+
+- [ ] Unit tests for delivery method filtering
+- [ ] Integration tests for trade creation with delivery methods
+- [ ] E2E tests for item creation with delivery preferences
+- [ ] Test delivery method mismatch scenarios
+
+---
+
+## Week 7-8: ID Verification System (OPTIONAL FOR LAUNCH)
+
+**Version 1.0.3 - User ID Verification System**
+
+**Timeline:** Week 7 or post-launch
+**Priority:** LOW - Can be added after launch, focus on MVP first
 
 ### Features
 
@@ -232,39 +345,76 @@ enum VerificationStatus {
 
 ---
 
-## Version 1.0.3 - Legal Compliance & GDPR Implementation
+## PHASE 2: Post-Launch Enhancements (Week 12+)
+
+### Version 1.1.0 - Basic Admin & Moderation Tools
+
+**Timeline:** After beta testing (Week 12+)
+**Priority:** Needed once you have 50+ users
 
 ### Features
 
-- [ ] GDPR-compliant data rights system
-- [ ] User data export (JSON format)
-- [ ] User data deletion (right to be forgotten)
-- [ ] Data processing register/audit log
-- [ ] Cookie consent tracking
-- [ ] Privacy policy acceptance tracking
-- [ ] Terms of Service acceptance tracking
-- [ ] **Age verification (18+ requirement) enforcement**
-- [ ] **Self-declared age during signup (checkbox)**
-- [ ] **Optional ID verification for enhanced trust**
-- [ ] Data breach notification system
-- [ ] User consent management
-- [ ] Data retention policies enforcement
+- [ ] Basic admin dashboard with user count and platform stats
+- [ ] User ban/suspend functionality
+- [ ] Flag and remove inappropriate items
+- [ ] Simple audit log for admin actions
 
-### Technical Implementation
+---
 
-- [ ] Create `DataExport` service for generating user data exports
-- [ ] Create `DataDeletion` service with cascading delete logic
-- [ ] Add `UserConsent` model (userId, consentType, version, acceptedAt, ipAddress)
-- [ ] Add `DataProcessingLog` model for GDPR compliance
-- [ ] Add `privacyAcceptedAt`, `tosAcceptedAt` fields to User model
-- [ ] Add `privacyVersion`, `tosVersion` fields to track document versions
-- [ ] Create endpoints for data rights (export, delete, rectification)
-- [ ] Implement data anonymization for deleted users (preserve analytics)
-- [ ] Add cookie consent tracking in API
-- [ ] Create data retention scheduler (delete old data per policy)
-- [ ] Add ANSPDCP breach notification templates
+## POST-LAUNCH ROADMAP (After March 2026)
 
-### API Endpoints
+These features are for Year 1 growth phase, after successful public launch.
+
+---
+
+## Version 1.2.0 - Advanced Moderation & Safety (Year 1, Q2)
+
+**Timeline:** 3-6 months after launch
+**Priority:** MEDIUM - needed for scaling to 500+ users
+
+### Features
+
+- [ ] Advanced content moderation (AI-powered flagging)
+- [ ] Automated scam detection
+- [ ] Report system with categories
+- [ ] User reputation scoring
+- [ ] Trusted trader program
+
+---
+
+## Version 1.3.0 - OAuth & Social Login (Year 1, Q3)
+
+**Timeline:** 6-9 months after launch
+**Priority:** LOW - convenience feature, not critical for MVP
+
+### Features
+
+- [ ] Google OAuth integration
+- [ ] Apple Sign In integration
+- [ ] Facebook OAuth integration
+- [ ] Account linking (connect multiple providers)
+
+---
+
+## Version 1.4.0 - Organizations & Group Trading (Year 1, Q4)
+
+**Timeline:** 9-12 months after launch
+**Priority:** LOW - nice-to-have for community building
+
+### Features
+
+- [ ] Organization-type accounts for businesses/nonprofits
+- [ ] Multiple members per organization
+- [ ] Team collaboration on trades
+- [ ] Bulk item management
+
+---
+
+## DETAILED POST-LAUNCH FEATURES (For Reference)
+
+Below are detailed specifications for features that have been moved to the post-launch roadmap. These are not needed for the March 2026 launch but provide a blueprint for future development.
+
+### API Endpoints (GDPR - Already implemented in Week 1-2)
 
 - `GET /users/me/data-export` - Request full data export (GDPR Art. 15)
 - `POST /users/me/data-export/download` - Download data export as JSON
@@ -452,9 +602,69 @@ enum ExportStatus {
 
 ---
 
-## Version 1.1.0 - Admin & Moderation System
+## Version 1.5.0 - Follow System (Year 1, Later)
+
+**Timeline:** After first few months of growth
+**Priority:** LOW - social features for engaged users
 
 ### Features
+
+- [ ] Follow/unfollow users
+- [ ] Followers/following lists
+- [ ] Follow notifications
+- [ ] New item notifications from followed users
+
+---
+
+## Version 1.6.0 - Activity Feed (Year 1, Later)
+
+**Timeline:** Once social features are established
+**Priority:** LOW - engagement feature
+
+### Features
+
+- [ ] Personalized activity feed
+- [ ] Feed showing followed users' new items
+- [ ] Trending items section
+- [ ] Real-time feed updates via WebSocket
+
+---
+
+## Version 1.7.0 - Premium Subscription System (Year 1, Later)
+
+**Timeline:** Once you have 200+ active users
+**Priority:** LOW - monetization can wait
+
+### Features
+
+- [ ] Subscription tiers (Basic - Free, Premium - $4.99-9.99/month)
+- [ ] Stripe integration for payments
+- [ ] Subscription management
+- [ ] Premium features (unlimited items, analytics, priority support)
+
+---
+
+## Version 1.8.0 - Advanced Recommendations (Year 2)
+
+**Timeline:** After you have substantial user data
+**Priority:** LOW - nice-to-have ML feature
+
+### Features
+
+- [ ] Personalized item recommendations
+- [ ] Smart trade matching algorithm
+- [ ] "Similar items" suggestions
+- [ ] Trade compatibility scoring
+
+---
+
+## APPENDIX: Detailed Feature Specifications
+
+Below are the full technical specifications for features listed above. These serve as blueprints when you're ready to implement them.
+
+### Admin & Moderation System (v1.1.0)
+
+**Features:**
 
 - [ ] Admin dashboard with platform statistics
 - [ ] User management (view all users, ban/suspend/activate)
@@ -468,7 +678,7 @@ enum ExportStatus {
 - [ ] Real-time support agent availability
 - [ ] Support chat history and transcripts
 
-### Technical Implementation
+**Technical Implementation:**
 
 - [ ] Extend User model with roles (ADMIN, MODERATOR, SUPPORT, USER)
 - [ ] Create AdminGuard, ModeratorGuard, SupportGuard
@@ -564,7 +774,7 @@ enum SupportChatStatus {
 
 ---
 
-## Version 1.2.0 - Organization/Business Accounts
+### OAuth Integration (v1.3.0)
 
 ### Features
 
@@ -596,9 +806,7 @@ enum SupportChatStatus {
 - `GET /organizations/:id/items` - Get organization items
 - `POST /organizations/:id/items/bulk` - Bulk create items
 
----
-
-## Version 1.3.0 - Social Authentication (OAuth)
+### Organizations & Group Trading (v1.4.0)
 
 ### Features
 
@@ -651,9 +859,7 @@ GITHUB_CLIENT_ID=
 GITHUB_CLIENT_SECRET=
 ```
 
----
-
-## Version 1.4.0 - Email Digest Notifications
+### Follow System (v1.5.0)
 
 ### Features
 
@@ -697,9 +903,7 @@ enum DigestFrequency {
 }
 ```
 
----
-
-## Version 1.5.0 - Social Features (Follow System)
+### Activity Feed (v1.6.0)
 
 ### Features
 
@@ -755,9 +959,7 @@ model User {
 }
 ```
 
----
-
-## Version 1.6.0 - Social Features (Activity Feed)
+### Premium Subscription System (v1.7.0)
 
 ### Features
 
@@ -934,11 +1136,9 @@ PREMIUM_MONTHLY_PRICE=9.99
 PREMIUM_YEARLY_PRICE=99.99
 ```
 
----
+### Item Recommendations & Matching (v1.8.0)
 
-## Version 1.8.0 - Premium Features Implementation
-
-### Premium Features
+**Features:**
 
 - [ ] Advanced search with more filters
 - [ ] Unlimited items (Basic: 20 items limit)
@@ -1016,9 +1216,7 @@ model ItemAnalytics {
 }
 ```
 
----
-
-## Version 1.9.0 - Payment Integration (Complete)
+### E2E Testing (Continuous)
 
 ### Features
 
@@ -1098,7 +1296,7 @@ model PaymentMethod {
 
 ---
 
-## Version 1.10.0 - Item Recommendations & Matching Algorithm
+## END OF BACKEND TODO
 
 ### Features
 
@@ -1275,7 +1473,13 @@ MIN_COLLABORATIVE_INTERACTIONS=20
 
 ---
 
-## E2E Testing (Continuous Integration)
+## LEGACY CONTENT (Moved to Appendix Above)
+
+The following sections have been consolidated into the APPENDIX above for reference.
+
+---
+
+## E2E Testing Details
 
 ### Test Coverage
 
@@ -1323,23 +1527,6 @@ test/e2e/
   └── fixtures/
       └── test-data.ts
 ```
-
----
-
-## Release Timeline (Estimated)
-
-- **v1.1.0** - Admin & Moderation (2-3 weeks)
-- **v1.2.0** - Organizations (3-4 weeks)
-- **v1.3.0** - OAuth (2-3 weeks)
-- **v1.4.0** - Email Digests (1-2 weeks)
-- **v1.5.0** - Follow System (2 weeks)
-- **v1.6.0** - Activity Feed (2-3 weeks)
-- **v1.7.0** - Subscriptions (3-4 weeks)
-- **v1.8.0** - Premium Features (2-3 weeks)
-- **v1.9.0** - Payment Integration (2-3 weeks)
-- **v2.0.0** - Complete Platform with all features 🎉
-
-**Total Development Time: ~5-7 months**
 
 ---
 

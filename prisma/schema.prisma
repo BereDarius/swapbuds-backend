@@ -506,10 +506,7 @@ enum Theme {
 
 enum Language {
   EN // English
-  ES // Spanish
-  FR // French
-  DE // German
-  PT // Portuguese
+  RO // Romanian
 }
 
 model UserSettings {
