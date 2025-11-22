@@ -1,4 +1,5 @@
 import { NotificationsGateway } from '@/notifications/notifications.gateway';
+import { NotificationsService } from '@/notifications/notifications.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import {
   BadRequestException,
@@ -16,6 +17,7 @@ export class MessagesService {
   constructor(
     private prisma: PrismaService,
     private notificationsGateway: NotificationsGateway,
+    private notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -82,6 +84,20 @@ export class MessagesService {
       dto.recipientId,
       formattedMessage,
     );
+
+    // Create notification for recipient (respects their preferences)
+    await this.notificationsService.createNotification({
+      type: 'NEW_MESSAGE',
+      title: `New message from ${message.sender.username}`,
+      message: dto.content.substring(0, 100), // Preview
+      userId: dto.recipientId,
+      metadata: {
+        messageId: message.id,
+        conversationId: conversation.id,
+        senderId,
+        senderUsername: message.sender.username,
+      },
+    });
 
     return formattedMessage;
   }
