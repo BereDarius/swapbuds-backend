@@ -1,3 +1,4 @@
+import { NotificationsModule } from '@/notifications/notifications.module';
 import { PrismaModule } from '@/prisma/prisma.module';
 import { Module } from '@nestjs/common';
 import { TradesController } from './trades.controller';
@@ -8,7 +9,7 @@ import { TradesService } from './trades.service';
  * Handles trade proposals, acceptance, rejection, and cancellation
  */
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, NotificationsModule],
   providers: [TradesService],
   controllers: [TradesController],
   exports: [TradesService],

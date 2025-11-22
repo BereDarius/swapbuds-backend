@@ -1,3 +1,4 @@
+import { NotificationsService } from '@/notifications/notifications.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { mockItem, mockItems } from '@/test/fixtures/item.fixture';
 import {
@@ -18,9 +19,21 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ItemStatus, TradeStatus } from '@prisma/client';
 import { TradesService } from './trades.service';
 
+// Mock NotificationsService
+const mockNotificationsService = {
+  createTradeNotification: jest.fn(),
+  createNotification: jest.fn(),
+  getUserNotifications: jest.fn(),
+  getUnreadCount: jest.fn(),
+  markAsRead: jest.fn(),
+  markAllAsRead: jest.fn(),
+  deleteNotification: jest.fn(),
+};
+
 describe('TradesService', () => {
   let service: TradesService;
   let prisma: PrismaService;
+  let notificationsService: NotificationsService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -30,11 +43,17 @@ describe('TradesService', () => {
           provide: PrismaService,
           useValue: mockPrismaService,
         },
+        {
+          provide: NotificationsService,
+          useValue: mockNotificationsService,
+        },
       ],
     }).compile();
 
     service = module.get<TradesService>(TradesService);
     prisma = module.get<PrismaService>(PrismaService);
+    notificationsService =
+      module.get<NotificationsService>(NotificationsService);
 
     jest.clearAllMocks();
   });
@@ -89,6 +108,13 @@ describe('TradesService', () => {
             status: TradeStatus.PENDING,
           }),
         }),
+      );
+
+      // Verify notification was sent to responder
+      expect(notificationsService.createTradeNotification).toHaveBeenCalledWith(
+        'TRADE_PROPOSAL',
+        'user-456',
+        mockTradeWithRelations,
       );
     });
 
@@ -355,6 +381,13 @@ describe('TradesService', () => {
           }),
         }),
       );
+
+      // Verify notification was sent to proposer
+      expect(notificationsService.createTradeNotification).toHaveBeenCalledWith(
+        'TRADE_ACCEPTED',
+        trade.proposerId,
+        mockAcceptedTrade,
+      );
     });
 
     it('should throw NotFoundException when trade not found', async () => {
@@ -412,6 +445,13 @@ describe('TradesService', () => {
           data: { status: TradeStatus.REJECTED },
         }),
       );
+
+      // Verify notification was sent to proposer
+      expect(notificationsService.createTradeNotification).toHaveBeenCalledWith(
+        'TRADE_REJECTED',
+        mockTradeWithRelations.proposerId,
+        mockRejectedTrade,
+      );
     });
 
     it('should throw ForbiddenException when user is not responder', async () => {
@@ -446,6 +486,13 @@ describe('TradesService', () => {
           where: { id: tradeId },
           data: { status: TradeStatus.CANCELLED },
         }),
+      );
+
+      // Verify notification was sent to responder
+      expect(notificationsService.createTradeNotification).toHaveBeenCalledWith(
+        'TRADE_REJECTED',
+        mockTradeWithRelations.responderId,
+        mockCancelledTrade,
       );
     });
 

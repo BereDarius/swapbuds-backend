@@ -15,6 +15,7 @@ import { UsersModule } from './users/users.module';
 import { LikesModule } from './likes/likes.module';
 import { CommentsModule } from './comments/comments.module';
 import { TradesModule } from './trades/trades.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -71,6 +72,8 @@ import { TradesModule } from './trades/trades.module';
     CommentsModule,
 
     TradesModule,
+
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [

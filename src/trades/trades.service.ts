@@ -1,3 +1,4 @@
+import { NotificationsService } from '@/notifications/notifications.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import {
   BadRequestException,
@@ -5,7 +6,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ItemStatus, TradeStatus } from '@prisma/client';
+import { ItemStatus, NotificationType, TradeStatus } from '@prisma/client';
 import { CreateTradeDto } from './dto/create-trade.dto';
 import { TradeResponseDto } from './dto/trade-response.dto';
 
@@ -15,7 +16,10 @@ import { TradeResponseDto } from './dto/trade-response.dto';
  */
 @Injectable()
 export class TradesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   /**
    * Create a new trade proposal
@@ -135,6 +139,13 @@ export class TradesService {
         },
       },
     });
+
+    // Send notification to responder about new trade proposal
+    await this.notificationsService.createTradeNotification(
+      NotificationType.TRADE_PROPOSAL,
+      trade.responderId,
+      trade,
+    );
 
     return this.formatTradeResponse(trade);
   }
@@ -364,6 +375,13 @@ export class TradesService {
       return updated;
     });
 
+    // Notify proposer that trade was accepted
+    await this.notificationsService.createTradeNotification(
+      NotificationType.TRADE_ACCEPTED,
+      trade.proposerId,
+      updatedTrade,
+    );
+
     return this.formatTradeResponse(updatedTrade);
   }
 
@@ -440,6 +458,13 @@ export class TradesService {
       },
     });
 
+    // Notify proposer that trade was rejected
+    await this.notificationsService.createTradeNotification(
+      NotificationType.TRADE_REJECTED,
+      trade.proposerId,
+      updatedTrade,
+    );
+
     return this.formatTradeResponse(updatedTrade);
   }
 
@@ -515,6 +540,14 @@ export class TradesService {
         },
       },
     });
+
+    // Notify responder that trade was cancelled by proposer
+    // We use TRADE_REJECTED type since there's no TRADE_CANCELLED in the enum
+    await this.notificationsService.createTradeNotification(
+      NotificationType.TRADE_REJECTED,
+      trade.responderId,
+      updatedTrade,
+    );
 
     return this.formatTradeResponse(updatedTrade);
   }
