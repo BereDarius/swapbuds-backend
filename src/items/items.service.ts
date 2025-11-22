@@ -1,3 +1,4 @@
+import { CacheService } from '@/cache/cache.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import {
   ForbiddenException,
@@ -14,7 +15,10 @@ import { UpdateItemDto } from './dto/update-item.dto';
  */
 @Injectable()
 export class ItemsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cacheService: CacheService,
+  ) {}
 
   /**
    * Create a new item for a user
@@ -64,16 +68,30 @@ export class ItemsService {
       },
     });
 
+    // Invalidate item list caches when new item is created
+    await this.cacheService.invalidateItem(item.id);
+
     return this.mapToResponse(item);
   }
 
   /**
-   * Get all items with pagination
+   * Get all items with pagination (with Redis caching)
    * @param skip - Number of items to skip
    * @param take - Number of items to take
    * @returns Array of items
    */
   async findAll(skip = 0, take = 20): Promise<ItemResponseDto[]> {
+    // Generate cache key based on pagination
+    const page = Math.floor(skip / take);
+    const cacheKey = this.cacheService.getItemsListKey(page, take);
+
+    // Try to get from cache first
+    const cached = await this.cacheService.get<ItemResponseDto[]>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    // If not in cache, fetch from database
     const items = await this.prisma.item.findMany({
       skip,
       take,
@@ -96,7 +114,12 @@ export class ItemsService {
       },
     });
 
-    return items.map((item) => this.mapToResponse(item));
+    const response = items.map((item) => this.mapToResponse(item));
+
+    // Cache the result for 5 minutes (300000ms)
+    await this.cacheService.set(cacheKey, response, 300000);
+
+    return response;
   }
 
   /**
@@ -226,6 +249,9 @@ export class ItemsService {
       },
     });
 
+    // Invalidate cache for this item and lists
+    await this.cacheService.invalidateItem(id);
+
     return this.mapToResponse(updatedItem);
   }
 
@@ -248,6 +274,9 @@ export class ItemsService {
     }
 
     await this.prisma.item.delete({ where: { id } });
+
+    // Invalidate cache for this item and lists
+    await this.cacheService.invalidateItem(id);
   }
 
   /**

@@ -1,3 +1,4 @@
+import { CacheService } from '@/cache/cache.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { mockItem, mockItemWithRelations } from '@/test/fixtures/item.fixture';
 import { mockPrismaService } from '@/test/mocks/prisma.mock';
@@ -6,9 +7,18 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ItemCategory, ItemCondition } from './dto/create-item.dto';
 import { ItemsService } from './items.service';
 
+const mockCacheService = {
+  get: jest.fn(),
+  set: jest.fn(),
+  del: jest.fn(),
+  invalidateItem: jest.fn(),
+  getItemsListKey: jest.fn((page, limit) => `items:list:${page}:${limit}:all`),
+};
+
 describe('ItemsService', () => {
   let service: ItemsService;
   let prisma: typeof mockPrismaService;
+  let cacheService: typeof mockCacheService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -18,11 +28,16 @@ describe('ItemsService', () => {
           provide: PrismaService,
           useValue: mockPrismaService,
         },
+        {
+          provide: CacheService,
+          useValue: mockCacheService,
+        },
       ],
     }).compile();
 
     service = module.get<ItemsService>(ItemsService);
     prisma = mockPrismaService;
+    cacheService = mockCacheService;
 
     jest.clearAllMocks();
   });

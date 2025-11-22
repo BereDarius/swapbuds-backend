@@ -3,12 +3,15 @@ import { AppService } from '@/app.service';
 import { AuthModule } from '@/auth/auth.module';
 import configuration from '@/config/configuration';
 import { PrismaModule } from '@/prisma/prisma.module';
+import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { redisStore } from 'cache-manager-redis-yet';
+import Redis from 'ioredis';
+import { CacheModule as AppCacheModule } from './cache/cache.module';
 import { CommentsModule } from './comments/comments.module';
 import { ItemsModule } from './items/items.module';
 import { LikesModule } from './likes/likes.module';
@@ -28,16 +31,21 @@ import { UsersModule } from './users/users.module';
       envFilePath: '.env',
     }),
 
-    // Rate Limiting
+    // Rate Limiting with Redis
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => [
-        {
-          ttl: config.get('throttle.ttl'),
-          limit: config.get('throttle.limit'),
-        },
-      ],
+      useFactory: (config: ConfigService) => ({
+        throttlers: [
+          {
+            ttl: config.get('throttle.ttl'),
+            limit: config.get('throttle.limit'),
+          },
+        ],
+        storage: new ThrottlerStorageRedisService(
+          new Redis(config.get('redis.url')),
+        ),
+      }),
     }),
 
     // Caching with Redis
@@ -59,6 +67,9 @@ import { UsersModule } from './users/users.module';
 
     // Database
     PrismaModule,
+
+    // Cache Service (Global)
+    AppCacheModule,
 
     // Auth
     AuthModule,
