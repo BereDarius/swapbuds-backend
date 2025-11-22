@@ -1,5 +1,457 @@
 # SwapBuds Backend - Post v1.0.0 Roadmap
 
+## Version 1.0.1 - Trade Delivery Methods & Estimated Value
+
+### Features
+
+- [ ] Support for multiple trade delivery methods
+- [ ] Users can specify preferred delivery method for items
+- [ ] Delivery method filtering in search and matching
+- [ ] Trade agreements include delivery method confirmation
+- [ ] User preferences for default delivery method
+- [ ] **Estimated price/value field for items**
+- [ ] **Value range filtering in search**
+- [ ] **Similar value matching suggestions**
+
+### Technical Implementation
+
+- [ ] Add `deliveryMethods` enum field to Item model (array: PHYSICAL, MAIL, BOTH)
+- [ ] Add `preferredDeliveryMethod` field to User preferences
+- [ ] **Add `estimatedValue` field to Item model (decimal, optional)**
+- [ ] **Add `currency` field to Item model (default: RON)**
+- [ ] Update ItemsService to filter by delivery method
+- [ ] **Update ItemsService to filter by value range**
+- [ ] Modify Trade model to include agreed delivery method
+- [ ] Update search/filter endpoints to support delivery method
+- [ ] **Update search/filter endpoints to support value range**
+- [ ] Add delivery method validation in trade creation
+- [ ] **Add value validation (must be positive, reasonable limits)**
+
+### API Endpoints
+
+- `PATCH /items/:id/delivery-methods` - Update item delivery methods
+- `GET /items?deliveryMethod=PHYSICAL|MAIL|BOTH` - Filter items by delivery method
+- **`GET /items?minValue=100&maxValue=500&currency=RON` - Filter items by value range**
+- `PATCH /users/me/preferences` - Update user delivery preferences (extend existing)
+- `POST /trades` - Include deliveryMethod in trade creation (extend existing)
+
+### Database Schema
+
+```prisma
+model Item {
+  // ... existing fields
+  deliveryMethods DeliveryMethod[] @default([PHYSICAL, MAIL]) // Default to both options
+  estimatedValue  Decimal?         // Optional estimated value
+  currency        String @default("RON") // RON, EUR, USD
+}
+
+model Trade {
+  // ... existing fields
+  deliveryMethod  DeliveryMethod // Agreed delivery method for this trade
+}
+
+model UserPreferences {
+  // ... existing fields
+  preferredDeliveryMethod DeliveryMethod @default(PHYSICAL)
+}
+
+enum DeliveryMethod {
+  PHYSICAL  // In-person exchange only
+  MAIL      // Ship through mail only
+  BOTH      // Flexible, either method works
+}
+```
+
+### Value Field Guidelines
+
+- **Optional field** - users can choose to provide estimated value
+- **Purpose:** Help match items of similar value for fair trades
+- **Display:** Show approximate value (e.g., "~500 RON") not exact price
+- **Not a selling price** - emphasize this is for matching purposes only
+- **Validation:**
+  - Min: 1 RON
+  - Max: 100,000 RON (adjust based on platform needs)
+  - Only positive numbers
+- **Privacy:** Users can hide value from public view (show only to potential traders)
+
+### Migration Notes
+
+- Default existing items to support both delivery methods (PHYSICAL, MAIL)
+- Add delivery method selection to item creation/edit flow
+- Update trade creation to require delivery method agreement
+- Add tooltips/help text explaining each delivery method
+
+### Testing
+
+- [ ] Unit tests for delivery method filtering
+- [ ] Integration tests for trade creation with delivery methods
+- [ ] E2E tests for item creation with delivery preferences
+- [ ] Test delivery method mismatch scenarios
+
+---
+
+## Version 1.0.2 - User ID Verification & Age Verification System
+
+### Features
+
+- [ ] Free ID verification for all users
+- [ ] **Age verification (18+ requirement) - MANDATORY**
+- [ ] Secure ID document upload (ID card, passport, driver's license)
+- [ ] **Extract date of birth from ID document**
+- [ ] **Automatic rejection if user is under 18 years old**
+- [ ] Manual review by support staff (Phase 1)
+- [ ] Verification status tracking (PENDING, APPROVED, REJECTED, UNDERAGE)
+- [ ] Verified badge on user profiles
+- [ ] **Account suspension/ban for underage users**
+- [ ] Admin dashboard for reviewing verification requests
+- [ ] Automatic verification using AI/OCR (Phase 2 - future enhancement)
+
+### Technical Implementation
+
+- [ ] Create UserVerification model (userId, status, documentUrl, submittedAt, reviewedAt, reviewedBy, rejectionReason)
+- [ ] Add `isVerified` boolean field to User model
+- [ ] Secure file upload endpoint for ID documents
+- [ ] Store documents in encrypted cloud storage (Cloudinary with transformation disabled)
+- [ ] VerificationService for managing verification workflow
+- [ ] Admin endpoints for reviewing and approving/rejecting verifications
+- [ ] Notification system for verification status updates
+- [ ] Automatic document deletion after approval/rejection (GDPR compliance)
+- [ ] Rate limiting on verification submissions (prevent abuse)
+
+### API Endpoints
+
+- `POST /users/me/verification` - Submit ID verification request
+- `GET /users/me/verification` - Get user's verification status
+- `GET /admin/verifications` - List pending verifications (admin only)
+- `GET /admin/verifications/:id` - View specific verification request (admin only)
+- `PATCH /admin/verifications/:id/approve` - Approve verification (admin/support)
+- `PATCH /admin/verifications/:id/reject` - Reject verification with reason (admin/support)
+- `DELETE /users/me/verification` - Cancel pending verification request
+
+### Database Schema
+
+```prisma
+model User {
+  // ... existing fields
+  isVerified       Boolean @default(false)
+  verificationId   String? @unique
+  verification     UserVerification?
+}
+
+model UserVerification {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id])
+  status          VerificationStatus @default(PENDING)
+  documentType    String   // ID_CARD, PASSPORT, DRIVERS_LICENSE
+  documentUrl     String   // Encrypted storage URL
+  dateOfBirth     DateTime? // Extracted from ID document
+  isOver18        Boolean? // Calculated from dateOfBirth
+  submittedAt     DateTime @default(now())
+  reviewedAt      DateTime?
+  reviewedBy      String?  // Admin/Support user ID
+  reviewer        User?    @relation("VerificationReviewer", fields: [reviewedBy], references: [id])
+  rejectionReason String?
+  notes           String?  // Internal notes for reviewers
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  UNDERAGE      // Rejected due to being under 18
+  CANCELLED
+}
+```
+
+### Security & Privacy
+
+- [ ] Encrypt ID documents at rest
+- [ ] Use signed URLs with short expiration for document access
+- [ ] Only admins/support can view documents
+- [ ] Auto-delete documents 30 days after approval
+- [ ] Auto-delete documents 90 days after rejection
+- [ ] Log all document access for audit trail
+- [ ] Rate limit: Max 3 verification attempts per 30 days
+- [ ] GDPR compliant - users can request document deletion
+
+### Age Verification Workflow
+
+**Manual Review (Phase 1):**
+
+1. User uploads ID document
+2. Admin/Support manually extracts date of birth from document
+3. System calculates age from date of birth
+4. If under 18: Automatic REJECTION with status UNDERAGE
+5. If 18+: Admin approves verification
+6. Account automatically suspended if UNDERAGE status
+
+**Automatic Review (Phase 2 - Future):**
+
+1. User uploads ID document
+2. OCR/AI extracts date of birth automatically
+3. System calculates age
+4. If under 18: Auto-reject with UNDERAGE status, account suspended
+5. If 18+: Auto-approve or flag for manual review if confidence low
+6. Face matching (selfie vs ID photo) for enhanced security
+
+**Enforcement:**
+
+- [ ] Suspend accounts with UNDERAGE verification status
+- [ ] Ban users who repeatedly attempt to verify with fake/altered IDs
+- [ ] Log all age verification attempts for compliance
+- [ ] Report suspicious activity (fake IDs) to authorities if needed
+
+### Notifications
+
+- [ ] Email notification when verification is submitted
+- [ ] Email notification when verification is approved
+- [ ] Email notification when verification is rejected (with reason)
+- [ ] **Email notification for UNDERAGE rejection (account suspended)**
+- [ ] Admin notification when new verification is submitted
+- [ ] **Admin alert for suspicious verification attempts (fake IDs)**
+- [ ] In-app notifications for status updates
+
+### Testing
+
+- [ ] Unit tests for VerificationService
+- [ ] Integration tests for verification workflow
+- [ ] E2E tests for verification submission and review
+- [ ] Security tests for document access control
+- [ ] Test document encryption and deletion
+
+### Future Enhancement (Phase 2)
+
+- [ ] Integrate OCR/AI service (e.g., AWS Rekognition, Azure Computer Vision)
+- [ ] Automatic identity verification
+- [ ] Liveness detection (selfie with ID)
+- [ ] Address verification
+- [ ] Phone number verification
+
+---
+
+## Version 1.0.3 - Legal Compliance & GDPR Implementation
+
+### Features
+
+- [ ] GDPR-compliant data rights system
+- [ ] User data export (JSON format)
+- [ ] User data deletion (right to be forgotten)
+- [ ] Data processing register/audit log
+- [ ] Cookie consent tracking
+- [ ] Privacy policy acceptance tracking
+- [ ] Terms of Service acceptance tracking
+- [ ] **Age verification (18+ requirement) enforcement**
+- [ ] **Self-declared age during signup (checkbox)**
+- [ ] **Optional ID verification for enhanced trust**
+- [ ] Data breach notification system
+- [ ] User consent management
+- [ ] Data retention policies enforcement
+
+### Technical Implementation
+
+- [ ] Create `DataExport` service for generating user data exports
+- [ ] Create `DataDeletion` service with cascading delete logic
+- [ ] Add `UserConsent` model (userId, consentType, version, acceptedAt, ipAddress)
+- [ ] Add `DataProcessingLog` model for GDPR compliance
+- [ ] Add `privacyAcceptedAt`, `tosAcceptedAt` fields to User model
+- [ ] Add `privacyVersion`, `tosVersion` fields to track document versions
+- [ ] Create endpoints for data rights (export, delete, rectification)
+- [ ] Implement data anonymization for deleted users (preserve analytics)
+- [ ] Add cookie consent tracking in API
+- [ ] Create data retention scheduler (delete old data per policy)
+- [ ] Add ANSPDCP breach notification templates
+
+### API Endpoints
+
+- `GET /users/me/data-export` - Request full data export (GDPR Art. 15)
+- `POST /users/me/data-export/download` - Download data export as JSON
+- `DELETE /users/me/account` - Request account deletion (GDPR Art. 17)
+- `GET /users/me/consents` - View consent history
+- `POST /users/me/consents` - Update consent preferences
+- `PATCH /users/me/data` - Rectify personal data (GDPR Art. 16)
+- `GET /legal/privacy-policy` - Get current privacy policy with version
+- `GET /legal/terms-of-service` - Get current TOS with version
+- `POST /legal/accept` - Accept legal documents (TOS/Privacy)
+
+### Database Schema
+
+```prisma
+model User {
+  // ... existing fields
+  dateOfBirth         DateTime? // Self-declared during signup
+  selfDeclaredAge18   Boolean @default(false) // Checkbox: "I am 18 or older"
+  ageVerifiedAt       DateTime? // When age was verified via ID
+  privacyAcceptedAt   DateTime?
+  privacyVersion      String?
+  tosAcceptedAt       DateTime?
+  tosVersion          String?
+  cookieConsent       Boolean @default(false)
+  marketingConsent    Boolean @default(false)
+  dataExports         DataExport[]
+  consents            UserConsent[]
+  deletionRequestedAt DateTime?
+  scheduledDeletionAt DateTime?
+}
+
+model UserConsent {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  consentType   ConsentType
+  version       String   // Document version
+  accepted      Boolean
+  acceptedAt    DateTime @default(now())
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+}
+
+model DataExport {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  status      ExportStatus @default(PENDING)
+  fileUrl     String?
+  requestedAt DateTime @default(now())
+  completedAt DateTime?
+  expiresAt   DateTime? // Export link expires after 7 days
+}
+
+model DataProcessingLog {
+  id             String   @id @default(uuid())
+  userId         String?
+  action         String   // EXPORT, DELETE, UPDATE, etc.
+  processingType String   // What data was processed
+  legalBasis     String   // GDPR Art. 6 basis (consent, contract, etc.)
+  performedBy    String?  // Admin user ID if applicable
+  ipAddress      String?
+  metadata       Json?
+  createdAt      DateTime @default(now())
+}
+
+enum ConsentType {
+  PRIVACY_POLICY
+  TERMS_OF_SERVICE
+  COOKIES
+  MARKETING
+  ANALYTICS
+}
+
+enum ExportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  EXPIRED
+}
+```
+
+### GDPR Compliance Features
+
+**Right to Access (Art. 15):**
+
+- [ ] Export all user data in JSON format
+- [ ] Include: profile, items, trades, messages, reviews
+- [ ] Processing time: Within 30 days (ideally 24-48 hours)
+
+**Right to Erasure (Art. 17):**
+
+- [ ] Soft delete user account (mark as deleted)
+- [ ] Anonymize personal data after 30-day grace period
+- [ ] Keep transaction records for legal/tax purposes (anonymized)
+- [ ] Cascade delete: items, messages, notifications
+- [ ] Preserve: trade history (anonymized), reviews (anonymized)
+
+**Right to Rectification (Art. 16):**
+
+- [ ] Allow users to update personal information
+- [ ] Audit log for all data changes
+- [ ] Verify email/phone on change
+
+**Right to Data Portability (Art. 20):**
+
+- [ ] Export in machine-readable format (JSON)
+- [ ] Include all user-provided data
+- [ ] Optional: Import to another service (future)
+
+**Data Retention:**
+
+- [ ] Active accounts: Retain indefinitely
+- [ ] Deleted accounts: Anonymize after 30 days
+- [ ] Trade records: 7 years (tax/legal requirements)
+- [ ] Logs: 90 days
+- [ ] Backups: Encrypted, 30 days retention
+
+### Security & Privacy
+
+- [ ] Encrypt sensitive data at rest (IDs, verification docs)
+- [ ] Use signed URLs for data exports (expire in 7 days)
+- [ ] Rate limit data export requests (1 per 24 hours)
+- [ ] Log all data access for audit trail
+- [ ] Implement data minimization (don't collect unnecessary data)
+- [ ] Document legal basis for all data processing
+- [ ] Create data processing agreements with vendors (Stripe, Cloudinary, etc.)
+
+### Age Verification in Signup Flow
+
+**Two-Layer Approach:**
+
+**Layer 1: Self-Declaration (Required at Signup)**
+
+- [ ] Add "Date of Birth" field to registration form
+- [ ] Validate date of birth shows user is 18+
+- [ ] Add checkbox: "I confirm I am at least 18 years old"
+- [ ] Store `selfDeclaredAge18` boolean with timestamp
+- [ ] Block registration if DOB indicates under 18
+- [ ] Log IP address and timestamp for audit trail
+
+**Layer 2: ID Verification (Optional, Encouraged)**
+
+- [ ] Prompt users to verify ID for verified badge
+- [ ] Free ID verification process
+- [ ] Verify actual age from ID document
+- [ ] If discrepancy found (user lied about age): Ban account
+- [ ] If confirmed 18+: Set `ageVerifiedAt` timestamp
+
+**Enforcement:**
+
+- [ ] Periodic age checks (e.g., verify DOB is still 18+ on login)
+- [ ] Random ID verification requests for high-activity accounts
+- [ ] Immediate suspension if underage user detected
+- [ ] Report suspicious activity (fake DOB, fake IDs)
+
+### Legal Documents API
+
+- [ ] Store TOS and Privacy Policy in database with versions
+- [ ] Track version changes and acceptance
+- [ ] API to fetch current legal documents
+- [ ] Require acceptance on signup and after major updates
+- [ ] **Include age restriction (18+) prominently in TOS**
+- [ ] Romanian language versions (mandatory)
+- [ ] English language versions (optional)
+
+### Notifications
+
+- [ ] Email notification when data export is ready
+- [ ] Email confirmation for account deletion request
+- [ ] Email notification 7 days before scheduled deletion
+- [ ] Admin notification for GDPR requests
+- [ ] Automatic ANSPDCP notification template for breaches
+
+### Testing
+
+- [ ] Unit tests for data export service
+- [ ] Unit tests for data deletion service
+- [ ] Integration tests for GDPR workflows
+- [ ] Test data anonymization
+- [ ] Test consent tracking
+- [ ] Security tests for data access
+
+---
+
 ## Version 1.1.0 - Admin & Moderation System
 
 ### Features
