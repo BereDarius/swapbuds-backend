@@ -184,6 +184,12 @@ Interactive Swagger documentation available at:
 - `POST /api/auth/login` - Login and get JWT
 - `GET /api/auth/me` - Get current user (protected)
 
+#### Users
+
+- `GET /api/users/:id` - Get user profile (public)
+- `PATCH /api/users/:id` - Update user profile (owner only)
+- `DELETE /api/users/:id` - Delete user account (owner only)
+
 #### Items
 
 - `POST /api/items` - Create item (protected)
@@ -192,6 +198,34 @@ Interactive Swagger documentation available at:
 - `GET /api/items/user/:userId` - Get user's items (public)
 - `PATCH /api/items/:id` - Update item (owner only)
 - `DELETE /api/items/:id` - Delete item (owner only)
+
+#### Likes
+
+- `POST /api/items/:itemId/likes` - Like an item (protected)
+- `DELETE /api/items/:itemId/likes` - Unlike an item (protected)
+- `GET /api/items/:itemId/likes` - Get item likes (public)
+- `GET /api/users/:userId/likes` - Get user's liked items (public)
+
+#### Comments
+
+- `POST /api/items/:itemId/comments` - Add comment to item (protected)
+- `GET /api/items/:itemId/comments` - Get item comments (public)
+- `PATCH /api/items/:itemId/comments/:commentId` - Update comment (owner only)
+- `DELETE /api/items/:itemId/comments/:commentId` - Delete comment (owner only)
+
+#### Trades
+
+- `POST /api/trades` - Create trade proposal (protected)
+- `GET /api/trades` - List user's trades (protected)
+- `GET /api/trades/:id` - Get trade details (protected)
+- `PATCH /api/trades/:id/accept` - Accept trade (protected)
+- `PATCH /api/trades/:id/reject` - Reject trade (protected)
+- `PATCH /api/trades/:id/cancel` - Cancel trade (protected)
+- `PATCH /api/trades/:id/complete` - Mark trade as completed (protected)
+
+#### Upload
+
+- `POST /api/upload` - Upload image to Cloudinary (protected)
 
 #### Notifications
 
