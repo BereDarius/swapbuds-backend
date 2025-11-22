@@ -160,7 +160,8 @@ export class NotificationsGateway
    * @returns True if user has active connections
    */
   isUserOnline(userId: string): boolean {
-    return this.userSockets.has(userId);
+    const sockets = this.userSockets.get(userId);
+    return sockets !== undefined && sockets.size > 0;
   }
 
   /**
