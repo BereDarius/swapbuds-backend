@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -18,10 +19,12 @@ import {
   ApiBody,
   ApiConsumes,
   ApiOperation,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UserFilterDto } from './dto/user-filter.dto';
 import { UserProfileDto } from './dto/user-profile.dto';
 import { UsersService } from './users.service';
 
@@ -34,6 +37,36 @@ import { UsersService } from './users.service';
 @UseGuards(JwtAuthGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  /**
+   * Get all users with optional filters (public)
+   * @param filters - Filter and pagination parameters
+   * @returns Paginated list of users
+   */
+  @Get()
+  @Public()
+  @ApiOperation({
+    summary: 'Get all users with optional filtering and pagination',
+  })
+  @ApiQuery({ name: 'location', required: false, type: String })
+  @ApiQuery({ name: 'minReputation', required: false, type: Number })
+  @ApiQuery({ name: 'maxReputation', required: false, type: Number })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    enum: ['createdAt', 'reputationScore', 'username'],
+  })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'] })
+  @ApiResponse({
+    status: 200,
+    description: 'Users retrieved successfully',
+  })
+  async findAll(@Query() filters: UserFilterDto) {
+    return this.usersService.findAllFiltered(filters);
+  }
 
   /**
    * Get user profile by ID (public)

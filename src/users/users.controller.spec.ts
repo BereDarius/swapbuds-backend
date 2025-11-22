@@ -10,6 +10,7 @@ describe('UsersController', () => {
   let usersService: UsersService;
 
   const mockUsersService = {
+    findAllFiltered: jest.fn(),
     getUserProfile: jest.fn(),
     updateProfile: jest.fn(),
     uploadAvatar: jest.fn(),
@@ -34,6 +35,45 @@ describe('UsersController', () => {
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  describe('findAll', () => {
+    it('should return filtered users', async () => {
+      const filters = { location: 'New York', page: 1, limit: 20 };
+      const mockResult = {
+        users: [mockUserWithProfile],
+        total: 1,
+        page: 1,
+        limit: 20,
+        totalPages: 1,
+      };
+
+      mockUsersService.findAllFiltered.mockResolvedValue(mockResult);
+
+      const result = await controller.findAll(filters);
+
+      expect(result).toEqual(mockResult);
+      expect(usersService.findAllFiltered).toHaveBeenCalledWith(filters);
+      expect(usersService.findAllFiltered).toHaveBeenCalledTimes(1);
+    });
+
+    it('should return all users when no filters provided', async () => {
+      const filters = {};
+      const mockResult = {
+        users: [mockUserWithProfile],
+        total: 1,
+        page: 1,
+        limit: 20,
+        totalPages: 1,
+      };
+
+      mockUsersService.findAllFiltered.mockResolvedValue(mockResult);
+
+      const result = await controller.findAll(filters);
+
+      expect(result).toEqual(mockResult);
+      expect(usersService.findAllFiltered).toHaveBeenCalledWith(filters);
+    });
   });
 
   describe('getUserProfile', () => {

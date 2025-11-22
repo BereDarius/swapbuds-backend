@@ -9,6 +9,7 @@ export const mockPrismaService = {
     create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
+    count: jest.fn(),
   },
   item: {
     findUnique: jest.fn(),

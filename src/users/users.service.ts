@@ -3,6 +3,7 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { UploadService } from '@/upload/upload.service';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UserFilterDto } from './dto/user-filter.dto';
 import { UserProfileDto } from './dto/user-profile.dto';
 
 /**
@@ -15,6 +16,97 @@ export class UsersService {
     private prisma: PrismaService,
     private uploadService: UploadService,
   ) {}
+
+  /**
+   * Get all users with filtering and pagination
+   * @param filters - Filter and pagination parameters
+   * @returns Paginated users with metadata
+   */
+  async findAllFiltered(filters: UserFilterDto): Promise<{
+    users: UserProfileDto[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const {
+      location,
+      minReputation,
+      maxReputation,
+      search,
+      page = 1,
+      limit = 20,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = filters;
+
+    // Build where clause
+    const where: any = {};
+
+    if (location) {
+      where.location = { contains: location, mode: 'insensitive' };
+    }
+
+    if (minReputation !== undefined || maxReputation !== undefined) {
+      where.reputationScore = {};
+      if (minReputation !== undefined) {
+        where.reputationScore.gte = minReputation;
+      }
+      if (maxReputation !== undefined) {
+        where.reputationScore.lte = maxReputation;
+      }
+    }
+
+    if (search) {
+      where.OR = [
+        { username: { contains: search, mode: 'insensitive' } },
+        { bio: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    // Build orderBy clause
+    const orderBy: any = { [sortBy]: sortOrder };
+
+    // Get total count
+    const total = await this.prisma.user.count({ where });
+
+    // Get paginated users
+    const skip = (page - 1) * limit;
+    const users = await this.prisma.user.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy,
+      include: {
+        _count: {
+          select: {
+            items: true,
+            tradesProposed: {
+              where: { status: 'COMPLETED' },
+            },
+          },
+        },
+      },
+    });
+
+    return {
+      users: users.map((user) => ({
+        id: user.id,
+        username: user.username,
+        avatarUrl: user.avatarUrl,
+        bio: user.bio,
+        location: user.location,
+        reputationScore: user.reputationScore,
+        createdAt: user.createdAt,
+        itemsCount: user._count.items,
+        tradesCount: user._count.tradesProposed,
+      })),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
 
   /**
    * Get public user profile by ID (with Redis caching)

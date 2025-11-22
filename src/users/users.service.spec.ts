@@ -46,6 +46,122 @@ describe('UsersService', () => {
     jest.clearAllMocks();
   });
 
+  describe('findAllFiltered', () => {
+    const mockUsersList = [
+      {
+        ...mockUserWithProfile,
+        _count: { items: 5, tradesProposed: 3 },
+      },
+    ];
+
+    it('should filter users by location', async () => {
+      const filters = { location: 'New York', page: 1, limit: 20 };
+      prisma.user.count.mockResolvedValue(1);
+      prisma.user.findMany.mockResolvedValue(mockUsersList);
+
+      const result = await service.findAllFiltered(filters);
+
+      expect(result.users).toHaveLength(1);
+      expect(prisma.user.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            location: { contains: 'New York', mode: 'insensitive' },
+          }),
+        }),
+      );
+    });
+
+    it('should filter users by reputation score range', async () => {
+      const filters = {
+        minReputation: 3,
+        maxReputation: 5,
+        page: 1,
+        limit: 20,
+      };
+      prisma.user.count.mockResolvedValue(1);
+      prisma.user.findMany.mockResolvedValue(mockUsersList);
+
+      const result = await service.findAllFiltered(filters);
+
+      expect(result.users).toHaveLength(1);
+      expect(prisma.user.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            reputationScore: { gte: 3, lte: 5 },
+          }),
+        }),
+      );
+    });
+
+    it('should search users by username or bio', async () => {
+      const filters = { search: 'collector', page: 1, limit: 20 };
+      prisma.user.count.mockResolvedValue(1);
+      prisma.user.findMany.mockResolvedValue(mockUsersList);
+
+      const result = await service.findAllFiltered(filters);
+
+      expect(result.users).toHaveLength(1);
+      expect(prisma.user.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            OR: expect.any(Array),
+          }),
+        }),
+      );
+    });
+
+    it('should sort users by reputation score', async () => {
+      const filters = {
+        page: 1,
+        limit: 20,
+        sortBy: 'reputationScore' as any,
+        sortOrder: 'desc' as any,
+      };
+      prisma.user.count.mockResolvedValue(1);
+      prisma.user.findMany.mockResolvedValue(mockUsersList);
+
+      const result = await service.findAllFiltered(filters);
+
+      expect(result.users).toHaveLength(1);
+      expect(prisma.user.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          orderBy: { reputationScore: 'desc' },
+        }),
+      );
+    });
+
+    it('should handle pagination correctly', async () => {
+      const filters = { page: 2, limit: 5 };
+      prisma.user.count.mockResolvedValue(10);
+      prisma.user.findMany.mockResolvedValue(mockUsersList);
+
+      const result = await service.findAllFiltered(filters);
+
+      expect(result.page).toBe(2);
+      expect(result.limit).toBe(5);
+      expect(result.total).toBe(10);
+      expect(result.totalPages).toBe(2);
+      expect(prisma.user.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          skip: 5,
+          take: 5,
+        }),
+      );
+    });
+
+    it('should return empty results when no users match filters', async () => {
+      const filters = { location: 'NonExistent', page: 1, limit: 20 };
+      prisma.user.count.mockResolvedValue(0);
+      prisma.user.findMany.mockResolvedValue([]);
+
+      const result = await service.findAllFiltered(filters);
+
+      expect(result.users).toEqual([]);
+      expect(result.total).toBe(0);
+      expect(result.totalPages).toBe(0);
+    });
+  });
+
   describe('getUserProfile', () => {
     const userId = 'user-1';
 
