@@ -4,6 +4,8 @@
 
 A production-ready NestJS backend with PostgreSQL, Redis, JWT authentication, and comprehensive API documentation.
 
+**Version 1.0.0**
+
 [![NestJS](https://img.shields.io/badge/NestJS-10-red.svg)](https://nestjs.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
 [![Prisma](https://img.shields.io/badge/Prisma-5.22-2D3748.svg)](https://www.prisma.io/)
@@ -12,7 +14,7 @@ A production-ready NestJS backend with PostgreSQL, Redis, JWT authentication, an
 
 ## 📖 Overview
 
-This is the backend API for SWAPBUDS, providing secure authentication, item management, and trading functionality. Built with NestJS and following enterprise best practices.
+This is the production-ready backend API for SWAPBUDS, providing secure authentication, item management, trading functionality, reviews, disputes, real-time messaging, and comprehensive user features. Built with NestJS and following enterprise best practices.
 
 ## ✨ Features
 
@@ -40,6 +42,16 @@ This is the backend API for SWAPBUDS, providing secure authentication, item mana
 - ✅ Messaging system (v0.9.0)
 - ✅ Redis caching system with decorators (v0.10.0)
 - ✅ Cache warming and monitoring (v0.10.0)
+- ✅ Reviews and trade filtering (v0.10.1)
+- ✅ Schema validation and type safety (v0.10.2)
+- ✅ User filtering and search (v0.10.3)
+- ✅ Trade counter-offers (v0.11.0)
+- ✅ Trade expiration system (v0.11.1)
+- ✅ Trade statistics (v0.11.2)
+- ✅ Dispute resolution (v0.12.0)
+- ✅ Multi-item trades (v0.13.0)
+- ✅ User settings and preferences (v0.14.0)
+- ✅ **Production Ready v1.0.0** - 484 tests passing
 
 ---
 
@@ -54,6 +66,9 @@ This is the backend API for SWAPBUDS, providing secure authentication, item mana
 - **Winston** - Structured logging
 - **Swagger** - API documentation
 - **TypeScript** - Type safety with `@/` path aliases
+- **@nestjs/schedule** - Cron jobs for trade expiration (v0.11.1)
+- **Socket.IO** - WebSocket for real-time features
+- **Nodemailer** - Email notifications
 
 ---
 
@@ -246,6 +261,46 @@ Interactive Swagger documentation available at:
 - `DELETE /api/messages/:id` - Delete message (protected, owner only)
 - `GET /api/messages/unread/count` - Get total unread message count (protected)
 
+#### Reviews (v0.10.1)
+
+- `POST /api/reviews` - Create review for completed trade (protected)
+- `GET /api/reviews/user/:userId` - Get reviews for user (public)
+- `GET /api/reviews/trade/:tradeId` - Get reviews for trade (public)
+- `PATCH /api/reviews/:id` - Update own review (protected, owner only)
+- `DELETE /api/reviews/:id` - Delete own review (protected, owner only)
+- `GET /api/users/:userId/reputation` - Get user reputation stats (public)
+
+#### Trade Filtering (v0.10.1)
+
+- `GET /api/trades/filter` - Filter trades (status, item, user, date range) (protected)
+
+#### Trade Counter-Offers (v0.11.0)
+
+- `POST /api/trades/:tradeId/counter-offers` - Create counter-offer (protected)
+- `GET /api/trades/:tradeId/counter-offers` - List counter-offers (protected)
+- `PATCH /api/counter-offers/:id/accept` - Accept counter-offer (protected)
+- `PATCH /api/counter-offers/:id/reject` - Reject counter-offer (protected)
+
+#### Trade Statistics (v0.11.2)
+
+- `GET /api/users/:userId/stats` - Get user trade statistics (public)
+
+#### Disputes (v0.12.0)
+
+- `POST /api/disputes` - Create dispute for trade (protected)
+- `GET /api/disputes` - List user's disputes (protected)
+- `GET /api/disputes/:id` - Get dispute details (protected)
+- `PATCH /api/disputes/:id` - Update dispute (admin only)
+- `PATCH /api/disputes/:id/resolve` - Resolve dispute (admin only)
+- `POST /api/disputes/:id/messages` - Add message to dispute (protected)
+- `GET /api/disputes/:id/messages` - Get dispute messages (protected)
+
+#### User Settings (v0.14.0)
+
+- `GET /api/users/settings` - Get user settings (protected)
+- `PATCH /api/users/settings` - Update user settings (protected)
+- `DELETE /api/users/account` - Delete user account (protected)
+
 ---
 
 ## 🔔 Real-time Features
@@ -303,6 +358,23 @@ socket.on('messageDeleted', ({ messageId, conversationId }) => {
 socket.on('typing', ({ conversationId, isTyping, username }) => {
   console.log(`${username} is ${isTyping ? 'typing' : 'stopped typing'}`);
 });
+
+// Dispute events (v0.12.0)
+socket.on('dispute', (dispute) => {
+  console.log('New dispute created:', dispute);
+});
+
+socket.on('disputeUpdated', (dispute) => {
+  console.log('Dispute updated:', dispute);
+});
+
+socket.on('disputeResolved', ({ disputeId, resolution }) => {
+  console.log('Dispute resolved:', disputeId, resolution);
+});
+
+socket.on('disputeMessage', (message) => {
+  console.log('New dispute message:', message);
+});
 ```
 
 ### Email Notifications
@@ -313,6 +385,10 @@ Email notifications are automatically sent for:
 - **Trade Accepted** - When a trade is accepted
 - **Trade Rejected** - When a trade is declined
 - **Trade Cancelled** - When a trade is cancelled
+- **Trade Expired** - When a trade expires (v0.11.1)
+- **New Review** - When someone reviews you (v0.10.1)
+- **New Dispute** - When a dispute is filed (v0.12.0)
+- **Dispute Resolved** - When a dispute is resolved (v0.12.0)
 - **Welcome Email** - When a new user registers
 
 #### Email Configuration
@@ -380,17 +456,29 @@ yarn prisma migrate reset
 
 ### Schema Overview
 
-- **User** - User accounts with authentication
+- **User** - User accounts with authentication and reputation
 - **Item** - Trading items with categories/conditions
 - **ItemImage** - Multiple images per item
-- **Trade** - Trade proposals between users
+- **Trade** - Trade proposals between users (supports multi-item trades)
+- **TradeItem** - Join table for multi-item trades (v0.13.0)
+- **CounterOffer** - Alternative trade proposals (v0.11.0)
+- **CounterOfferItem** - Items in counter-offers
+- **Review** - Trade reviews and ratings (v0.10.1)
+- **Dispute** - Trade dispute resolution (v0.12.0)
+- **DisputeMessage** - Messages within disputes
 - **Like** - Item likes
 - **Comment** - Item comments
 - **Message** - Chat messages
+- **Conversation** - Message threads between users
+- **Notification** - In-app notifications
+- **NotificationPreference** - User notification settings
+- **UserSettings** - Privacy and preference controls (v0.14.0)
 
 ---
 
 ## 🧪 Testing
+
+**484 tests passing** across 33 test suites, covering all features from v0.2.0 through v1.0.0.
 
 ```bash
 # Unit tests
