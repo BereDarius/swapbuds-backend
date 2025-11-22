@@ -30,13 +30,16 @@ This is the backend API for SWAPBUDS, providing secure authentication, item mana
 - ✅ Rate limiting and security (Helmet, CORS)
 - ✅ Path aliases with `@/` prefix
 
-### In Progress
+### Completed
 
-- 🚧 Trading system (v0.6.0+)
-- 🚧 Real-time chat
 - ✅ Notifications system (v0.7.0)
 - ✅ WebSocket real-time notifications (v0.8.0)
 - ✅ Email notifications (v0.8.0)
+- ✅ Messaging system (v0.9.0)
+
+### In Progress
+
+- 🚧 Trading system (v0.6.0+)
 - 🚧 Likes and comments
 
 ---
@@ -200,6 +203,16 @@ Interactive Swagger documentation available at:
 - `GET /api/notifications/preferences` - Get preferences (protected)
 - `PUT /api/notifications/preferences` - Update preferences (protected)
 
+#### Messages (v0.9.0)
+
+- `POST /api/messages` - Send a message (protected)
+- `GET /api/messages/conversations` - List all conversations (protected)
+- `GET /api/messages/conversations/:id` - Get messages in conversation (protected, paginated)
+- `PATCH /api/messages/:id/read` - Mark message as read (protected)
+- `PATCH /api/messages/conversations/:id/read` - Mark all messages in conversation as read (protected)
+- `DELETE /api/messages/:id` - Delete message (protected, owner only)
+- `GET /api/messages/unread/count` - Get total unread message count (protected)
+
 ---
 
 ## 🔔 Real-time Features
@@ -235,6 +248,27 @@ socket.on('allNotificationsRead', ({ count }) => {
 
 socket.on('notificationDeleted', ({ notificationId }) => {
   console.log('Notification deleted:', notificationId);
+});
+
+// Messaging events (v0.9.0)
+socket.on('message', (message) => {
+  console.log('New message received:', message);
+});
+
+socket.on('messageRead', ({ messageId, conversationId }) => {
+  console.log('Message marked as read:', messageId);
+});
+
+socket.on('conversationRead', ({ conversationId, count }) => {
+  console.log(`${count} messages marked as read in conversation`);
+});
+
+socket.on('messageDeleted', ({ messageId, conversationId }) => {
+  console.log('Message deleted:', messageId);
+});
+
+socket.on('typing', ({ conversationId, isTyping, username }) => {
+  console.log(`${username} is ${isTyping ? 'typing' : 'stopped typing'}`);
 });
 ```
 

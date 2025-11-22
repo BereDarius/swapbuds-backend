@@ -12,9 +12,6 @@ import { MessagesService } from './messages.service';
 
 describe('MessagesService', () => {
   let service: MessagesService;
-  let prisma: PrismaService;
-  let notificationsGateway: NotificationsGateway;
-  let notificationsService: NotificationsService;
 
   const mockNotificationsGateway = {
     emitMessageToUser: jest.fn(),
@@ -89,11 +86,6 @@ describe('MessagesService', () => {
     }).compile();
 
     service = module.get<MessagesService>(MessagesService);
-    prisma = module.get<PrismaService>(PrismaService);
-    notificationsGateway =
-      module.get<NotificationsGateway>(NotificationsGateway);
-    notificationsService =
-      module.get<NotificationsService>(NotificationsService);
 
     jest.clearAllMocks();
   });
