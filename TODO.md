@@ -11,6 +11,10 @@
 - [ ] Audit logs for admin actions
 - [ ] Platform monitoring and health checks
 - [ ] Bulk actions for moderation tasks
+- [ ] **Live support chat with queue system**
+- [ ] Support ticket management
+- [ ] Real-time support agent availability
+- [ ] Support chat history and transcripts
 
 ### Technical Implementation
 
@@ -20,6 +24,12 @@
 - [ ] AuditLog model for tracking admin actions
 - [ ] Admin dashboard API endpoints
 - [ ] Moderation queue system
+- [ ] **SupportChat model (userId, agentId, status, priority, queuePosition)**
+- [ ] **SupportChatMessage model (chatId, senderId, message, timestamp)**
+- [ ] **SupportQueue service with basic queue handling**
+- [ ] **WebSocket gateway for live support chat**
+- [ ] **Queue position tracking and notifications**
+- [ ] **Agent assignment algorithm (round-robin with availability)**
 
 ### API Endpoints
 
@@ -31,6 +41,74 @@
 - `PATCH /admin/items/:id/approve` - Approve item
 - `DELETE /admin/items/:id` - Remove item
 - `GET /admin/audit-logs` - View audit logs
+- **`POST /support/chat/start` - Start support chat session (enters queue)**
+- **`GET /support/chat/:id` - Get support chat details**
+- **`GET /support/chat/:id/messages` - Get chat messages**
+- **`POST /support/chat/:id/messages` - Send message in support chat**
+- **`PATCH /support/chat/:id/close` - Close support chat**
+- **`GET /support/queue` - Get current queue position (user)**
+- **`GET /support/agent/queue` - Get support queue (agents only)**
+- **`PATCH /support/agent/available` - Toggle agent availability**
+- **`GET /support/history` - Get user's support chat history**
+
+### Database Schema
+
+```prisma
+model SupportChat {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation("UserSupportChats", fields: [userId], references: [id])
+  agentId       String?
+  agent         User?    @relation("AgentSupportChats", fields: [agentId], references: [id])
+  status        SupportChatStatus @default(QUEUED)
+  priority      Int      @default(0) // Priority level (can be enhanced later)
+  queuePosition Int?
+  subject       String?
+  createdAt     DateTime @default(now())
+  assignedAt    DateTime?
+  closedAt      DateTime?
+  messages      SupportChatMessage[]
+}
+
+model SupportChatMessage {
+  id        String   @id @default(uuid())
+  chatId    String
+  chat      SupportChat @relation(fields: [chatId], references: [id])
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id])
+  message   String
+  isInternal Boolean @default(false) // For agent-only notes
+  createdAt DateTime @default(now())
+}
+
+enum SupportChatStatus {
+  QUEUED
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+```
+
+### WebSocket Events
+
+- `support:queue:joined` - User entered queue (with position)
+- `support:queue:updated` - Queue position changed
+- `support:chat:assigned` - Agent assigned to chat
+- `support:chat:message` - New message in support chat
+- `support:chat:typing` - Someone is typing
+- `support:chat:closed` - Chat session closed
+- `support:agent:available` - Agent became available
+- `support:agent:unavailable` - Agent went offline
+
+### Business Rules
+
+- Maximum 3 active support chats per agent
+- Inactive chats (no response for 10 minutes) get auto-reminder
+- Chats with no agent response for 5 minutes get reassigned
+- Support agents can't see messages marked as `isInternal`
+- Queue position updates in real-time via WebSocket
+- Default priority is 0 (can be modified by subscription tier)
 
 ---
 
@@ -412,7 +490,7 @@ PREMIUM_YEARLY_PRICE=99.99
 
 - [ ] Advanced search with more filters
 - [ ] Unlimited items (Basic: 20 items limit)
-- [ ] Priority customer support
+- [ ] **Priority customer support (queue jumping)**
 - [ ] Featured/promoted listings
 - [ ] Analytics dashboard (views, likes, trade success rate)
 - [ ] Ad-free experience
@@ -427,7 +505,8 @@ PREMIUM_YEARLY_PRICE=99.99
 - [ ] Analytics service (track views, clicks, conversions)
 - [ ] ItemAnalytics model (itemId, views, likes, tradeAttempts)
 - [ ] PremiumGuard decorator for premium-only endpoints
-- [ ] Support ticket priority system
+- [ ] **Priority queue system enhancement (Premium users get +10 priority)**
+- [ ] **Update SupportQueue service to check subscription tier**
 - [ ] Featured items in search results
 
 ### API Endpoints
@@ -444,7 +523,9 @@ PREMIUM_YEARLY_PRICE=99.99
 - Premium users: Unlimited items
 - Featured listings: Premium only, max 3 concurrent
 - Analytics: Premium gets detailed metrics, Basic gets basic stats
-- Support: Premium tickets prioritized in queue
+- **Support queue priority: Premium users get +10 priority (moved to front of queue)**
+- **Premium support chats are assigned to agents first**
+- **Premium users see "Priority Support" badge in queue**
 
 ### Database Schema
 
@@ -561,6 +642,183 @@ model PaymentMethod {
 
   @@index([userId])
 }
+```
+
+---
+
+## Version 1.10.0 - Item Recommendations & Matching Algorithm
+
+### Features
+
+- [ ] Personalized item recommendations based on user preferences
+- [ ] Smart trade matching (suggest compatible trades)
+- [ ] Category-based recommendations
+- [ ] Location-based item suggestions
+- [ ] User behavior tracking (views, likes, searches)
+- [ ] "Similar items" feature on item pages
+- [ ] "You might also like" recommendations
+- [ ] Trade compatibility scoring
+- [ ] Trending items algorithm
+- [ ] Recently viewed items tracking
+
+### Technical Implementation
+
+- [ ] RecommendationEngine service with ML-ready architecture
+- [ ] UserBehavior model (track views, searches, interactions)
+- [ ] ItemSimilarity calculation algorithm
+- [ ] Collaborative filtering algorithm (user-based)
+- [ ] Content-based filtering (category, condition, location)
+- [ ] Hybrid recommendation system (combine multiple algorithms)
+- [ ] Redis caching for recommendation results
+- [ ] Scheduled job to pre-compute recommendations
+- [ ] Recommendation scoring and ranking system
+- [ ] A/B testing framework for algorithm improvements
+
+### API Endpoints
+
+- `GET /recommendations/items` - Get personalized item recommendations
+- `GET /recommendations/items/:id/similar` - Get similar items
+- `GET /recommendations/trades` - Get suggested trade matches
+- `GET /recommendations/trending` - Get trending items
+- `GET /items/:id/compatibility/:targetId` - Check trade compatibility score
+- `POST /analytics/track` - Track user behavior (view, search, etc.)
+- `GET /users/me/recently-viewed` - Get recently viewed items
+
+### Database Schema
+
+```prisma
+model UserBehavior {
+  id          String         @id @default(cuid())
+  userId      String
+  itemId      String?
+  categoryId  String?
+  action      BehaviorAction
+  metadata    Json?          // Additional context (search query, duration, etc.)
+  createdAt   DateTime       @default(now())
+
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item        Item?          @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([userId, action])
+  @@index([itemId])
+  @@index([createdAt])
+}
+
+model ItemRecommendation {
+  id              String   @id @default(cuid())
+  userId          String
+  itemId          String
+  score           Float    // Recommendation confidence score (0-1)
+  algorithm       String   // Which algorithm generated this
+  expiresAt       DateTime // Cache expiration
+  createdAt       DateTime @default(now())
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item            Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, itemId])
+  @@index([userId, score])
+  @@index([expiresAt])
+}
+
+model TradeMatch {
+  id              String   @id @default(cuid())
+  userId          String
+  userItemId      String
+  matchUserId     String
+  matchItemId     String
+  compatibilityScore Float  // 0-100 score
+  reasons         Json     // Why this is a good match
+  status          MatchStatus @default(SUGGESTED)
+  createdAt       DateTime @default(now())
+  viewedAt        DateTime?
+  dismissedAt     DateTime?
+
+  user            User     @relation("UserMatches", fields: [userId], references: [id], onDelete: Cascade)
+  matchUser       User     @relation("MatchUserMatches", fields: [matchUserId], references: [id], onDelete: Cascade)
+  userItem        Item     @relation("UserMatchItems", fields: [userItemId], references: [id], onDelete: Cascade)
+  matchItem       Item     @relation("MatchUserItems", fields: [matchItemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, matchUserId, userItemId, matchItemId])
+  @@index([userId, status])
+  @@index([compatibilityScore])
+}
+
+enum BehaviorAction {
+  VIEW
+  SEARCH
+  LIKE
+  UNLIKE
+  COMMENT
+  TRADE_PROPOSE
+  SHARE
+}
+
+enum MatchStatus {
+  SUGGESTED
+  VIEWED
+  DISMISSED
+  TRADE_INITIATED
+}
+```
+
+### Recommendation Algorithms
+
+#### 1. Content-Based Filtering
+
+- Match based on item categories, condition, location
+- User's past liked items and completed trades
+- Price range preferences
+
+#### 2. Collaborative Filtering
+
+- "Users who liked X also liked Y"
+- Similar user taste analysis
+- Community behavior patterns
+
+#### 3. Hybrid Approach
+
+- Combine content + collaborative scores
+- Weighted scoring: 60% content, 40% collaborative
+- Adjust weights based on user activity level
+
+#### 4. Trade Compatibility Scoring
+
+Factors:
+
+- Category match (40 points)
+- Condition compatibility (20 points)
+- Location proximity (20 points)
+- User reputation compatibility (10 points)
+- Historical trade patterns (10 points)
+
+### Business Rules
+
+- Recommendations refresh every 6 hours
+- Minimum 20 user interactions before collaborative filtering
+- New users get content-based recommendations only
+- Track user behavior for 90 days (rolling window)
+- Trending algorithm: engagement score over last 7 days
+- Recently viewed: Last 50 items per user
+- Similar items: Top 10 matches by similarity score
+- Trade matches: Only suggest if compatibility > 60
+
+### Performance Optimization
+
+- Pre-compute recommendations nightly for all active users
+- Cache recommendations in Redis (6 hour TTL)
+- Use database indexes on userId, itemId, createdAt
+- Lazy load recommendations (paginated)
+- Background job for similarity calculations
+
+### Environment Variables
+
+```
+RECOMMENDATION_CACHE_TTL=21600
+RECOMMENDATION_REFRESH_CRON='0 */6 * * *'
+TRENDING_WINDOW_DAYS=7
+BEHAVIOR_RETENTION_DAYS=90
+MIN_COLLABORATIVE_INTERACTIONS=20
 ```
 
 ---
