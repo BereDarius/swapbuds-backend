@@ -73,6 +73,13 @@ This roadmap is aligned with the [LAUNCH_ROADMAP.md](../plans/LAUNCH_ROADMAP.md)
 
 ### API Endpoints
 
+**reCAPTCHA Integration:**
+
+- `POST /auth/register` - Updated to accept optional `recaptchaToken` field
+- `POST /auth/login` - Updated to accept optional `recaptchaToken` field
+
+**Delivery Methods & Value:**
+
 - `PATCH /items/:id/delivery-methods` - Update item delivery methods
 - `GET /items?deliveryMethod=PHYSICAL|MAIL|BOTH` - Filter items by delivery method
 - **`GET /items?minValue=100&maxValue=500&currency=RON` - Filter items by value range**
@@ -80,6 +87,25 @@ This roadmap is aligned with the [LAUNCH_ROADMAP.md](../plans/LAUNCH_ROADMAP.md)
 - `POST /trades` - Include deliveryMethod in trade creation (extend existing)
 
 ### Database Schema
+
+**reCAPTCHA Logging (Optional - for analytics):**
+
+```prisma
+model RecaptchaLog {
+  id        String   @id @default(cuid())
+  action    String   // register, login, etc.
+  score     Float    // 0.0 - 1.0
+  ip        String?
+  success   Boolean  // true if score >= threshold
+  timestamp DateTime @default(now())
+
+  @@index([action])
+  @@index([score])
+  @@index([timestamp])
+}
+```
+
+**Delivery Methods & Value:**
 
 ```prisma
 model Item {
