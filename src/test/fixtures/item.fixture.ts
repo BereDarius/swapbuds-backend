@@ -1,4 +1,4 @@
-import { ItemCondition, ItemStatus } from '@prisma/client';
+import { ItemCategory, ItemCondition, ItemStatus } from '@prisma/client';
 
 /**
  * Test fixtures for Item entities
@@ -8,7 +8,7 @@ export const mockItem = {
   title: 'Test Item',
   description: 'Test item description',
   condition: ItemCondition.GOOD,
-  category: 'Electronics',
+  category: ItemCategory.ELECTRONICS,
   status: ItemStatus.AVAILABLE,
   userId: 'user-1',
   viewCount: 0,

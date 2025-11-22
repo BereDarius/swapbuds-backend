@@ -7,11 +7,8 @@ import {
 } from '@/test/fixtures/item.fixture';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import {
-  CreateItemDto,
-  ItemCategory,
-  ItemCondition,
-} from './dto/create-item.dto';
+import { ItemCategory, ItemCondition } from '@prisma/client';
+import { CreateItemDto } from './dto/create-item.dto';
 import { UpdateItemDto } from './dto/update-item.dto';
 
 describe('ItemsController', () => {
@@ -21,6 +18,7 @@ describe('ItemsController', () => {
   const mockItemsService = {
     create: jest.fn(),
     findAll: jest.fn(),
+    findAllFiltered: jest.fn(),
     findByUser: jest.fn(),
     findOne: jest.fn(),
     update: jest.fn(),
@@ -90,37 +88,54 @@ describe('ItemsController', () => {
     it('should return array of items with default pagination', async () => {
       mockItemsService.findAll.mockResolvedValue(mockItems);
 
-      const result = await controller.findAll();
+      const result = await controller.findAll({});
 
-      expect(result).toEqual(mockItems);
+      expect(result).toEqual({ items: mockItems, total: mockItems.length });
       expect(itemsService.findAll).toHaveBeenCalledWith(0, 20);
       expect(itemsService.findAll).toHaveBeenCalledTimes(1);
     });
 
-    it('should return array of items with custom pagination', async () => {
+    it('should return array of items with custom pagination via skip/take', async () => {
       mockItemsService.findAll.mockResolvedValue(mockItems);
 
-      const result = await controller.findAll('10', '5');
+      const result = await controller.findAll({}, '10', '5');
 
-      expect(result).toEqual(mockItems);
+      expect(result).toEqual({ items: mockItems, total: mockItems.length });
       expect(itemsService.findAll).toHaveBeenCalledWith(10, 5);
     });
 
-    it('should handle skip parameter', async () => {
+    it('should handle skip parameter with legacy pagination', async () => {
       mockItemsService.findAll.mockResolvedValue([mockItems[0]]);
 
-      const result = await controller.findAll('1');
+      const result = await controller.findAll({}, '1');
 
-      expect(result).toEqual([mockItems[0]]);
+      expect(result).toEqual({ items: [mockItems[0]], total: 1 });
       expect(itemsService.findAll).toHaveBeenCalledWith(1, 20);
+    });
+
+    it('should use filtered method when filters provided', async () => {
+      const filters = { category: 'Electronics', page: 1, limit: 10 };
+      const filteredResult = {
+        items: mockItems,
+        total: 2,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
+      };
+      mockItemsService.findAllFiltered.mockResolvedValue(filteredResult);
+
+      const result = await controller.findAll(filters as any);
+
+      expect(result).toEqual(filteredResult);
+      expect(itemsService.findAllFiltered).toHaveBeenCalledWith(filters);
     });
 
     it('should handle take parameter', async () => {
       mockItemsService.findAll.mockResolvedValue([mockItems[0]]);
 
-      const result = await controller.findAll(undefined, '1');
+      const result = await controller.findAll({}, undefined, '1');
 
-      expect(result).toEqual([mockItems[0]]);
+      expect(result).toEqual({ items: [mockItems[0]], total: 1 });
       expect(itemsService.findAll).toHaveBeenCalledWith(0, 1);
     });
   });

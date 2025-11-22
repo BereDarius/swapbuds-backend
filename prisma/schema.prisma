@@ -78,12 +78,23 @@ enum ItemStatus {
   REMOVED
 }
 
+enum ItemCategory {
+  ELECTRONICS
+  CLOTHING
+  BOOKS
+  TOYS
+  SPORTS
+  COLLECTIBLES
+  HOME
+  OTHER
+}
+
 model Item {
   id          String        @id @default(cuid())
   title       String
   description String
   condition   ItemCondition
-  category    String
+  category    ItemCategory
   status      ItemStatus    @default(AVAILABLE)
 
   // Ownership

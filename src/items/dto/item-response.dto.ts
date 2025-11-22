@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { ItemCategory, ItemCondition } from './create-item.dto';
+import { ItemCategory, ItemCondition } from '@prisma/client';
 
 /**
  * User info embedded in item response

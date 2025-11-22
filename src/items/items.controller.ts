@@ -21,6 +21,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CreateItemDto } from './dto/create-item.dto';
+import { ItemFilterDto } from './dto/item-filter.dto';
 import { ItemResponseDto } from './dto/item-response.dto';
 import { UpdateItemDto } from './dto/update-item.dto';
 import { ItemsService } from './items.service';
@@ -56,37 +57,86 @@ export class ItemsController {
   }
 
   /**
-   * Get all items with pagination
+   * Get all items with optional filters
    * Public endpoint - no authentication required
    */
   @Get()
   @Public()
-  @ApiOperation({ summary: 'Get all items with pagination' })
-  @ApiQuery({
-    name: 'skip',
-    required: false,
-    type: Number,
-    description: 'Number of items to skip',
+  @ApiOperation({
+    summary: 'Get all items with optional filtering and pagination',
   })
   @ApiQuery({
-    name: 'take',
+    name: 'status',
     required: false,
-    type: Number,
-    description: 'Number of items to return',
+    enum: ['AVAILABLE', 'IN_TRADE', 'TRADED', 'REMOVED'],
   })
+  @ApiQuery({
+    name: 'category',
+    required: false,
+    enum: [
+      'ELECTRONICS',
+      'CLOTHING',
+      'BOOKS',
+      'TOYS',
+      'SPORTS',
+      'COLLECTIBLES',
+      'HOME',
+      'OTHER',
+    ],
+  })
+  @ApiQuery({
+    name: 'condition',
+    required: false,
+    enum: ['NEW', 'LIKE_NEW', 'EXCELLENT', 'GOOD', 'FAIR', 'POOR'],
+  })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    enum: ['createdAt', 'likes'],
+  })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'] })
+  @ApiQuery({ name: 'skip', required: false, type: Number })
+  @ApiQuery({ name: 'take', required: false, type: Number })
   @ApiResponse({
     status: 200,
     description: 'Items retrieved successfully',
-    type: [ItemResponseDto],
   })
   async findAll(
+    @Query() filters: ItemFilterDto,
     @Query('skip') skip?: string,
     @Query('take') take?: string,
-  ): Promise<ItemResponseDto[]> {
-    return this.itemsService.findAll(
-      skip ? parseInt(skip, 10) : 0,
-      take ? parseInt(take, 10) : 20,
-    );
+  ) {
+    // Check if using old pagination style (skip/take) or filters
+    if (skip !== undefined || take !== undefined) {
+      // Legacy pagination
+      const items = await this.itemsService.findAll(
+        skip ? parseInt(skip, 10) : 0,
+        take ? parseInt(take, 10) : 20,
+      );
+      return { items, total: items.length };
+    }
+
+    // Check if any filters are provided
+    if (
+      !filters.status &&
+      !filters.category &&
+      !filters.condition &&
+      !filters.search &&
+      !filters.page &&
+      !filters.limit &&
+      !filters.sortBy &&
+      !filters.sortOrder
+    ) {
+      // No filters, use simple cached method
+      const items = await this.itemsService.findAll(0, 20);
+      return { items, total: items.length };
+    }
+
+    // Use filtered method
+    return this.itemsService.findAllFiltered(filters);
   }
 
   /**

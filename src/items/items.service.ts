@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { CreateItemDto } from './dto/create-item.dto';
+import { ItemFilterDto } from './dto/item-filter.dto';
 import { ItemResponseDto } from './dto/item-response.dto';
 import { UpdateItemDto } from './dto/update-item.dto';
 
@@ -109,6 +110,96 @@ export class ItemsService {
     });
 
     return items.map((item) => this.mapToResponse(item));
+  }
+
+  /**
+   * Get filtered and paginated items
+   * @param filters - Filter and pagination parameters
+   * @returns Paginated items with metadata
+   */
+  async findAllFiltered(filters: ItemFilterDto): Promise<{
+    items: ItemResponseDto[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const {
+      status,
+      category,
+      condition,
+      search,
+      page = 1,
+      limit = 20,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = filters;
+
+    // Build where clause
+    const where: any = {};
+
+    if (status) {
+      where.status = status;
+    }
+
+    if (category) {
+      where.category = category;
+    }
+
+    if (condition) {
+      where.condition = condition;
+    }
+
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    // Build orderBy clause
+    let orderBy: any;
+    if (sortBy === 'likes') {
+      orderBy = { likes: { _count: sortOrder } };
+    } else {
+      orderBy = { [sortBy]: sortOrder };
+    }
+
+    // Get total count
+    const total = await this.prisma.item.count({ where });
+
+    // Get paginated items
+    const skip = (page - 1) * limit;
+    const items = await this.prisma.item.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy,
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            avatarUrl: true,
+          },
+        },
+        images: true,
+        _count: {
+          select: {
+            likes: true,
+            comments: true,
+          },
+        },
+      },
+    });
+
+    return {
+      items: items.map((item) => this.mapToResponse(item)),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   /**

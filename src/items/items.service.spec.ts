@@ -4,7 +4,7 @@ import { mockItem, mockItemWithRelations } from '@/test/fixtures/item.fixture';
 import { mockPrismaService } from '@/test/mocks/prisma.mock';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ItemCategory, ItemCondition } from './dto/create-item.dto';
+import { ItemCategory, ItemCondition } from '@prisma/client';
 import { ItemsService } from './items.service';
 
 const mockCacheService = {
@@ -154,6 +154,115 @@ describe('ItemsService', () => {
       );
       expect(result).toHaveLength(1);
       expect(result[0].title).toBe(mockItemWithRelations.title);
+    });
+  });
+
+  describe('findAllFiltered', () => {
+    it('should filter items by status', async () => {
+      const filters = { status: 'AVAILABLE' as any, page: 1, limit: 20 };
+      prisma.item.count.mockResolvedValue(1);
+      prisma.item.findMany.mockResolvedValue([mockItemWithRelations]);
+
+      const result = await service.findAllFiltered(filters);
+
+      expect(result.items).toHaveLength(1);
+      expect(result.total).toBe(1);
+      expect(prisma.item.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            status: 'AVAILABLE',
+          }),
+        }),
+      );
+    });
+
+    it('should filter items by category', async () => {
+      const filters = {
+        category: ItemCategory.ELECTRONICS,
+        page: 1,
+        limit: 20,
+      };
+      prisma.item.count.mockResolvedValue(1);
+      prisma.item.findMany.mockResolvedValue([mockItemWithRelations]);
+
+      const result = await service.findAllFiltered(filters);
+
+      expect(result.items).toHaveLength(1);
+      expect(prisma.item.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            category: ItemCategory.ELECTRONICS,
+          }),
+        }),
+      );
+    });
+
+    it('should search items by title or description', async () => {
+      const filters = { search: 'laptop', page: 1, limit: 20 };
+      prisma.item.count.mockResolvedValue(1);
+      prisma.item.findMany.mockResolvedValue([mockItemWithRelations]);
+
+      const result = await service.findAllFiltered(filters);
+
+      expect(result.items).toHaveLength(1);
+      expect(prisma.item.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            OR: expect.any(Array),
+          }),
+        }),
+      );
+    });
+
+    it('should sort items by likes count', async () => {
+      const filters = {
+        page: 1,
+        limit: 20,
+        sortBy: 'likes' as any,
+        sortOrder: 'desc' as any,
+      };
+      prisma.item.count.mockResolvedValue(1);
+      prisma.item.findMany.mockResolvedValue([mockItemWithRelations]);
+
+      const result = await service.findAllFiltered(filters);
+
+      expect(result.items).toHaveLength(1);
+      expect(prisma.item.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          orderBy: { likes: { _count: 'desc' } },
+        }),
+      );
+    });
+
+    it('should handle pagination correctly', async () => {
+      const filters = { page: 2, limit: 5 };
+      prisma.item.count.mockResolvedValue(12);
+      prisma.item.findMany.mockResolvedValue([mockItemWithRelations]);
+
+      const result = await service.findAllFiltered(filters);
+
+      expect(result.page).toBe(2);
+      expect(result.limit).toBe(5);
+      expect(result.total).toBe(12);
+      expect(result.totalPages).toBe(3);
+      expect(prisma.item.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          skip: 5,
+          take: 5,
+        }),
+      );
+    });
+
+    it('should return empty results when no items match filters', async () => {
+      const filters = { category: ItemCategory.OTHER, page: 1, limit: 20 };
+      prisma.item.count.mockResolvedValue(0);
+      prisma.item.findMany.mockResolvedValue([]);
+
+      const result = await service.findAllFiltered(filters);
+
+      expect(result.items).toEqual([]);
+      expect(result.total).toBe(0);
+      expect(result.totalPages).toBe(0);
     });
   });
 

@@ -9,30 +9,8 @@ import {
   MinLength,
 } from 'class-validator';
 
-/**
- * Item condition enum matching Prisma schema
- */
-export enum ItemCondition {
-  NEW = 'NEW',
-  LIKE_NEW = 'LIKE_NEW',
-  GOOD = 'GOOD',
-  FAIR = 'FAIR',
-  POOR = 'POOR',
-}
-
-/**
- * Item category enum matching Prisma schema
- */
-export enum ItemCategory {
-  ELECTRONICS = 'ELECTRONICS',
-  CLOTHING = 'CLOTHING',
-  BOOKS = 'BOOKS',
-  TOYS = 'TOYS',
-  SPORTS = 'SPORTS',
-  COLLECTIBLES = 'COLLECTIBLES',
-  HOME = 'HOME',
-  OTHER = 'OTHER',
-}
+// Import enums from Prisma
+import { ItemCategory, ItemCondition } from '@prisma/client';
 
 /**
  * DTO for creating a new item
