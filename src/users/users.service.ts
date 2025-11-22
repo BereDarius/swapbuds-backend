@@ -367,6 +367,111 @@ export class UsersService {
   }
 
   /**
+   * Get user settings
+   * Creates default settings if none exist
+   * @param userId - User ID
+   * @returns User settings
+   */
+  @Cacheable({
+    ttl: 300000, // 5 minutes
+    keyGenerator: (userId: string) => `users:${userId}:settings`,
+  })
+  async getUserSettings(userId: string): Promise<any> {
+    // Check if user exists
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Get or create settings
+    let settings = await this.prisma.userSettings.findUnique({
+      where: { userId },
+    });
+
+    if (!settings) {
+      // Create default settings
+      settings = await this.prisma.userSettings.create({
+        data: { userId },
+      });
+    }
+
+    return settings;
+  }
+
+  /**
+   * Update user settings
+   * @param userId - User ID
+   * @param updateData - Settings to update
+   * @returns Updated settings
+   */
+  @CacheInvalidate((userId: string) => [`users:${userId}:settings`])
+  async updateUserSettings(userId: string, updateData: any): Promise<any> {
+    // Check if user exists
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Get or create settings first
+    let settings = await this.prisma.userSettings.findUnique({
+      where: { userId },
+    });
+
+    if (!settings) {
+      // Create with provided data
+      settings = await this.prisma.userSettings.create({
+        data: {
+          userId,
+          ...updateData,
+        },
+      });
+    } else {
+      // Update existing settings
+      settings = await this.prisma.userSettings.update({
+        where: { userId },
+        data: updateData,
+      });
+    }
+
+    return settings;
+  }
+
+  /**
+   * Reset user settings to defaults
+   * @param userId - User ID
+   * @returns Reset settings
+   */
+  @CacheInvalidate((userId: string) => [`users:${userId}:settings`])
+  async resetUserSettings(userId: string): Promise<any> {
+    // Check if user exists
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Delete existing settings
+    await this.prisma.userSettings.deleteMany({
+      where: { userId },
+    });
+
+    // Create new default settings
+    const settings = await this.prisma.userSettings.create({
+      data: { userId },
+    });
+
+    return settings;
+  }
+
+  /**
    * Extract Cloudinary public ID from URL
    * @param url - Cloudinary URL
    * @returns Public ID or null

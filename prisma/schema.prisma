@@ -51,6 +51,7 @@ model User {
   conversationsAsUser2    Conversation[]           @relation("ConversationUser2")
   notifications           Notification[]
   notificationPreferences NotificationPreferences?
+  settings                UserSettings?
   likes                   Like[]
   comments                Comment[]
   counterOffers           CounterOffer[]
@@ -492,6 +493,83 @@ model NotificationPreferences {
 
   @@index([userId])
   @@map("notification_preferences")
+}
+
+// ============================================
+// USER SETTINGS MODEL
+// ============================================
+enum Theme {
+  LIGHT
+  DARK
+  AUTO
+}
+
+enum Language {
+  EN // English
+  ES // Spanish
+  FR // French
+  DE // German
+  PT // Portuguese
+}
+
+model UserSettings {
+  id String @id @default(cuid())
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Profile Settings
+  displayEmail    Boolean @default(false) // Show email on public profile
+  displayLocation Boolean @default(true) // Show location on public profile
+  allowMessages   Boolean @default(true) // Allow messages from other users
+
+  // Privacy Settings
+  profileVisibility String  @default("PUBLIC") // PUBLIC, FRIENDS_ONLY, PRIVATE
+  showTradeHistory  Boolean @default(true) // Show completed trades on profile
+  showReviews       Boolean @default(true) // Show reviews on profile
+  showStatistics    Boolean @default(true) // Show trade statistics
+
+  // Trade Settings
+  autoDeclineExpiredTrades Boolean @default(true) // Auto-decline when trades expire
+  allowCounterOffers       Boolean @default(true) // Allow others to send counter-offers
+  requireTradeMessage      Boolean @default(false) // Require message with trade proposals
+
+  // Notification Frequency
+  emailDigestFrequency String @default("DAILY") // REALTIME, DAILY, WEEKLY, NEVER
+  pushDigestFrequency  String @default("REALTIME") // REALTIME, HOURLY, DAILY, NEVER
+
+  // UI Preferences
+  theme         Theme    @default(AUTO)
+  language      Language @default(EN)
+  itemsPerPage  Int      @default(12) // Pagination
+  defaultSortBy String   @default("RECENT") // RECENT, POPULAR, PRICE_LOW, PRICE_HIGH
+  compactView   Boolean  @default(false) // Compact list view vs card view
+
+  // Search & Discovery
+  saveSearchHistory     Boolean @default(true)
+  showSimilarItems      Boolean @default(true)
+  enableRecommendations Boolean @default(true)
+
+  // Accessibility
+  highContrast     Boolean @default(false)
+  largeText        Boolean @default(false)
+  reduceMotion     Boolean @default(false)
+  screenReaderMode Boolean @default(false)
+
+  // Marketing & Communication
+  marketingEmails     Boolean @default(false) // Promotional emails
+  productUpdates      Boolean @default(true) // Feature announcements
+  communityNewsletter Boolean @default(false) // Community highlights
+
+  // Advanced
+  twoFactorEnabled Boolean @default(false)
+  sessionTimeout   Int     @default(30) // Minutes of inactivity
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("user_settings")
 }
 
 // ============================================

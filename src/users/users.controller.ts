@@ -24,8 +24,10 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { UserFilterDto } from './dto/user-filter.dto';
 import { UserProfileDto } from './dto/user-profile.dto';
+import { UserSettingsDto } from './dto/user-settings.dto';
 import { UserStatisticsDto } from './dto/user-statistics.dto';
 import { UsersService } from './users.service';
 
@@ -189,5 +191,82 @@ export class UsersController {
     @Param('id') userId: string,
   ): Promise<UserStatisticsDto> {
     return this.usersService.getUserStatistics(userId);
+  }
+
+  /**
+   * Get current user's settings
+   * @param userId - Current user ID from JWT
+   * @returns User settings
+   */
+  @Get('me/settings')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get current user settings',
+    description: 'Retrieves all settings for the authenticated user',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Settings retrieved successfully',
+    type: UserSettingsDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+  })
+  async getUserSettings(@CurrentUser('userId') userId: string) {
+    return this.usersService.getUserSettings(userId);
+  }
+
+  /**
+   * Update current user's settings
+   * @param userId - Current user ID from JWT
+   * @param updateSettingsDto - Settings to update
+   * @returns Updated settings
+   */
+  @Patch('me/settings')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Update current user settings',
+    description: 'Updates one or more settings for the authenticated user',
+  })
+  @ApiBody({ type: UpdateSettingsDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Settings updated successfully',
+    type: UserSettingsDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+  })
+  async updateUserSettings(
+    @CurrentUser('userId') userId: string,
+    @Body() updateSettingsDto: UpdateSettingsDto,
+  ) {
+    return this.usersService.updateUserSettings(userId, updateSettingsDto);
+  }
+
+  /**
+   * Reset current user's settings to defaults
+   * @param userId - Current user ID from JWT
+   * @returns Reset settings
+   */
+  @Post('me/settings/reset')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Reset user settings to defaults',
+    description: 'Resets all settings to their default values',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Settings reset successfully',
+    type: UserSettingsDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+  })
+  async resetUserSettings(@CurrentUser('userId') userId: string) {
+    return this.usersService.resetUserSettings(userId);
   }
 }
