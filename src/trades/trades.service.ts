@@ -1,3 +1,4 @@
+import { Cacheable, CacheInvalidate } from '@/cache/cache.module';
 import { NotificationsService } from '@/notifications/notifications.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import {
@@ -27,6 +28,11 @@ export class TradesService {
    * @param createTradeDto - Trade details
    * @returns Created trade
    */
+  @CacheInvalidate((proposerId: string, dto: CreateTradeDto) => [
+    `users:${proposerId}:trades:*`,
+    `users:${dto.itemRequestedId}:trades:*`,
+    `trades:*`,
+  ])
   async createTrade(
     proposerId: string,
     createTradeDto: CreateTradeDto,
@@ -155,6 +161,10 @@ export class TradesService {
    * @param userId - User ID
    * @returns Array of trades
    */
+  @Cacheable({
+    ttl: 60000, // 1 minute
+    keyGenerator: (userId: string) => `users:${userId}:trades:all`,
+  })
   async getUserTrades(userId: string): Promise<TradeResponseDto[]> {
     const trades = await this.prisma.trade.findMany({
       where: {
@@ -210,6 +220,10 @@ export class TradesService {
    * @param userId - Current user ID (for authorization)
    * @returns Trade details
    */
+  @Cacheable({
+    ttl: 120000, // 2 minutes
+    keyGenerator: (tradeId: string) => `trades:${tradeId}`,
+  })
   async getTradeById(
     tradeId: string,
     userId: string,
@@ -274,6 +288,11 @@ export class TradesService {
    * @param userId - User accepting (must be responder)
    * @returns Updated trade
    */
+  @CacheInvalidate((tradeId: string) => [
+    `trades:${tradeId}`,
+    `users:*:trades:*`,
+    `items:*`,
+  ])
   async acceptTrade(
     tradeId: string,
     userId: string,
@@ -391,6 +410,10 @@ export class TradesService {
    * @param userId - User rejecting (must be responder)
    * @returns Updated trade
    */
+  @CacheInvalidate((tradeId: string) => [
+    `trades:${tradeId}`,
+    `users:*:trades:*`,
+  ])
   async rejectTrade(
     tradeId: string,
     userId: string,
@@ -474,6 +497,10 @@ export class TradesService {
    * @param userId - User cancelling (must be proposer)
    * @returns Updated trade
    */
+  @CacheInvalidate((tradeId: string) => [
+    `trades:${tradeId}`,
+    `users:*:trades:*`,
+  ])
   async cancelTrade(
     tradeId: string,
     userId: string,

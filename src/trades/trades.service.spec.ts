@@ -1,3 +1,4 @@
+import { CacheService } from '@/cache/cache.service';
 import { NotificationsService } from '@/notifications/notifications.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { mockItem, mockItems } from '@/test/fixtures/item.fixture';
@@ -30,6 +31,14 @@ const mockNotificationsService = {
   deleteNotification: jest.fn(),
 };
 
+// Mock CacheService
+const mockCacheService = {
+  get: jest.fn().mockResolvedValue(null), // Return null to bypass cache
+  set: jest.fn().mockResolvedValue('OK'),
+  del: jest.fn().mockResolvedValue(1),
+  delPattern: jest.fn().mockResolvedValue(0),
+};
+
 describe('TradesService', () => {
   let service: TradesService;
   let prisma: PrismaService;
@@ -46,6 +55,10 @@ describe('TradesService', () => {
         {
           provide: NotificationsService,
           useValue: mockNotificationsService,
+        },
+        {
+          provide: CacheService,
+          useValue: mockCacheService,
         },
       ],
     }).compile();
