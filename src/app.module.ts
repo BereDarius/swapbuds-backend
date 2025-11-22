@@ -14,6 +14,7 @@ import { UploadModule } from './upload/upload.module';
 import { UsersModule } from './users/users.module';
 import { LikesModule } from './likes/likes.module';
 import { CommentsModule } from './comments/comments.module';
+import { TradesModule } from './trades/trades.module';
 
 @Module({
   imports: [
@@ -68,6 +69,8 @@ import { CommentsModule } from './comments/comments.module';
     LikesModule,
 
     CommentsModule,
+
+    TradesModule,
   ],
   controllers: [AppController],
   providers: [
