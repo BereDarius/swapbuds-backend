@@ -1,3 +1,4 @@
+import { MailModule } from '@/mail/mail.module';
 import { NotificationsModule } from '@/notifications/notifications.module';
 import { PrismaModule } from '@/prisma/prisma.module';
 import { Module } from '@nestjs/common';
@@ -11,7 +12,7 @@ import { TradesService } from './trades.service';
  * Includes automatic expiration handling
  */
 @Module({
-  imports: [PrismaModule, NotificationsModule],
+  imports: [PrismaModule, NotificationsModule, MailModule],
   providers: [TradesService, TradeExpirationService],
   controllers: [TradesController],
   exports: [TradesService, TradeExpirationService],

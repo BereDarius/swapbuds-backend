@@ -1,3 +1,4 @@
+import { MailService } from '@/mail/mail.service';
 import { NotificationsService } from '@/notifications/notifications.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { Injectable, Logger } from '@nestjs/common';
@@ -18,6 +19,7 @@ export class TradeExpirationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
+    private readonly mailService: MailService,
     private readonly configService: ConfigService,
   ) {
     // Default: trades expire after 72 hours (3 days)
@@ -92,7 +94,19 @@ export class TradeExpirationService {
           data: { status: TradeStatus.EXPIRED },
         });
 
-        // Notify both parties
+        // Fetch proposer and responder with email addresses
+        const [proposerWithEmail, responderWithEmail] = await Promise.all([
+          this.prisma.user.findUnique({
+            where: { id: trade.proposerId },
+            select: { email: true },
+          }),
+          this.prisma.user.findUnique({
+            where: { id: trade.responderId },
+            select: { email: true },
+          }),
+        ]);
+
+        // Notify both parties (in-app notifications)
         await Promise.all([
           this.notificationsService.createNotification({
             userId: trade.proposerId,
@@ -108,6 +122,30 @@ export class TradeExpirationService {
             message: `Trade proposal from ${trade.proposer.username} for "${trade.itemOffered.title}" has expired`,
             metadata: { tradeId: trade.id },
           }),
+        ]);
+
+        // Send email notifications to both parties
+        await Promise.all([
+          this.mailService.sendTradeExpired(
+            proposerWithEmail.email,
+            trade.proposer.username,
+            {
+              itemName: trade.itemRequested.title,
+              otherPartyName: trade.responder.username,
+              tradeId: trade.id,
+              isProposer: true,
+            },
+          ),
+          this.mailService.sendTradeExpired(
+            responderWithEmail.email,
+            trade.responder.username,
+            {
+              itemName: trade.itemOffered.title,
+              otherPartyName: trade.proposer.username,
+              tradeId: trade.id,
+              isProposer: false,
+            },
+          ),
         ]);
 
         this.logger.log(`Expired trade ${trade.id}`);
@@ -189,7 +227,13 @@ export class TradeExpirationService {
           (trade.expiresAt!.getTime() - now.getTime()) / (1000 * 60 * 60),
         );
 
-        // Notify responder (the one who needs to respond)
+        // Fetch responder with email
+        const responderWithEmail = await this.prisma.user.findUnique({
+          where: { id: trade.responderId },
+          select: { email: true },
+        });
+
+        // Notify responder (the one who needs to respond) - in-app notification
         await this.notificationsService.createNotification({
           userId: trade.responderId,
           type: NotificationType.TRADE_PROPOSAL,
@@ -197,6 +241,19 @@ export class TradeExpirationService {
           message: `Trade proposal from ${trade.proposer.username} expires in ${hoursRemaining} hours`,
           metadata: { tradeId: trade.id, hoursRemaining },
         });
+
+        // Send email warning to responder
+        await this.mailService.sendTradeExpiringWarning(
+          responderWithEmail.email,
+          trade.responder.username,
+          {
+            proposerName: trade.proposer.username,
+            offeredItemName: trade.itemOffered.title,
+            requestedItemName: trade.itemRequested.title,
+            hoursRemaining,
+            tradeId: trade.id,
+          },
+        );
 
         this.logger.log(`Sent expiration warning for trade ${trade.id}`);
       } catch (error) {

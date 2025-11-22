@@ -1,0 +1,112 @@
+<html>
+  <head>
+    <meta charset='utf-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .header {
+        background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+        color: white;
+        padding: 30px;
+        text-align: center;
+        border-radius: 10px 10px 0 0;
+      }
+      .content {
+        background: #f9f9f9;
+        padding: 30px;
+        border-radius: 0 0 10px 10px;
+      }
+      .button {
+        display: inline-block;
+        padding: 12px 30px;
+        background: #667eea;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        margin: 20px 0;
+      }
+      .trade-details {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin: 20px 0;
+        border-left: 4px solid #6b7280;
+      }
+      .info-box {
+        background: #e5e7eb;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 20px 0;
+      }
+      .footer {
+        text-align: center;
+        margin-top: 30px;
+        color: #666;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class='header'>
+      <h1>⏰ Trade Expired</h1>
+    </div>
+    <div class='content'>
+      <p>Hi {{userName}},</p>
+
+      {{#if isProposer}}
+        <p>Your trade proposal for
+          <strong>{{itemName}}</strong>
+          has expired without receiving a response from
+          <strong>{{otherPartyName}}</strong>.</p>
+
+        <div class='info-box'>
+          <p><strong>What happened?</strong></p>
+          <p style='margin: 5px 0 0 0;'>Trade proposals automatically expire
+            after 72 hours to keep the marketplace fresh and active. The other
+            party didn't respond in time, so this trade is now closed.</p>
+        </div>
+
+        <p>Don't worry! You can:</p>
+        <ul>
+          <li>Propose the trade again if the item is still available</li>
+          <li>Browse other items that might interest you</li>
+          <li>Continue exploring SwapBuds for new opportunities</li>
+        </ul>
+      {{else}}
+        <p>A trade proposal from
+          <strong>{{otherPartyName}}</strong>
+          for
+          <strong>{{itemName}}</strong>
+          has expired.</p>
+
+        <div class='info-box'>
+          <p><strong>What happened?</strong></p>
+          <p style='margin: 5px 0 0 0;'>Trade proposals automatically expire
+            after 72 hours to keep the marketplace fresh and active. Since you
+            didn't respond in time, this trade is now closed.</p>
+        </div>
+
+        <p>If you're still interested in this trade, you can reach out to
+          {{otherPartyName}}
+          directly through their profile.</p>
+      {{/if}}
+
+      <center>
+        <a href='{{tradeUrl}}' class='button'>View Trade Details</a>
+      </center>
+
+      <p>Keep exploring and happy swapping! 🎉</p>
+    </div>
+    <div class='footer'>
+      <p>SwapBuds - Trading made easy</p>
+      <p>This is an automated message. Please do not reply to this email.</p>
+    </div>
+  </body>
+</html>

@@ -203,6 +203,98 @@ export class MailService {
   }
 
   /**
+   * Send trade expiration notification email
+   * @param userEmail - Recipient email
+   * @param userName - Recipient name
+   * @param tradeData - Trade details
+   */
+  async sendTradeExpired(
+    userEmail: string,
+    userName: string,
+    tradeData: {
+      itemName: string;
+      otherPartyName?: string;
+      tradeId: string;
+      isProposer: boolean;
+    },
+  ): Promise<void> {
+    if (!this.isEmailEnabled) {
+      this.logger.debug('Email disabled, skipping trade expired email');
+      return;
+    }
+
+    try {
+      await this.mailerService.sendMail({
+        to: userEmail,
+        subject: '⏰ Trade Expired - SwapBuds',
+        template: './trade-expired',
+        context: {
+          userName,
+          itemName: tradeData.itemName,
+          otherPartyName: tradeData.otherPartyName,
+          isProposer: tradeData.isProposer,
+          tradeUrl: `${this.configService.get('FRONTEND_URL')}/trades/${tradeData.tradeId}`,
+        },
+      });
+
+      this.logger.log(`Trade expired email sent to ${userEmail}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to send trade expired email to ${userEmail}`,
+        error.stack,
+      );
+    }
+  }
+
+  /**
+   * Send trade expiration warning email
+   * @param userEmail - Recipient email
+   * @param userName - Recipient name
+   * @param tradeData - Trade details
+   */
+  async sendTradeExpiringWarning(
+    userEmail: string,
+    userName: string,
+    tradeData: {
+      proposerName: string;
+      offeredItemName: string;
+      requestedItemName: string;
+      hoursRemaining: number;
+      tradeId: string;
+    },
+  ): Promise<void> {
+    if (!this.isEmailEnabled) {
+      this.logger.debug(
+        'Email disabled, skipping trade expiring warning email',
+      );
+      return;
+    }
+
+    try {
+      await this.mailerService.sendMail({
+        to: userEmail,
+        subject: `⏳ Trade Expiring in ${tradeData.hoursRemaining} Hours - SwapBuds`,
+        template: './trade-expiring',
+        context: {
+          userName,
+          proposerName: tradeData.proposerName,
+          offeredItemName: tradeData.offeredItemName,
+          requestedItemName: tradeData.requestedItemName,
+          hoursRemaining: tradeData.hoursRemaining,
+          tradeUrl: `${this.configService.get('FRONTEND_URL')}/trades/${tradeData.tradeId}`,
+        },
+      });
+
+      this.logger.log(`Trade expiring warning email sent to ${userEmail}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to send trade expiring warning email to ${userEmail}`,
+        error.stack,
+      );
+    }
+  }
+
+  /**
    * Send welcome email to new user
    * @param userEmail - Recipient email
    * @param userName - Recipient name
