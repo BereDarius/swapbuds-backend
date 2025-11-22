@@ -153,6 +153,7 @@ enum TradeStatus {
   REJECTED
   COMPLETED
   CANCELLED
+  EXPIRED
 }
 
 model Trade {
@@ -180,6 +181,7 @@ model Trade {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   completedAt DateTime?
+  expiresAt   DateTime? // When the trade proposal expires
 
   // Relations
   conversation  Conversation?

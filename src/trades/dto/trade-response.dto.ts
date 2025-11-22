@@ -100,4 +100,11 @@ export class TradeResponseDto {
     required: false,
   })
   completedAt: Date | null;
+
+  @ApiProperty({
+    description: 'When the trade proposal expires (if pending)',
+    example: '2024-11-25T10:30:00Z',
+    required: false,
+  })
+  expiresAt: Date | null;
 }

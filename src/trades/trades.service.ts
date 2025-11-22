@@ -4,6 +4,8 @@ import { PrismaService } from '@/prisma/prisma.service';
 import {
   BadRequestException,
   ForbiddenException,
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -13,6 +15,7 @@ import { CreateCounterOfferDto } from './dto/create-counter-offer.dto';
 import { CreateTradeDto } from './dto/create-trade.dto';
 import { TradeFilterDto } from './dto/trade-filter.dto';
 import { TradeResponseDto } from './dto/trade-response.dto';
+import { TradeExpirationService } from './trade-expiration.service';
 
 /**
  * Service handling trade business logic
@@ -23,6 +26,8 @@ export class TradesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
+    @Inject(forwardRef(() => TradeExpirationService))
+    private readonly tradeExpirationService: TradeExpirationService,
   ) {}
 
   /**
@@ -108,6 +113,7 @@ export class TradesService {
         itemRequestedId,
         message,
         status: TradeStatus.PENDING,
+        expiresAt: this.tradeExpirationService.calculateExpirationDate(),
       },
       include: {
         proposer: {
@@ -1149,6 +1155,7 @@ export class TradesService {
       createdAt: trade.createdAt,
       updatedAt: trade.updatedAt,
       completedAt: trade.completedAt,
+      expiresAt: trade.expiresAt,
     };
   }
 

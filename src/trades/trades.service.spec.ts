@@ -18,6 +18,7 @@ import {
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ItemStatus, TradeStatus } from '@prisma/client';
+import { TradeExpirationService } from './trade-expiration.service';
 import { TradesService } from './trades.service';
 
 // Mock NotificationsService
@@ -37,6 +38,19 @@ const mockCacheService = {
   set: jest.fn().mockResolvedValue('OK'),
   del: jest.fn().mockResolvedValue(1),
   delPattern: jest.fn().mockResolvedValue(0),
+};
+
+// Mock TradeExpirationService
+const mockTradeExpirationService = {
+  calculateExpirationDate: jest
+    .fn()
+    .mockReturnValue(new Date('2024-11-25T10:30:00Z')),
+  getExpirationConfig: jest.fn().mockReturnValue({
+    expirationHours: 72,
+    notificationHoursBefore: 24,
+  }),
+  handleTradeExpiration: jest.fn(),
+  handleExpirationWarnings: jest.fn(),
 };
 
 describe('TradesService', () => {
@@ -59,6 +73,10 @@ describe('TradesService', () => {
         {
           provide: CacheService,
           useValue: mockCacheService,
+        },
+        {
+          provide: TradeExpirationService,
+          useValue: mockTradeExpirationService,
         },
       ],
     }).compile();
