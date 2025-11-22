@@ -46,6 +46,8 @@ model User {
   reviewsGiven            Review[]                 @relation("ReviewAuthor")
   reviewsReceived         Review[]                 @relation("ReviewTarget")
   messages                Message[]
+  conversationsAsUser1    Conversation[]           @relation("ConversationUser1")
+  conversationsAsUser2    Conversation[]           @relation("ConversationUser2")
   notifications           Notification[]
   notificationPreferences NotificationPreferences?
   likes                   Like[]
@@ -167,8 +169,8 @@ model Trade {
   completedAt DateTime?
 
   // Relations
-  messages Message[]
-  reviews  Review[]
+  conversation Conversation?
+  reviews      Review[]
 
   @@index([proposerId])
   @@index([responderId])
@@ -178,28 +180,73 @@ model Trade {
 }
 
 // ============================================
+// CONVERSATION MODEL
+// ============================================
+model Conversation {
+  id String @id @default(cuid())
+
+  // Participants (only 2 users for direct messaging)
+  user1Id String
+  user1   User   @relation("ConversationUser1", fields: [user1Id], references: [id], onDelete: Cascade)
+
+  user2Id String
+  user2   User   @relation("ConversationUser2", fields: [user2Id], references: [id], onDelete: Cascade)
+
+  // Optional: Related to a trade
+  tradeId String? @unique
+  trade   Trade?  @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+
+  // Last message info for listing
+  lastMessageAt      DateTime?
+  lastMessageContent String?
+  lastMessageSender  String? // userId of last sender
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  messages Message[]
+
+  @@unique([user1Id, user2Id]) // Prevent duplicate conversations
+  @@index([user1Id])
+  @@index([user2Id])
+  @@index([tradeId])
+  @@index([lastMessageAt])
+  @@map("conversations")
+}
+
+// ============================================
 // MESSAGE MODEL
 // ============================================
 model Message {
   id      String @id @default(cuid())
   content String
+  type    String @default("text") // text, image, system
 
   // Sender
   senderId String
   sender   User   @relation(fields: [senderId], references: [id], onDelete: Cascade)
 
-  // Trade context
-  tradeId String
-  trade   Trade  @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  // Conversation
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   // Status
-  isRead Boolean @default(false)
+  isRead Boolean   @default(false)
+  readAt DateTime?
 
+  // Soft delete
+  isDeleted Boolean @default(false)
+
+  // Timestamps
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@index([tradeId])
+  @@index([conversationId])
   @@index([senderId])
   @@index([createdAt])
+  @@index([isRead])
   @@map("messages")
 }
 
