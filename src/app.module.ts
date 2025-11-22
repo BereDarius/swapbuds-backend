@@ -9,13 +9,14 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { redisStore } from 'cache-manager-redis-yet';
+import { CommentsModule } from './comments/comments.module';
 import { ItemsModule } from './items/items.module';
+import { LikesModule } from './likes/likes.module';
+import { MailModule } from './mail/mail.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { TradesModule } from './trades/trades.module';
 import { UploadModule } from './upload/upload.module';
 import { UsersModule } from './users/users.module';
-import { LikesModule } from './likes/likes.module';
-import { CommentsModule } from './comments/comments.module';
-import { TradesModule } from './trades/trades.module';
-import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -74,6 +75,8 @@ import { NotificationsModule } from './notifications/notifications.module';
     TradesModule,
 
     NotificationsModule,
+
+    MailModule,
   ],
   controllers: [AppController],
   providers: [

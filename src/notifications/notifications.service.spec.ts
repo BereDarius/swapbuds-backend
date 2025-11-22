@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotificationsService } from './notifications.service';
 
+import { MailService } from '@/mail/mail.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import {
   mockNotification,
@@ -13,10 +14,26 @@ import { mockTradeWithRelations } from '@/test/fixtures/trade.fixture';
 import { mockPrismaService } from '@/test/mocks/prisma.mock';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { NotificationType } from '@prisma/client';
+import { NotificationsGateway } from './notifications.gateway';
 
 describe('NotificationsService', () => {
   let service: NotificationsService;
   let prisma: PrismaService;
+
+  const mockNotificationsGateway = {
+    emitNotificationToUser: jest.fn(),
+    emitNotificationRead: jest.fn(),
+    emitAllNotificationsRead: jest.fn(),
+    emitNotificationDeleted: jest.fn(),
+  };
+
+  const mockMailService = {
+    sendTradeProposal: jest.fn(),
+    sendTradeAccepted: jest.fn(),
+    sendTradeRejected: jest.fn(),
+    sendTradeCancelled: jest.fn(),
+    sendWelcomeEmail: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -26,11 +43,43 @@ describe('NotificationsService', () => {
           provide: PrismaService,
           useValue: mockPrismaService,
         },
+        {
+          provide: NotificationsGateway,
+          useValue: mockNotificationsGateway,
+        },
+        {
+          provide: MailService,
+          useValue: mockMailService,
+        },
       ],
     }).compile();
 
     service = module.get<NotificationsService>(NotificationsService);
     prisma = module.get<PrismaService>(PrismaService);
+
+    // Mock default notification preferences (all enabled)
+    mockPrismaService.notificationPreferences.findUnique.mockResolvedValue({
+      id: 'pref-123',
+      userId: 'user-123',
+      emailTradeProposal: true,
+      emailTradeAccepted: true,
+      emailTradeRejected: true,
+      emailTradeCancelled: true,
+      emailNewMessage: true,
+      emailNewComment: true,
+      emailNewLike: true,
+      emailNewReview: true,
+      pushTradeProposal: true,
+      pushTradeAccepted: true,
+      pushTradeRejected: true,
+      pushTradeCancelled: true,
+      pushNewMessage: true,
+      pushNewComment: true,
+      pushNewLike: true,
+      pushNewReview: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
 
     jest.clearAllMocks();
   });

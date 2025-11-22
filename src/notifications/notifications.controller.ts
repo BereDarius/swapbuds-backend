@@ -1,6 +1,7 @@
 import { CurrentUser } from '@/auth/decorators/auth.decorators';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 import {
+  Body,
   Controller,
   Delete,
   Get,
@@ -8,6 +9,7 @@ import {
   HttpStatus,
   Param,
   Patch,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -18,7 +20,9 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { NotificationPreferencesResponseDto } from './dto/notification-preferences-response.dto';
 import { NotificationResponseDto } from './dto/notification-response.dto';
+import { UpdateNotificationPreferencesDto } from './dto/update-notification-preferences.dto';
 import { NotificationsService } from './notifications.service';
 
 /**
@@ -144,5 +148,43 @@ export class NotificationsController {
     @CurrentUser('id') userId: string,
   ): Promise<void> {
     await this.notificationsService.deleteNotification(notificationId, userId);
+  }
+
+  /**
+   * Get notification preferences for the current user
+   * @param userId - Current user ID from JWT
+   * @returns User's notification preferences
+   */
+  @Get('preferences')
+  @ApiOperation({ summary: 'Get notification preferences' })
+  @ApiResponse({
+    status: 200,
+    description: 'User notification preferences',
+    type: NotificationPreferencesResponseDto,
+  })
+  async getPreferences(
+    @CurrentUser('id') userId: string,
+  ): Promise<NotificationPreferencesResponseDto> {
+    return this.notificationsService.getPreferences(userId);
+  }
+
+  /**
+   * Update notification preferences for the current user
+   * @param userId - Current user ID from JWT
+   * @param updateDto - Preferences to update
+   * @returns Updated preferences
+   */
+  @Put('preferences')
+  @ApiOperation({ summary: 'Update notification preferences' })
+  @ApiResponse({
+    status: 200,
+    description: 'Updated notification preferences',
+    type: NotificationPreferencesResponseDto,
+  })
+  async updatePreferences(
+    @CurrentUser('id') userId: string,
+    @Body() updateDto: UpdateNotificationPreferencesDto,
+  ): Promise<NotificationPreferencesResponseDto> {
+    return this.notificationsService.updatePreferences(userId, updateDto);
   }
 }

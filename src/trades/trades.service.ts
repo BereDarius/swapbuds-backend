@@ -542,9 +542,8 @@ export class TradesService {
     });
 
     // Notify responder that trade was cancelled by proposer
-    // We use TRADE_REJECTED type since there's no TRADE_CANCELLED in the enum
     await this.notificationsService.createTradeNotification(
-      NotificationType.TRADE_REJECTED,
+      NotificationType.TRADE_CANCELLED,
       trade.responderId,
       updatedTrade,
     );

@@ -490,7 +490,7 @@ describe('TradesService', () => {
 
       // Verify notification was sent to responder
       expect(notificationsService.createTradeNotification).toHaveBeenCalledWith(
-        'TRADE_REJECTED',
+        'TRADE_CANCELLED',
         mockTradeWithRelations.responderId,
         mockCancelledTrade,
       );

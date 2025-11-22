@@ -40,15 +40,16 @@ model User {
   isVerified Boolean @default(false)
 
   // Relations
-  items           Item[]
-  tradesProposed  Trade[]        @relation("TradeProposer")
-  tradesReceived  Trade[]        @relation("TradeResponder")
-  reviewsGiven    Review[]       @relation("ReviewAuthor")
-  reviewsReceived Review[]       @relation("ReviewTarget")
-  messages        Message[]
-  notifications   Notification[]
-  likes           Like[]
-  comments        Comment[]
+  items                   Item[]
+  tradesProposed          Trade[]                  @relation("TradeProposer")
+  tradesReceived          Trade[]                  @relation("TradeResponder")
+  reviewsGiven            Review[]                 @relation("ReviewAuthor")
+  reviewsReceived         Review[]                 @relation("ReviewTarget")
+  messages                Message[]
+  notifications           Notification[]
+  notificationPreferences NotificationPreferences?
+  likes                   Like[]
+  comments                Comment[]
 
   @@index([email])
   @@index([username])
@@ -280,6 +281,7 @@ enum NotificationType {
   TRADE_PROPOSAL
   TRADE_ACCEPTED
   TRADE_REJECTED
+  TRADE_CANCELLED
   TRADE_COMPLETED
   NEW_MESSAGE
   NEW_COMMENT
@@ -306,4 +308,40 @@ model Notification {
   @@index([isRead])
   @@index([createdAt])
   @@map("notifications")
+}
+
+// ============================================
+// NOTIFICATION PREFERENCES MODEL
+// ============================================
+model NotificationPreferences {
+  id String @id @default(cuid())
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Email notifications
+  emailTradeProposal  Boolean @default(true)
+  emailTradeAccepted  Boolean @default(true)
+  emailTradeRejected  Boolean @default(true)
+  emailTradeCancelled Boolean @default(true)
+  emailNewMessage     Boolean @default(true)
+  emailNewComment     Boolean @default(true)
+  emailNewLike        Boolean @default(false)
+  emailNewReview      Boolean @default(true)
+
+  // Push/In-app notifications
+  pushTradeProposal  Boolean @default(true)
+  pushTradeAccepted  Boolean @default(true)
+  pushTradeRejected  Boolean @default(true)
+  pushTradeCancelled Boolean @default(true)
+  pushNewMessage     Boolean @default(true)
+  pushNewComment     Boolean @default(true)
+  pushNewLike        Boolean @default(true)
+  pushNewReview      Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("notification_preferences")
 }

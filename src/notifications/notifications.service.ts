@@ -1,12 +1,16 @@
+import { MailService } from '@/mail/mail.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import {
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
+  forwardRef,
 } from '@nestjs/common';
 import { NotificationType } from '@prisma/client';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { NotificationResponseDto } from './dto/notification-response.dto';
+import { NotificationsGateway } from './notifications.gateway';
 
 /**
  * Service for managing user notifications
@@ -14,16 +18,31 @@ import { NotificationResponseDto } from './dto/notification-response.dto';
  */
 @Injectable()
 export class NotificationsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => NotificationsGateway))
+    private notificationsGateway: NotificationsGateway,
+    private mailService: MailService,
+  ) {}
 
   /**
    * Create a new notification for a user
    * @param createNotificationDto - Notification data
-   * @returns Created notification
+   * @returns Created notification or null if user disabled this notification type
    */
   async createNotification(
     createNotificationDto: CreateNotificationDto,
-  ): Promise<NotificationResponseDto> {
+  ): Promise<NotificationResponseDto | null> {
+    // Check if user wants push/in-app notifications for this type
+    const shouldSend = await this.shouldSendPush(
+      createNotificationDto.userId,
+      createNotificationDto.type,
+    );
+
+    if (!shouldSend) {
+      return null;
+    }
+
     const notification = await this.prisma.notification.create({
       data: {
         type: createNotificationDto.type,
@@ -34,7 +53,15 @@ export class NotificationsService {
       },
     });
 
-    return this.formatNotificationResponse(notification);
+    const response = this.formatNotificationResponse(notification);
+
+    // Emit real-time notification to user if they're connected
+    this.notificationsGateway.emitNotificationToUser(
+      createNotificationDto.userId,
+      response,
+    );
+
+    return response;
   }
 
   /**
@@ -106,6 +133,9 @@ export class NotificationsService {
       data: { isRead: true },
     });
 
+    // Emit real-time update
+    this.notificationsGateway.emitNotificationRead(userId, notificationId);
+
     return this.formatNotificationResponse(updated);
   }
 
@@ -124,6 +154,9 @@ export class NotificationsService {
         isRead: true,
       },
     });
+
+    // Emit real-time update
+    this.notificationsGateway.emitAllNotificationsRead(userId, result.count);
 
     return { count: result.count };
   }
@@ -155,6 +188,9 @@ export class NotificationsService {
     await this.prisma.notification.delete({
       where: { id: notificationId },
     });
+
+    // Emit real-time update
+    this.notificationsGateway.emitNotificationDeleted(userId, notificationId);
   }
 
   /**
@@ -184,6 +220,10 @@ export class NotificationsService {
         title = 'Trade Rejected';
         message = `${trade.responder.username} rejected your trade proposal for "${trade.itemRequested.title}"`;
         break;
+      case NotificationType.TRADE_CANCELLED:
+        title = 'Trade Cancelled';
+        message = `${trade.proposer.username} cancelled the trade proposal for "${trade.itemRequested.title}"`;
+        break;
       case NotificationType.TRADE_COMPLETED:
         title = 'Trade Completed';
         message = `Your trade with ${trade.responder.username} has been completed successfully`;
@@ -192,6 +232,7 @@ export class NotificationsService {
         return;
     }
 
+    // Create in-app notification (checks preferences internally)
     await this.createNotification({
       type,
       title,
@@ -203,6 +244,201 @@ export class NotificationsService {
         itemRequestedId: trade.itemRequestedId,
       },
     });
+
+    // Send email notification if user preferences allow
+    await this.sendTradeEmail(type, recipientId, trade);
+  }
+
+  /**
+   * Send trade-related email notification
+   * @param type - Notification type
+   * @param recipientId - User ID to receive email
+   * @param trade - Trade object
+   */
+  private async sendTradeEmail(
+    type: NotificationType,
+    recipientId: string,
+    trade: any,
+  ): Promise<void> {
+    // Check if user wants email for this notification type
+    const shouldSend = await this.shouldSendEmail(recipientId, type);
+    if (!shouldSend) {
+      return;
+    }
+
+    // Get recipient user with email
+    const recipient = await this.prisma.user.findUnique({
+      where: { id: recipientId },
+      select: { email: true, username: true },
+    });
+
+    if (!recipient) {
+      return;
+    }
+
+    try {
+      switch (type) {
+        case NotificationType.TRADE_PROPOSAL:
+          await this.mailService.sendTradeProposal(
+            recipient.email,
+            recipient.username,
+            {
+              proposerName: trade.proposer.username,
+              offeredItemName: trade.itemOffered.title,
+              requestedItemName: trade.itemRequested.title,
+              tradeId: trade.id,
+            },
+          );
+          break;
+        case NotificationType.TRADE_ACCEPTED:
+          await this.mailService.sendTradeAccepted(
+            recipient.email,
+            recipient.username,
+            {
+              responderName: trade.responder.username,
+              offeredItemName: trade.itemOffered.title,
+              requestedItemName: trade.itemRequested.title,
+              tradeId: trade.id,
+            },
+          );
+          break;
+        case NotificationType.TRADE_REJECTED:
+          await this.mailService.sendTradeRejected(
+            recipient.email,
+            recipient.username,
+            {
+              responderName: trade.responder.username,
+              offeredItemName: trade.itemOffered.title,
+              requestedItemName: trade.itemRequested.title,
+              tradeId: trade.id,
+            },
+          );
+          break;
+        case NotificationType.TRADE_CANCELLED:
+          await this.mailService.sendTradeCancelled(
+            recipient.email,
+            recipient.username,
+            {
+              proposerName: trade.proposer.username,
+              offeredItemName: trade.itemOffered.title,
+              requestedItemName: trade.itemRequested.title,
+              tradeId: trade.id,
+            },
+          );
+          break;
+        default:
+          break;
+      }
+    } catch (error) {
+      // Log error but don't fail the notification creation
+      console.error('Failed to send email notification:', error);
+    }
+  }
+
+  /**
+   * Get notification preferences for a user
+   * Creates default preferences if they don't exist
+   * @param userId - User ID
+   * @returns User's notification preferences
+   */
+  async getPreferences(userId: string): Promise<any> {
+    let preferences = await this.prisma.notificationPreferences.findUnique({
+      where: { userId },
+    });
+
+    // Create default preferences if they don't exist
+    if (!preferences) {
+      preferences = await this.prisma.notificationPreferences.create({
+        data: { userId },
+      });
+    }
+
+    return preferences;
+  }
+
+  /**
+   * Update notification preferences for a user
+   * @param userId - User ID
+   * @param updateData - Preferences to update
+   * @returns Updated preferences
+   */
+  async updatePreferences(userId: string, updateData: any): Promise<any> {
+    // Ensure preferences exist
+    await this.getPreferences(userId);
+
+    // Update preferences
+    return this.prisma.notificationPreferences.update({
+      where: { userId },
+      data: updateData,
+    });
+  }
+
+  /**
+   * Check if user wants email notifications for a specific type
+   * @param userId - User ID
+   * @param notificationType - Type of notification
+   * @returns True if user wants email for this type
+   */
+  async shouldSendEmail(
+    userId: string,
+    notificationType: NotificationType,
+  ): Promise<boolean> {
+    const preferences = await this.getPreferences(userId);
+
+    switch (notificationType) {
+      case NotificationType.TRADE_PROPOSAL:
+        return preferences.emailTradeProposal;
+      case NotificationType.TRADE_ACCEPTED:
+        return preferences.emailTradeAccepted;
+      case NotificationType.TRADE_REJECTED:
+        return preferences.emailTradeRejected;
+      case NotificationType.TRADE_CANCELLED:
+        return preferences.emailTradeCancelled;
+      case NotificationType.NEW_MESSAGE:
+        return preferences.emailNewMessage;
+      case NotificationType.NEW_COMMENT:
+        return preferences.emailNewComment;
+      case NotificationType.NEW_LIKE:
+        return preferences.emailNewLike;
+      case NotificationType.NEW_REVIEW:
+        return preferences.emailNewReview;
+      default:
+        return true;
+    }
+  }
+
+  /**
+   * Check if user wants push/in-app notifications for a specific type
+   * @param userId - User ID
+   * @param notificationType - Type of notification
+   * @returns True if user wants push notification for this type
+   */
+  async shouldSendPush(
+    userId: string,
+    notificationType: NotificationType,
+  ): Promise<boolean> {
+    const preferences = await this.getPreferences(userId);
+
+    switch (notificationType) {
+      case NotificationType.TRADE_PROPOSAL:
+        return preferences.pushTradeProposal;
+      case NotificationType.TRADE_ACCEPTED:
+        return preferences.pushTradeAccepted;
+      case NotificationType.TRADE_REJECTED:
+        return preferences.pushTradeRejected;
+      case NotificationType.TRADE_CANCELLED:
+        return preferences.pushTradeCancelled;
+      case NotificationType.NEW_MESSAGE:
+        return preferences.pushNewMessage;
+      case NotificationType.NEW_COMMENT:
+        return preferences.pushNewComment;
+      case NotificationType.NEW_LIKE:
+        return preferences.pushNewLike;
+      case NotificationType.NEW_REVIEW:
+        return preferences.pushNewReview;
+      default:
+        return true;
+    }
   }
 
   /**
