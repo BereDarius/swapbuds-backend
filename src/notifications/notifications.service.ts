@@ -1,12 +1,12 @@
-import { CacheService } from '@/cache/cache.service';
+import { Cacheable, CacheInvalidate } from '@/cache/cache.module';
 import { MailService } from '@/mail/mail.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import {
   ForbiddenException,
+  forwardRef,
   Inject,
   Injectable,
   NotFoundException,
-  forwardRef,
 } from '@nestjs/common';
 import { NotificationType } from '@prisma/client';
 import { CreateNotificationDto } from './dto/create-notification.dto';
@@ -24,7 +24,6 @@ export class NotificationsService {
     @Inject(forwardRef(() => NotificationsGateway))
     private notificationsGateway: NotificationsGateway,
     private mailService: MailService,
-    private cacheService: CacheService,
   ) {}
 
   /**
@@ -32,6 +31,9 @@ export class NotificationsService {
    * @param createNotificationDto - Notification data
    * @returns Created notification or null if user disabled this notification type
    */
+  @CacheInvalidate((dto: CreateNotificationDto) => [
+    `users:${dto.userId}:notifications:*`,
+  ])
   async createNotification(
     createNotificationDto: CreateNotificationDto,
   ): Promise<NotificationResponseDto | null> {
@@ -56,11 +58,6 @@ export class NotificationsService {
     });
 
     const response = this.formatNotificationResponse(notification);
-
-    // Invalidate unread count cache after creating notification
-    await this.cacheService.del(
-      this.cacheService.getUnreadNotificationsKey(createNotificationDto.userId),
-    );
 
     // Emit real-time notification to user if they're connected
     this.notificationsGateway.emitNotificationToUser(
@@ -101,26 +98,17 @@ export class NotificationsService {
    * @param userId - User ID
    * @returns Count of unread notifications
    */
+  @Cacheable({
+    ttl: 60000, // 1 minute
+    keyGenerator: (userId: string) => `users:${userId}:notifications:unread`,
+  })
   async getUnreadCount(userId: string): Promise<number> {
-    // Try cache first
-    const cacheKey = this.cacheService.getUnreadNotificationsKey(userId);
-    const cached = await this.cacheService.get<number>(cacheKey);
-    if (cached !== null) {
-      return cached;
-    }
-
-    // Fetch from database if not cached
-    const count = await this.prisma.notification.count({
+    return this.prisma.notification.count({
       where: {
         userId,
         isRead: false,
       },
     });
-
-    // Cache the result for 1 minute
-    await this.cacheService.set(cacheKey, count, 60000);
-
-    return count;
   }
 
   /**
@@ -129,6 +117,9 @@ export class NotificationsService {
    * @param userId - User ID (for authorization)
    * @returns Updated notification
    */
+  @CacheInvalidate((notificationId: string, userId: string) => [
+    `users:${userId}:notifications:*`,
+  ])
   async markAsRead(
     notificationId: string,
     userId: string,
@@ -153,11 +144,6 @@ export class NotificationsService {
       data: { isRead: true },
     });
 
-    // Invalidate unread count cache
-    await this.cacheService.del(
-      this.cacheService.getUnreadNotificationsKey(userId),
-    );
-
     // Emit real-time update
     this.notificationsGateway.emitNotificationRead(userId, notificationId);
 
@@ -169,6 +155,7 @@ export class NotificationsService {
    * @param userId - User ID
    * @returns Count of updated notifications
    */
+  @CacheInvalidate((userId: string) => [`users:${userId}:notifications:*`])
   async markAllAsRead(userId: string): Promise<{ count: number }> {
     const result = await this.prisma.notification.updateMany({
       where: {

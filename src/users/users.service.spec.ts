@@ -65,7 +65,6 @@ describe('UsersService', () => {
 
       const result = await service.getUserProfile(userId);
 
-      expect(mockCacheService.getUserKey).toHaveBeenCalledWith(userId);
       expect(mockCacheService.get).toHaveBeenCalledWith(`users:${userId}`);
       expect(prisma.user.findUnique).not.toHaveBeenCalled(); // DB not queried on cache hit
       expect(result).toEqual(cachedProfile);

@@ -1,4 +1,4 @@
-import { CacheService } from '@/cache/cache.service';
+import { Cacheable, CacheInvalidate } from '@/cache/cache.module';
 import { PrismaService } from '@/prisma/prisma.service';
 import {
   ForbiddenException,
@@ -15,10 +15,7 @@ import { UpdateItemDto } from './dto/update-item.dto';
  */
 @Injectable()
 export class ItemsService {
-  constructor(
-    private prisma: PrismaService,
-    private cacheService: CacheService,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   /**
    * Create a new item for a user
@@ -26,6 +23,10 @@ export class ItemsService {
    * @param createItemDto - Item data
    * @returns Created item with owner details
    */
+  @CacheInvalidate((userId: string) => [
+    'items:list:0:20:all',
+    `users:${userId}:items`,
+  ])
   async create(
     userId: string,
     createItemDto: CreateItemDto,
@@ -68,10 +69,6 @@ export class ItemsService {
       },
     });
 
-    // Invalidate item list caches and user's items cache when new item is created
-    await this.cacheService.invalidateItem(item.id);
-    await this.cacheService.del(this.cacheService.getUserItemsKey(userId));
-
     return this.mapToResponse(item);
   }
 
@@ -81,18 +78,14 @@ export class ItemsService {
    * @param take - Number of items to take
    * @returns Array of items
    */
+  @Cacheable({
+    ttl: 300000, // 5 minutes
+    keyGenerator: (skip: number, take: number) => {
+      const page = Math.floor(skip / take);
+      return `items:list:${page}:${take}:all`;
+    },
+  })
   async findAll(skip = 0, take = 20): Promise<ItemResponseDto[]> {
-    // Generate cache key based on pagination
-    const page = Math.floor(skip / take);
-    const cacheKey = this.cacheService.getItemsListKey(page, take);
-
-    // Try to get from cache first
-    const cached = await this.cacheService.get<ItemResponseDto[]>(cacheKey);
-    if (cached) {
-      return cached;
-    }
-
-    // If not in cache, fetch from database
     const items = await this.prisma.item.findMany({
       skip,
       take,
@@ -115,12 +108,7 @@ export class ItemsService {
       },
     });
 
-    const response = items.map((item) => this.mapToResponse(item));
-
-    // Cache the result for 5 minutes (300000ms)
-    await this.cacheService.set(cacheKey, response, 300000);
-
-    return response;
+    return items.map((item) => this.mapToResponse(item));
   }
 
   /**
@@ -128,15 +116,11 @@ export class ItemsService {
    * @param userId - User ID
    * @returns Array of user's items
    */
+  @Cacheable({
+    ttl: 300000, // 5 minutes
+    keyGenerator: (userId: string) => `users:${userId}:items`,
+  })
   async findByUser(userId: string): Promise<ItemResponseDto[]> {
-    // Try cache first
-    const cacheKey = this.cacheService.getUserItemsKey(userId);
-    const cached = await this.cacheService.get<ItemResponseDto[]>(cacheKey);
-    if (cached) {
-      return cached;
-    }
-
-    // Fetch from database if not cached
     const items = await this.prisma.item.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
@@ -158,12 +142,7 @@ export class ItemsService {
       },
     });
 
-    const response = items.map((item) => this.mapToResponse(item));
-
-    // Cache the result for 5 minutes
-    await this.cacheService.set(cacheKey, response, 300000);
-
-    return response;
+    return items.map((item) => this.mapToResponse(item));
   }
 
   /**
@@ -172,15 +151,11 @@ export class ItemsService {
    * @returns Item details
    * @throws NotFoundException if item not found
    */
+  @Cacheable({
+    ttl: 300000, // 5 minutes
+    keyGenerator: (id: string) => `items:${id}`,
+  })
   async findOne(id: string): Promise<ItemResponseDto> {
-    // Try cache first
-    const cacheKey = this.cacheService.getItemKey(id);
-    const cached = await this.cacheService.get<ItemResponseDto>(cacheKey);
-    if (cached) {
-      return cached;
-    }
-
-    // Fetch from database if not cached
     const item = await this.prisma.item.findUnique({
       where: { id },
       include: {
@@ -205,12 +180,7 @@ export class ItemsService {
       throw new NotFoundException(`Item with ID ${id} not found`);
     }
 
-    const response = this.mapToResponse(item);
-
-    // Cache the result for 5 minutes
-    await this.cacheService.set(cacheKey, response, 300000);
-
-    return response;
+    return this.mapToResponse(item);
   }
 
   /**
@@ -222,6 +192,10 @@ export class ItemsService {
    * @throws NotFoundException if item not found
    * @throws ForbiddenException if user is not the owner
    */
+  @CacheInvalidate((id: string, userId: string) => [
+    'items:*',
+    `users:${userId}:*`,
+  ])
   async update(
     id: string,
     userId: string,
@@ -276,10 +250,6 @@ export class ItemsService {
       },
     });
 
-    // Invalidate cache for this item, lists, and user's items
-    await this.cacheService.invalidateItem(id);
-    await this.cacheService.del(this.cacheService.getUserItemsKey(userId));
-
     return this.mapToResponse(updatedItem);
   }
 
@@ -290,6 +260,10 @@ export class ItemsService {
    * @throws NotFoundException if item not found
    * @throws ForbiddenException if user is not the owner
    */
+  @CacheInvalidate((id: string, userId: string) => [
+    'items:*',
+    `users:${userId}:*`,
+  ])
   async remove(id: string, userId: string): Promise<void> {
     const item = await this.prisma.item.findUnique({ where: { id } });
 
@@ -302,10 +276,6 @@ export class ItemsService {
     }
 
     await this.prisma.item.delete({ where: { id } });
-
-    // Invalidate cache for this item, lists, and user's items
-    await this.cacheService.invalidateItem(id);
-    await this.cacheService.del(this.cacheService.getUserItemsKey(userId));
   }
 
   /**

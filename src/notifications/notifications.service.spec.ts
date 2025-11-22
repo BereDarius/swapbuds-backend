@@ -175,9 +175,6 @@ describe('NotificationsService', () => {
 
       const result = await service.getUnreadCount(userId);
 
-      expect(mockCacheService.getUnreadNotificationsKey).toHaveBeenCalledWith(
-        userId,
-      );
       expect(mockCacheService.get).toHaveBeenCalledWith(
         `users:${userId}:notifications:unread`,
       );

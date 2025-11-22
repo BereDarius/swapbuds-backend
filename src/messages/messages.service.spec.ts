@@ -466,9 +466,6 @@ describe('MessagesService', () => {
 
       const result = await service.getUnreadCount(userId);
 
-      expect(mockCacheService.getUnreadMessagesKey).toHaveBeenCalledWith(
-        userId,
-      );
       expect(mockCacheService.get).toHaveBeenCalledWith(
         `users:${userId}:messages:unread`,
       );

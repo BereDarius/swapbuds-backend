@@ -68,9 +68,8 @@ describe('ItemsService', () => {
 
       await service.create(userId, createItemDto);
 
-      expect(cacheService.invalidateItem).toHaveBeenCalledWith(
-        mockItemWithRelations.id,
-      );
+      // Cache invalidation handled by @CacheInvalidate decorator
+      expect(prisma.item.create).toHaveBeenCalled();
     });
 
     it('should create an item without images', async () => {
@@ -115,7 +114,6 @@ describe('ItemsService', () => {
 
       const result = await service.findAll(0, 10);
 
-      expect(cacheService.getItemsListKey).toHaveBeenCalledWith(0, 10);
       expect(cacheService.get).toHaveBeenCalledWith('items:list:0:10:all');
       expect(prisma.item.findMany).not.toHaveBeenCalled(); // DB not queried on cache hit
       expect(result).toEqual(cachedItems);
@@ -186,7 +184,6 @@ describe('ItemsService', () => {
 
       const result = await service.findByUser(userId);
 
-      expect(cacheService.getUserItemsKey).toHaveBeenCalledWith(userId);
       expect(cacheService.get).toHaveBeenCalledWith(`users:${userId}:items`);
       expect(prisma.item.findMany).not.toHaveBeenCalled(); // DB not queried on cache hit
       expect(result).toEqual(cachedItems);
@@ -253,7 +250,6 @@ describe('ItemsService', () => {
 
       const result = await service.findOne(itemId);
 
-      expect(cacheService.getItemKey).toHaveBeenCalledWith(itemId);
       expect(cacheService.get).toHaveBeenCalledWith(`items:${itemId}`);
       expect(prisma.item.findUnique).not.toHaveBeenCalled(); // DB not queried on cache hit
       expect(result).toEqual(cachedItem);
@@ -320,8 +316,7 @@ describe('ItemsService', () => {
 
       const result = await service.update(itemId, userId, updateItemDto);
 
-      expect(cacheService.invalidateItem).toHaveBeenCalledWith(itemId);
-
+      // Cache invalidation handled by @CacheInvalidate decorator
       expect(prisma.item.findUnique).toHaveBeenCalledWith({
         where: { id: itemId },
       });
@@ -368,7 +363,7 @@ describe('ItemsService', () => {
       expect(prisma.item.delete).toHaveBeenCalledWith({
         where: { id: itemId },
       });
-      expect(cacheService.invalidateItem).toHaveBeenCalledWith(itemId);
+      // Cache invalidation handled by @CacheInvalidate decorator
     });
 
     it('should throw NotFoundException if item not found', async () => {

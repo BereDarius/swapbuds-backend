@@ -1,4 +1,4 @@
-import { CacheService } from '@/cache/cache.service';
+import { Cacheable, CacheInvalidate } from '@/cache/cache.module';
 import { NotificationsGateway } from '@/notifications/gateway/notifications.gateway';
 import { NotificationsService } from '@/notifications/notifications.service';
 import { PrismaService } from '@/prisma/prisma.service';
@@ -19,13 +19,15 @@ export class MessagesService {
     private prisma: PrismaService,
     private notificationsGateway: NotificationsGateway,
     private notificationsService: NotificationsService,
-    private cacheService: CacheService,
   ) {}
 
   /**
    * Send a message to another user
    * Creates conversation if it doesn't exist
    */
+  @CacheInvalidate((senderId: string, dto: SendMessageDto) => [
+    `users:${dto.recipientId}:messages:*`,
+  ])
   async sendMessage(
     senderId: string,
     dto: SendMessageDto,
@@ -80,11 +82,6 @@ export class MessagesService {
     });
 
     const formattedMessage = this.formatMessageResponse(message);
-
-    // Invalidate unread count cache for the recipient
-    await this.cacheService.del(
-      this.cacheService.getUnreadMessagesKey(dto.recipientId),
-    );
 
     // Emit real-time message to recipient
     this.notificationsGateway.emitMessageToUser(
@@ -251,6 +248,7 @@ export class MessagesService {
   /**
    * Mark message as read
    */
+  @CacheInvalidate((userId: string) => [`users:${userId}:messages:*`])
   async markAsRead(
     userId: string,
     messageId: string,
@@ -305,9 +303,6 @@ export class MessagesService {
 
     const formattedMessage = this.formatMessageResponse(updatedMessage);
 
-    // Invalidate unread count cache for the recipient
-    await this.cacheService.del(this.cacheService.getUnreadMessagesKey(userId));
-
     // Emit real-time read status to sender
     this.notificationsGateway.emitMessageRead(
       message.senderId,
@@ -321,6 +316,7 @@ export class MessagesService {
   /**
    * Mark all messages in a conversation as read
    */
+  @CacheInvalidate((userId: string) => [`users:${userId}:messages:*`])
   async markConversationAsRead(
     userId: string,
     conversationId: string,
@@ -405,15 +401,11 @@ export class MessagesService {
   /**
    * Get unread message count for a user (with Redis caching)
    */
+  @Cacheable({
+    ttl: 60000, // 1 minute
+    keyGenerator: (userId: string) => `users:${userId}:messages:unread`,
+  })
   async getUnreadCount(userId: string): Promise<number> {
-    // Try cache first
-    const cacheKey = this.cacheService.getUnreadMessagesKey(userId);
-    const cached = await this.cacheService.get<number>(cacheKey);
-    if (cached !== null) {
-      return cached;
-    }
-
-    // Fetch from database if not cached
     const conversations = await this.prisma.conversation.findMany({
       where: {
         OR: [{ user1Id: userId }, { user2Id: userId }],
@@ -423,7 +415,7 @@ export class MessagesService {
 
     const conversationIds = conversations.map((c) => c.id);
 
-    const count = await this.prisma.message.count({
+    return this.prisma.message.count({
       where: {
         conversationId: { in: conversationIds },
         senderId: { not: userId },
@@ -431,11 +423,6 @@ export class MessagesService {
         isDeleted: false,
       },
     });
-
-    // Cache the result for 1 minute
-    await this.cacheService.set(cacheKey, count, 60000);
-
-    return count;
   }
 
   /**
