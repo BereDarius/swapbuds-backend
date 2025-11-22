@@ -8,7 +8,7 @@ import * as crypto from 'crypto';
 import { Response } from 'express';
 import { Observable, of } from 'rxjs';
 import { tap } from 'rxjs/operators';
-import { CacheService } from './cache.service';
+import { CacheService } from '../cache.service';
 
 /**
  * Options for HTTP caching interceptor

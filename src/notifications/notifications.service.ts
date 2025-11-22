@@ -11,7 +11,7 @@ import {
 import { NotificationType } from '@prisma/client';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { NotificationResponseDto } from './dto/notification-response.dto';
-import { NotificationsGateway } from './notifications.gateway';
+import { NotificationsGateway } from './gateway/notifications.gateway';
 
 /**
  * Service for managing user notifications

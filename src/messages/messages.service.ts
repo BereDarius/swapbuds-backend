@@ -1,5 +1,5 @@
 import { CacheService } from '@/cache/cache.service';
-import { NotificationsGateway } from '@/notifications/notifications.gateway';
+import { NotificationsGateway } from '@/notifications/gateway/notifications.gateway';
 import { NotificationsService } from '@/notifications/notifications.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import {

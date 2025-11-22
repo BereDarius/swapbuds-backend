@@ -15,7 +15,7 @@ import { mockTradeWithRelations } from '@/test/fixtures/trade.fixture';
 import { mockPrismaService } from '@/test/mocks/prisma.mock';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { NotificationType } from '@prisma/client';
-import { NotificationsGateway } from './notifications.gateway';
+import { NotificationsGateway } from './gateway/notifications.gateway';
 
 const mockCacheService = {
   get: jest.fn().mockResolvedValue(null),

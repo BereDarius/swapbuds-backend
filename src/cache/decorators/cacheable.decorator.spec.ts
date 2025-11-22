@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { CacheService } from './cache.service';
+import { CacheService } from '../cache.service';
 import { Cacheable, CacheInvalidate } from './cacheable.decorator';
 
 describe('Cacheable Decorator', () => {

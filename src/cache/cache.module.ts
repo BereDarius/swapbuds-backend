@@ -25,5 +25,5 @@ import { CacheService } from './cache.service';
 export class CacheModule {}
 
 // Export decorators and interceptors for convenience
-export * from './cacheable.decorator';
-export * from './http-cache.interceptor';
+export * from './decorators/cacheable.decorator';
+export * from './interceptors/http-cache.interceptor';

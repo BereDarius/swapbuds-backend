@@ -3,8 +3,8 @@ import { MailModule } from '@/mail/mail.module';
 import { PrismaModule } from '@/prisma/prisma.module';
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
+import { NotificationsGateway } from './gateway/notifications.gateway';
 import { NotificationsController } from './notifications.controller';
-import { NotificationsGateway } from './notifications.gateway';
 import { NotificationsService } from './notifications.service';
 
 @Module({
