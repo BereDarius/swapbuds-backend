@@ -31,6 +31,69 @@ export class TradesService {
   ) {}
 
   /**
+   * Get standard include object for trade queries
+   * Handles both legacy single-item and new multi-item trades
+   */
+  private getTradeInclude() {
+    return {
+      proposer: {
+        select: {
+          id: true,
+          username: true,
+          avatarUrl: true,
+        },
+      },
+      responder: {
+        select: {
+          id: true,
+          username: true,
+          avatarUrl: true,
+        },
+      },
+      // Legacy single-item fields
+      itemOffered: {
+        select: {
+          id: true,
+          title: true,
+          images: {
+            select: { url: true },
+            orderBy: { order: 'asc' as const },
+            take: 1,
+          },
+        },
+      },
+      itemRequested: {
+        select: {
+          id: true,
+          title: true,
+          images: {
+            select: { url: true },
+            orderBy: { order: 'asc' as const },
+            take: 1,
+          },
+        },
+      },
+      // Multi-item support
+      tradeItems: {
+        include: {
+          item: {
+            select: {
+              id: true,
+              title: true,
+              images: {
+                select: { url: true },
+                orderBy: { order: 'asc' as const },
+                take: 1,
+              },
+            },
+          },
+        },
+        orderBy: { order: 'asc' as const },
+      },
+    };
+  }
+
+  /**
    * Create a new trade proposal
    * @param proposerId - ID of user proposing the trade
    * @param createTradeDto - Trade details
@@ -38,15 +101,71 @@ export class TradesService {
    */
   @CacheInvalidate((proposerId: string, dto: CreateTradeDto) => [
     `users:${proposerId}:trades:*`,
-    `users:${dto.itemRequestedId}:trades:*`,
+    `users:${dto.itemRequestedId || dto.itemsRequestedIds?.[0]}:trades:*`,
     `trades:*`,
   ])
   async createTrade(
     proposerId: string,
     createTradeDto: CreateTradeDto,
   ): Promise<TradeResponseDto> {
-    const { itemOfferedId, itemRequestedId, message } = createTradeDto;
+    const {
+      itemOfferedId,
+      itemRequestedId,
+      itemsOfferedIds,
+      itemsRequestedIds,
+      message,
+    } = createTradeDto;
 
+    // Determine if single-item (legacy) or multi-item trade
+    const isMultiItem =
+      (itemsOfferedIds && itemsOfferedIds.length > 0) ||
+      (itemsRequestedIds && itemsRequestedIds.length > 0);
+
+    // Validate that either legacy OR new format is used, not both
+    if (
+      isMultiItem &&
+      (itemOfferedId !== undefined || itemRequestedId !== undefined)
+    ) {
+      throw new BadRequestException(
+        'Cannot mix legacy (itemOfferedId/itemRequestedId) and new (itemsOfferedIds/itemsRequestedIds) formats',
+      );
+    }
+
+    // Validate that at least one format is provided
+    if (!isMultiItem && (!itemOfferedId || !itemRequestedId)) {
+      throw new BadRequestException(
+        'Must provide either legacy fields (itemOfferedId, itemRequestedId) or new fields (itemsOfferedIds, itemsRequestedIds)',
+      );
+    }
+
+    // Handle multi-item trades
+    if (isMultiItem) {
+      return this.createMultiItemTrade(
+        proposerId,
+        itemsOfferedIds || [],
+        itemsRequestedIds || [],
+        message,
+      );
+    }
+
+    // Handle legacy single-item trades (backward compatibility)
+    return this.createSingleItemTrade(
+      proposerId,
+      itemOfferedId!,
+      itemRequestedId!,
+      message,
+    );
+  }
+
+  /**
+   * Create a legacy single-item trade (backward compatibility)
+   */
+  private async createSingleItemTrade(
+    proposerId: string,
+    itemOfferedId: string,
+    itemRequestedId: string,
+    message?: string,
+  ): Promise<TradeResponseDto> {
     // Validate items exist
     const [itemOffered, itemRequested] = await Promise.all([
       this.prisma.item.findUnique({
@@ -166,18 +285,108 @@ export class TradesService {
   }
 
   /**
-   * Get all trades for a user (proposed or received)
-   * @param userId - User ID
-   * @returns Array of trades
+   * Create a multi-item trade
    */
-  @Cacheable({
-    ttl: 60000, // 1 minute
-    keyGenerator: (userId: string) => `users:${userId}:trades:all`,
-  })
-  async getUserTrades(userId: string): Promise<TradeResponseDto[]> {
-    const trades = await this.prisma.trade.findMany({
-      where: {
-        OR: [{ proposerId: userId }, { responderId: userId }],
+  private async createMultiItemTrade(
+    proposerId: string,
+    itemsOfferedIds: string[],
+    itemsRequestedIds: string[],
+    message?: string,
+  ): Promise<TradeResponseDto> {
+    // Validate at least one item on each side
+    if (itemsOfferedIds.length === 0 || itemsRequestedIds.length === 0) {
+      throw new BadRequestException(
+        'Multi-item trades require at least one item on each side',
+      );
+    }
+
+    // Fetch all items
+    const allItemIds = [...itemsOfferedIds, ...itemsRequestedIds];
+    const items = await this.prisma.item.findMany({
+      where: { id: { in: allItemIds } },
+      include: { user: true },
+    });
+
+    // Validate all items exist
+    if (items.length !== allItemIds.length) {
+      const foundIds = items.map((i) => i.id);
+      const missingIds = allItemIds.filter((id) => !foundIds.includes(id));
+      throw new NotFoundException(`Items not found: ${missingIds.join(', ')}`);
+    }
+
+    // Separate offered and requested items
+    const itemsOffered = items.filter((i) => itemsOfferedIds.includes(i.id));
+    const itemsRequested = items.filter((i) =>
+      itemsRequestedIds.includes(i.id),
+    );
+
+    // Validate proposer owns all offered items
+    const notOwnedItems = itemsOffered.filter((i) => i.userId !== proposerId);
+    if (notOwnedItems.length > 0) {
+      throw new ForbiddenException(
+        `You don't own these items: ${notOwnedItems.map((i) => i.title).join(', ')}`,
+      );
+    }
+
+    // Get responder ID from first requested item
+    const responderId = itemsRequested[0].userId;
+
+    // Validate all requested items belong to same user
+    const differentOwners = itemsRequested.filter(
+      (i) => i.userId !== responderId,
+    );
+    if (differentOwners.length > 0) {
+      throw new BadRequestException(
+        'All requested items must belong to the same user',
+      );
+    }
+
+    // Validate not trading with yourself
+    if (responderId === proposerId) {
+      throw new BadRequestException('Cannot trade with yourself');
+    }
+
+    // Validate all items are available
+    const unavailableOffered = itemsOffered.filter(
+      (i) => i.status !== ItemStatus.AVAILABLE,
+    );
+    if (unavailableOffered.length > 0) {
+      throw new BadRequestException(
+        `These items you're offering are not available: ${unavailableOffered.map((i) => i.title).join(', ')}`,
+      );
+    }
+
+    const unavailableRequested = itemsRequested.filter(
+      (i) => i.status !== ItemStatus.AVAILABLE,
+    );
+    if (unavailableRequested.length > 0) {
+      throw new BadRequestException(
+        `These requested items are not available: ${unavailableRequested.map((i) => i.title).join(', ')}`,
+      );
+    }
+
+    // Create the trade with trade items
+    const trade = await this.prisma.trade.create({
+      data: {
+        proposerId,
+        responderId,
+        message,
+        status: TradeStatus.PENDING,
+        expiresAt: this.tradeExpirationService.calculateExpirationDate(),
+        tradeItems: {
+          create: [
+            ...itemsOfferedIds.map((itemId, index) => ({
+              itemId,
+              side: 'OFFERED' as const,
+              order: index,
+            })),
+            ...itemsRequestedIds.map((itemId, index) => ({
+              itemId,
+              side: 'REQUESTED' as const,
+              order: index,
+            })),
+          ],
+        },
       },
       include: {
         proposer: {
@@ -194,29 +403,50 @@ export class TradesService {
             avatarUrl: true,
           },
         },
-        itemOffered: {
-          select: {
-            id: true,
-            title: true,
-            images: {
-              select: { url: true },
-              orderBy: { order: 'asc' },
-              take: 1,
+        tradeItems: {
+          include: {
+            item: {
+              select: {
+                id: true,
+                title: true,
+                images: {
+                  select: { url: true },
+                  orderBy: { order: 'asc' },
+                  take: 1,
+                },
+              },
             },
           },
-        },
-        itemRequested: {
-          select: {
-            id: true,
-            title: true,
-            images: {
-              select: { url: true },
-              orderBy: { order: 'asc' },
-              take: 1,
-            },
-          },
+          orderBy: { order: 'asc' },
         },
       },
+    });
+
+    // Send notification to responder about new trade proposal
+    await this.notificationsService.createTradeNotification(
+      NotificationType.TRADE_PROPOSAL,
+      trade.responderId,
+      trade,
+    );
+
+    return this.formatTradeResponse(trade);
+  }
+
+  /**
+   * Get all trades for a user (proposed or received)
+   * @param userId - User ID
+   * @returns Array of trades
+   */
+  @Cacheable({
+    ttl: 60000, // 1 minute
+    keyGenerator: (userId: string) => `users:${userId}:trades:all`,
+  })
+  async getUserTrades(userId: string): Promise<TradeResponseDto[]> {
+    const trades = await this.prisma.trade.findMany({
+      where: {
+        OR: [{ proposerId: userId }, { responderId: userId }],
+      },
+      include: this.getTradeInclude(),
       orderBy: { createdAt: 'desc' },
     });
 
@@ -1136,6 +1366,42 @@ export class TradesService {
    * Format trade response with proper structure
    */
   private formatTradeResponse(trade: any): TradeResponseDto {
+    const isMultiItem = trade.tradeItems && trade.tradeItems.length > 0;
+
+    // For multi-item trades
+    if (isMultiItem) {
+      const offeredItems = trade.tradeItems
+        .filter((ti: any) => ti.side === 'OFFERED')
+        .map((ti: any) => ({
+          id: ti.item.id,
+          title: ti.item.title,
+          images: ti.item.images.map((img: any) => img.url),
+        }));
+
+      const requestedItems = trade.tradeItems
+        .filter((ti: any) => ti.side === 'REQUESTED')
+        .map((ti: any) => ({
+          id: ti.item.id,
+          title: ti.item.title,
+          images: ti.item.images.map((img: any) => img.url),
+        }));
+
+      return {
+        id: trade.id,
+        status: trade.status,
+        proposer: trade.proposer,
+        responder: trade.responder,
+        itemsOffered: offeredItems,
+        itemsRequested: requestedItems,
+        message: trade.message,
+        createdAt: trade.createdAt,
+        updatedAt: trade.updatedAt,
+        completedAt: trade.completedAt,
+        expiresAt: trade.expiresAt,
+      };
+    }
+
+    // For legacy single-item trades
     return {
       id: trade.id,
       status: trade.status,

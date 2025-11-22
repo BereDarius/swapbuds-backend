@@ -289,6 +289,341 @@ describe('TradesService', () => {
     });
   });
 
+  describe('createTrade - Multi-Item', () => {
+    it('should create a multi-item trade successfully', async () => {
+      const proposerId = 'user-123';
+      const createTradeDto = {
+        itemsOfferedIds: ['item-123', 'item-789'],
+        itemsRequestedIds: ['item-456'],
+        message: 'Would love to trade multiple items!',
+      };
+
+      const itemsOffered = [
+        {
+          ...mockItem,
+          id: 'item-123',
+          userId: proposerId,
+          status: ItemStatus.AVAILABLE,
+          user: { id: proposerId },
+        },
+        {
+          ...mockItem,
+          id: 'item-789',
+          userId: proposerId,
+          status: ItemStatus.AVAILABLE,
+          user: { id: proposerId },
+        },
+      ];
+
+      const itemsRequested = [
+        {
+          ...mockItems[1],
+          id: 'item-456',
+          userId: 'user-456',
+          status: ItemStatus.AVAILABLE,
+          user: { id: 'user-456' },
+        },
+      ];
+
+      mockPrismaService.item.findMany.mockResolvedValue([
+        ...itemsOffered,
+        ...itemsRequested,
+      ]);
+
+      const mockMultiItemTrade = {
+        id: 'trade-multi-123',
+        status: TradeStatus.PENDING,
+        proposerId,
+        responderId: 'user-456',
+        message: createTradeDto.message,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        completedAt: null,
+        expiresAt: new Date('2024-11-25T10:30:00Z'),
+        proposer: {
+          id: proposerId,
+          username: 'proposer',
+          avatarUrl: null,
+        },
+        responder: {
+          id: 'user-456',
+          username: 'responder',
+          avatarUrl: null,
+        },
+        tradeItems: [
+          {
+            id: 'ti-1',
+            tradeId: 'trade-multi-123',
+            itemId: 'item-123',
+            side: 'OFFERED',
+            order: 0,
+            item: {
+              id: 'item-123',
+              title: 'Item 1',
+              images: [{ url: 'http://example.com/img1.jpg' }],
+            },
+          },
+          {
+            id: 'ti-2',
+            tradeId: 'trade-multi-123',
+            itemId: 'item-789',
+            side: 'OFFERED',
+            order: 1,
+            item: {
+              id: 'item-789',
+              title: 'Item 2',
+              images: [{ url: 'http://example.com/img2.jpg' }],
+            },
+          },
+          {
+            id: 'ti-3',
+            tradeId: 'trade-multi-123',
+            itemId: 'item-456',
+            side: 'REQUESTED',
+            order: 0,
+            item: {
+              id: 'item-456',
+              title: 'Item 3',
+              images: [{ url: 'http://example.com/img3.jpg' }],
+            },
+          },
+        ],
+      };
+
+      mockPrismaService.trade.create.mockResolvedValue(mockMultiItemTrade);
+
+      const result = await service.createTrade(proposerId, createTradeDto);
+
+      expect(result).toHaveProperty('id');
+      expect(result.status).toBe(TradeStatus.PENDING);
+      expect(result.itemsOffered).toHaveLength(2);
+      expect(result.itemsRequested).toHaveLength(1);
+      expect(result.itemOffered).toBeUndefined(); // Legacy field should not be set
+      expect(result.itemRequested).toBeUndefined(); // Legacy field should not be set
+
+      expect(prisma.trade.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            proposerId,
+            responderId: 'user-456',
+            message: createTradeDto.message,
+            status: TradeStatus.PENDING,
+            tradeItems: expect.objectContaining({
+              create: expect.arrayContaining([
+                expect.objectContaining({
+                  itemId: 'item-123',
+                  side: 'OFFERED',
+                  order: 0,
+                }),
+                expect.objectContaining({
+                  itemId: 'item-789',
+                  side: 'OFFERED',
+                  order: 1,
+                }),
+                expect.objectContaining({
+                  itemId: 'item-456',
+                  side: 'REQUESTED',
+                  order: 0,
+                }),
+              ]),
+            }),
+          }),
+        }),
+      );
+
+      expect(notificationsService.createTradeNotification).toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException when mixing legacy and new formats', async () => {
+      const proposerId = 'user-123';
+      const createTradeDto = {
+        itemOfferedId: 'item-123',
+        itemsOfferedIds: ['item-123', 'item-789'],
+      };
+
+      await expect(
+        service.createTrade(proposerId, createTradeDto as any),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException when multi-item arrays are empty', async () => {
+      const proposerId = 'user-123';
+      const createTradeDto = {
+        itemsOfferedIds: [],
+        itemsRequestedIds: ['item-456'],
+      };
+
+      await expect(
+        service.createTrade(proposerId, createTradeDto as any),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw NotFoundException when an item in multi-item trade does not exist', async () => {
+      const proposerId = 'user-123';
+      const createTradeDto = {
+        itemsOfferedIds: ['item-123', 'item-nonexistent'],
+        itemsRequestedIds: ['item-456'],
+      };
+
+      mockPrismaService.item.findMany.mockResolvedValue([
+        {
+          ...mockItem,
+          id: 'item-123',
+          userId: proposerId,
+          user: { id: proposerId },
+        },
+        {
+          ...mockItems[1],
+          id: 'item-456',
+          userId: 'user-456',
+          user: { id: 'user-456' },
+        },
+      ]);
+
+      await expect(
+        service.createTrade(proposerId, createTradeDto),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw ForbiddenException when proposer does not own all offered items', async () => {
+      const proposerId = 'user-123';
+      const createTradeDto = {
+        itemsOfferedIds: ['item-123', 'item-789'],
+        itemsRequestedIds: ['item-456'],
+      };
+
+      mockPrismaService.item.findMany.mockResolvedValue([
+        {
+          ...mockItem,
+          id: 'item-123',
+          userId: proposerId,
+          user: { id: proposerId },
+        },
+        {
+          ...mockItem,
+          id: 'item-789',
+          userId: 'someone-else',
+          user: { id: 'someone-else' },
+        },
+        {
+          ...mockItems[1],
+          id: 'item-456',
+          userId: 'user-456',
+          user: { id: 'user-456' },
+        },
+      ]);
+
+      await expect(
+        service.createTrade(proposerId, createTradeDto),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw BadRequestException when requested items belong to different users', async () => {
+      const proposerId = 'user-123';
+      const createTradeDto = {
+        itemsOfferedIds: ['item-123'],
+        itemsRequestedIds: ['item-456', 'item-789'],
+      };
+
+      mockPrismaService.item.findMany.mockResolvedValue([
+        {
+          ...mockItem,
+          id: 'item-123',
+          userId: proposerId,
+          user: { id: proposerId },
+        },
+        {
+          ...mockItems[1],
+          id: 'item-456',
+          userId: 'user-456',
+          user: { id: 'user-456' },
+        },
+        {
+          ...mockItems[1],
+          id: 'item-789',
+          userId: 'user-789',
+          user: { id: 'user-789' },
+        },
+      ]);
+
+      await expect(
+        service.createTrade(proposerId, createTradeDto),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException when offered items are not available', async () => {
+      const proposerId = 'user-123';
+      const createTradeDto = {
+        itemsOfferedIds: ['item-123', 'item-789'],
+        itemsRequestedIds: ['item-456'],
+      };
+
+      mockPrismaService.item.findMany.mockResolvedValue([
+        {
+          ...mockItem,
+          id: 'item-123',
+          userId: proposerId,
+          status: ItemStatus.AVAILABLE,
+          user: { id: proposerId },
+        },
+        {
+          ...mockItem,
+          id: 'item-789',
+          userId: proposerId,
+          status: ItemStatus.TRADED,
+          user: { id: proposerId },
+        },
+        {
+          ...mockItems[1],
+          id: 'item-456',
+          userId: 'user-456',
+          status: ItemStatus.AVAILABLE,
+          user: { id: 'user-456' },
+        },
+      ]);
+
+      await expect(
+        service.createTrade(proposerId, createTradeDto),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException when requested items are not available', async () => {
+      const proposerId = 'user-123';
+      const createTradeDto = {
+        itemsOfferedIds: ['item-123'],
+        itemsRequestedIds: ['item-456', 'item-789'],
+      };
+
+      mockPrismaService.item.findMany.mockResolvedValue([
+        {
+          ...mockItem,
+          id: 'item-123',
+          userId: proposerId,
+          status: ItemStatus.AVAILABLE,
+          user: { id: proposerId },
+        },
+        {
+          ...mockItems[1],
+          id: 'item-456',
+          userId: 'user-456',
+          status: ItemStatus.AVAILABLE,
+          user: { id: 'user-456' },
+        },
+        {
+          ...mockItems[1],
+          id: 'item-789',
+          userId: 'user-456',
+          status: ItemStatus.TRADED,
+          user: { id: 'user-456' },
+        },
+      ]);
+
+      await expect(
+        service.createTrade(proposerId, createTradeDto),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
   describe('getUserTrades', () => {
     it('should return all trades for a user', async () => {
       const userId = 'user-123';

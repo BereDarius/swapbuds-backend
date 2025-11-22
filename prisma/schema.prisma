@@ -117,6 +117,7 @@ model Item {
   // Trading
   tradesOffered      Trade[]        @relation("TradeItemOffered")
   tradesRequested    Trade[]        @relation("TradeItemRequested")
+  tradeItems         TradeItem[]
   counterOffersUsing CounterOffer[]
 
   // Timestamps
@@ -171,12 +172,16 @@ model Trade {
   responderId String
   responder   User   @relation("TradeResponder", fields: [responderId], references: [id], onDelete: Cascade)
 
-  // Items
-  itemOfferedId String
-  itemOffered   Item   @relation("TradeItemOffered", fields: [itemOfferedId], references: [id], onDelete: Cascade)
+  // Legacy single-item fields (kept for backward compatibility)
+  // These are now optional and will be null for multi-item trades
+  itemOfferedId String?
+  itemOffered   Item?   @relation("TradeItemOffered", fields: [itemOfferedId], references: [id], onDelete: Cascade)
 
-  itemRequestedId String
-  itemRequested   Item   @relation("TradeItemRequested", fields: [itemRequestedId], references: [id], onDelete: Cascade)
+  itemRequestedId String?
+  itemRequested   Item?   @relation("TradeItemRequested", fields: [itemRequestedId], references: [id], onDelete: Cascade)
+
+  // Multi-item trade support
+  tradeItems TradeItem[]
 
   // Additional info
   message String?
@@ -198,6 +203,40 @@ model Trade {
   @@index([status])
   @@index([createdAt])
   @@map("trades")
+}
+
+// ============================================
+// TRADE ITEM MODEL (Join table for multi-item trades)
+// ============================================
+enum TradeItemSide {
+  OFFERED // Item offered by proposer
+  REQUESTED // Item requested from responder
+}
+
+model TradeItem {
+  id String @id @default(cuid())
+
+  // Trade this item belongs to
+  tradeId String
+  trade   Trade  @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+
+  // The item being traded
+  itemId String
+  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  // Which side of the trade (offered or requested)
+  side TradeItemSide
+
+  // Order for display purposes
+  order Int @default(0)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+
+  @@unique([tradeId, itemId]) // Prevent duplicate items in same trade
+  @@index([tradeId])
+  @@index([itemId])
+  @@map("trade_items")
 }
 
 // ============================================

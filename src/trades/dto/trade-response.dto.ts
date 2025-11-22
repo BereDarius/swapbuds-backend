@@ -48,32 +48,91 @@ export class TradeResponseDto {
   };
 
   @ApiProperty({
-    description: 'Item being offered by proposer',
+    description: 'Item being offered by proposer (legacy single-item)',
     example: {
       id: 'item123',
       title: 'Nintendo Switch Game',
       images: ['https://cloudinary.com/game.jpg'],
     },
+    required: false,
   })
-  itemOffered: {
+  itemOffered?: {
     id: string;
     title: string;
     images: string[];
   };
 
   @ApiProperty({
-    description: 'Item being requested by proposer',
+    description: 'Item being requested by proposer (legacy single-item)',
     example: {
       id: 'item456',
       title: 'Vintage Pokemon Cards',
       images: ['https://cloudinary.com/cards.jpg'],
     },
+    required: false,
   })
-  itemRequested: {
+  itemRequested?: {
     id: string;
     title: string;
     images: string[];
   };
+
+  @ApiProperty({
+    description: 'Items being offered by proposer (multi-item trades)',
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        title: { type: 'string' },
+        images: { type: 'array', items: { type: 'string' } },
+      },
+    },
+    example: [
+      {
+        id: 'item123',
+        title: 'Nintendo Switch Game',
+        images: ['https://cloudinary.com/game.jpg'],
+      },
+      {
+        id: 'item789',
+        title: 'Playstation Controller',
+        images: ['https://cloudinary.com/controller.jpg'],
+      },
+    ],
+    required: false,
+  })
+  itemsOffered?: Array<{
+    id: string;
+    title: string;
+    images: string[];
+  }>;
+
+  @ApiProperty({
+    description: 'Items being requested by proposer (multi-item trades)',
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        title: { type: 'string' },
+        images: { type: 'array', items: { type: 'string' } },
+      },
+    },
+    example: [
+      {
+        id: 'item456',
+        title: 'Vintage Pokemon Cards',
+        images: ['https://cloudinary.com/cards.jpg'],
+      },
+    ],
+    required: false,
+  })
+  itemsRequested?: Array<{
+    id: string;
+    title: string;
+    images: string[];
+  }>;
 
   @ApiProperty({
     description: 'Optional message from proposer',
