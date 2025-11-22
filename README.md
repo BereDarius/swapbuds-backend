@@ -611,6 +611,232 @@ expect(prisma.item.findMany).toHaveBeenCalled(); // DB queried
 expect(mockCacheService.set).toHaveBeenCalled(); // Result cached
 ```
 
+### Advanced Caching Features
+
+#### 1. @Cacheable() Decorator
+
+Automatically cache method results with declarative syntax:
+
+```typescript
+import { Cacheable, CacheInvalidate } from '@/cache/cache.module';
+
+@Injectable()
+export class UsersService {
+  constructor(private cacheService: CacheService) {}
+
+  // Automatic caching with default options (1 min TTL)
+  @Cacheable()
+  async getUserById(id: string) {
+    return this.prisma.user.findUnique({ where: { id } });
+  }
+
+  // Custom TTL and prefix
+  @Cacheable({ ttl: 600000, prefix: 'users' })
+  async getUserProfile(id: string) {
+    return this.getUserWithStats(id);
+  }
+
+  // Custom key generator
+  @Cacheable({
+    ttl: 300000,
+    keyGenerator: (userId: string) => `custom:${userId}`,
+  })
+  async getCustomData(userId: string) {
+    return this.fetchExpensiveData(userId);
+  }
+
+  // Automatic cache invalidation
+  @CacheInvalidate(['users:*', 'profiles:*'])
+  async updateUser(id: string, data: UpdateUserDto) {
+    return this.prisma.user.update({ where: { id }, data });
+  }
+
+  // Dynamic invalidation based on arguments
+  @CacheInvalidate((id: string) => [`users:${id}`, `profiles:${id}`])
+  async deleteUser(id: string) {
+    return this.prisma.user.delete({ where: { id } });
+  }
+}
+```
+
+**Features:**
+
+- ✨ Automatic cache-aside pattern
+- 🎯 Configurable TTL per method
+- 🔑 Custom key generators
+- 🗑️ Automatic cache invalidation
+- 📝 Clean, declarative syntax
+
+#### 2. HTTP Cache Interceptor
+
+Controller-level caching with HTTP standards (ETags, Cache-Control):
+
+```typescript
+import { HttpCacheInterceptor } from '@/cache/cache.module';
+
+@Controller('items')
+export class ItemsController {
+  // Cache GET requests for 5 minutes
+  @Get()
+  @UseInterceptors(new HttpCacheInterceptor({ ttl: 300 }))
+  findAll(@Query() query: ItemQueryDto) {
+    return this.itemsService.findAll(query);
+  }
+
+  // Custom key generator for user-specific caching
+  @Get('my-items')
+  @UseInterceptors(
+    new HttpCacheInterceptor({
+      ttl: 60,
+      keyGenerator: (req) => `user-items:${req.user.id}`,
+    }),
+  )
+  getMyItems(@CurrentUser() user: User) {
+    return this.itemsService.findByUser(user.id);
+  }
+
+  // Disable ETags
+  @Get('public')
+  @UseInterceptors(new HttpCacheInterceptor({ ttl: 3600, useETag: false }))
+  getPublicItems() {
+    return this.itemsService.findPublic();
+  }
+}
+```
+
+**Features:**
+
+- 🌐 HTTP-standard caching (ETags, Cache-Control)
+- ⚡ 304 Not Modified responses
+- 🔒 Per-user cache isolation
+- 📋 Only caches GET requests with 200 responses
+- 🎛️ Configurable ETag usage
+
+**Response Headers:**
+
+```http
+HTTP/1.1 200 OK
+ETag: "a4f3d2c1b0"
+Cache-Control: public, max-age=300
+Vary: Accept-Encoding
+```
+
+**Conditional Request:**
+
+```http
+GET /api/items
+If-None-Match: "a4f3d2c1b0"
+
+HTTP/1.1 304 Not Modified
+```
+
+#### 3. Cache Warming
+
+Pre-populate cache on application startup for frequently accessed data:
+
+```typescript
+// Automatically runs on app startup
+// src/cache/cache-warming.service.ts
+
+@Injectable()
+export class CacheWarmingService implements OnModuleInit {
+  async onModuleInit() {
+    // Warms:
+    // - Recent items (first page)
+    // - Popular items (most engagement)
+  }
+}
+```
+
+**Configuration:**
+
+```typescript
+// Custom configuration
+const warmingService = new CacheWarmingService(cacheService, prisma, {
+  enabled: true,
+  itemsCount: 20,
+  ttl: 300000, // 5 minutes
+});
+
+// Manual trigger (for scheduled tasks)
+await warmingService.warmCache();
+```
+
+**Benefits:**
+
+- 🚀 Fast first requests after startup
+- 📊 Pre-caches popular content
+- 🔧 Configurable warming strategies
+- ⏰ Manual trigger for scheduled refresh
+
+#### 4. Cache Monitoring
+
+Track cache performance with built-in metrics:
+
+```typescript
+// Access monitoring service
+@Injectable()
+export class MyService {
+  constructor(private monitoring: CacheMonitoringService) {}
+
+  async someMethod() {
+    // Track cache operations
+    this.monitoring.recordGet();
+    const cached = await this.cacheService.get(key);
+
+    if (cached) {
+      this.monitoring.recordHit();
+    } else {
+      this.monitoring.recordMiss();
+      // Fetch from DB...
+      this.monitoring.recordSet();
+    }
+  }
+}
+```
+
+**Metrics Endpoints:**
+
+```bash
+# Get cache statistics
+GET /cache/stats
+{
+  "hits": 1500,
+  "misses": 300,
+  "hitRate": 83.33,
+  "totalRequests": 1800,
+  "operations": {
+    "get": 1800,
+    "set": 400,
+    "del": 50
+  },
+  "timestamp": "2025-11-22T14:35:00.000Z"
+}
+
+# Get health status
+GET /cache/health
+{
+  "status": "healthy",
+  "uptime": 3600000,
+  "hitRate": 83.33,
+  "totalRequests": 1800
+}
+
+# Reset statistics
+POST /cache/reset-stats
+{
+  "message": "Cache statistics reset successfully"
+}
+```
+
+**Features:**
+
+- 📈 Hit/miss rate tracking
+- 📊 Operation counters
+- ⏱️ Uptime monitoring
+- 🔍 Health check endpoint
+- 🧹 Stats reset capability
+
 ### Performance Metrics
 
 **Before Caching:**
