@@ -41,14 +41,50 @@ export class CacheService {
   }
 
   /**
-   * Delete multiple keys matching a pattern
-   * @param pattern Key pattern (e.g., 'items:*')
+   * Delete multiple keys matching a pattern using Redis SCAN
+   * @param pattern Key pattern (e.g., 'items:*', 'users:123:*')
+   * @returns Number of keys deleted
    */
-  async delPattern(pattern: string): Promise<void> {
-    // Note: This requires getting the Redis client directly
-    // For now, we'll implement individual key deletion
-    // TODO: Implement pattern-based deletion using Redis SCAN
-    await this.cacheManager.del(pattern);
+  async delPattern(pattern: string): Promise<number> {
+    const store = (this.cacheManager as any).store;
+
+    // Access the underlying Redis client
+    if (!store?.client) {
+      throw new Error('Redis client not available');
+    }
+
+    const client = store.client;
+    let cursor = '0';
+    let deletedCount = 0;
+    const keysToDelete: string[] = [];
+
+    // Use SCAN to iterate through keys matching the pattern
+    // This is more efficient than KEYS for large datasets
+    do {
+      const [nextCursor, keys] = await client.scan(
+        cursor,
+        'MATCH',
+        pattern,
+        'COUNT',
+        100, // Scan 100 keys at a time
+      );
+
+      cursor = nextCursor;
+
+      if (keys.length > 0) {
+        keysToDelete.push(...keys);
+      }
+    } while (cursor !== '0');
+
+    // Delete keys in batches using pipeline for better performance
+    if (keysToDelete.length > 0) {
+      const pipeline = client.pipeline();
+      keysToDelete.forEach((key: string) => pipeline.del(key));
+      await pipeline.exec();
+      deletedCount = keysToDelete.length;
+    }
+
+    return deletedCount;
   }
 
   /**
