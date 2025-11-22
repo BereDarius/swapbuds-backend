@@ -1,0 +1,15 @@
+import { PrismaModule } from '@/prisma/prisma.module';
+import { Module } from '@nestjs/common';
+import { DisputesController } from './disputes.controller';
+import { DisputesService } from './disputes.service';
+
+/**
+ * Module for handling trade disputes
+ */
+@Module({
+  imports: [PrismaModule],
+  controllers: [DisputesController],
+  providers: [DisputesService],
+  exports: [DisputesService],
+})
+export class DisputesModule {}

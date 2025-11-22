@@ -38,6 +38,7 @@ model User {
   // Status
   isActive   Boolean @default(true)
   isVerified Boolean @default(false)
+  isAdmin    Boolean @default(false)
 
   // Relations
   items                   Item[]
@@ -53,6 +54,9 @@ model User {
   likes                   Like[]
   comments                Comment[]
   counterOffers           CounterOffer[]
+  disputesReported        Dispute[]                @relation("DisputeReporter")
+  disputesAgainst         Dispute[]                @relation("DisputeReportedUser")
+  disputesAdministered    Dispute[]                @relation("DisputeAdmin")
 
   @@index([email])
   @@index([username])
@@ -187,6 +191,7 @@ model Trade {
   conversation  Conversation?
   reviews       Review[]
   counterOffers CounterOffer[]
+  disputes      Dispute[]
 
   @@index([proposerId])
   @@index([responderId])
@@ -448,4 +453,62 @@ model NotificationPreferences {
 
   @@index([userId])
   @@map("notification_preferences")
+}
+
+// ============================================
+// DISPUTE MODEL
+// ============================================
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  CLOSED
+}
+
+enum DisputeReason {
+  ITEM_NOT_AS_DESCRIBED
+  ITEM_NOT_RECEIVED
+  ITEM_DAMAGED
+  COMMUNICATION_ISSUE
+  SCAM_ATTEMPT
+  OTHER
+}
+
+model Dispute {
+  id String @id @default(cuid())
+
+  // Trade being disputed
+  tradeId String
+  trade   Trade  @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+
+  // User who filed the dispute
+  reporterId String
+  reporter   User   @relation("DisputeReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  // User being disputed against
+  reportedUserId String
+  reportedUser   User   @relation("DisputeReportedUser", fields: [reportedUserId], references: [id], onDelete: Cascade)
+
+  // Dispute details
+  reason      DisputeReason
+  description String
+  status      DisputeStatus @default(OPEN)
+
+  // Admin handling
+  adminId    String?
+  admin      User?     @relation("DisputeAdmin", fields: [adminId], references: [id], onDelete: SetNull)
+  adminNotes String?
+  resolution String?
+  resolvedAt DateTime?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tradeId])
+  @@index([reporterId])
+  @@index([reportedUserId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("disputes")
 }

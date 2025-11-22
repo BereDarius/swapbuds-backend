@@ -14,6 +14,7 @@ import { redisStore } from 'cache-manager-redis-yet';
 import Redis from 'ioredis';
 import { CacheModule as AppCacheModule } from './cache/cache.module';
 import { CommentsModule } from './comments/comments.module';
+import { DisputesModule } from './disputes/disputes.module';
 import { ItemsModule } from './items/items.module';
 import { LikesModule } from './likes/likes.module';
 import { MailModule } from './mail/mail.module';
@@ -98,6 +99,8 @@ import { UsersModule } from './users/users.module';
     MailModule,
 
     MessagesModule,
+
+    DisputesModule,
   ],
   controllers: [AppController],
   providers: [
