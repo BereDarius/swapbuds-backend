@@ -155,6 +155,83 @@ export class NotificationsGateway
   }
 
   /**
+   * Emit new message to user
+   * @param userId - User ID
+   * @param message - Message data
+   */
+  emitMessageToUser(userId: string, message: any) {
+    this.server.to(`user:${userId}`).emit('message', message);
+    this.logger.log(`Emitted message to user:${userId}`);
+  }
+
+  /**
+   * Emit message read status update to user
+   * @param userId - User ID
+   * @param messageId - Message ID
+   * @param conversationId - Conversation ID
+   */
+  emitMessageRead(userId: string, messageId: string, conversationId: string) {
+    this.server
+      .to(`user:${userId}`)
+      .emit('messageRead', { messageId, conversationId });
+    this.logger.log(
+      `Emitted message read status to user:${userId}, messageId:${messageId}`,
+    );
+  }
+
+  /**
+   * Emit conversation read status update to user
+   * @param userId - User ID
+   * @param conversationId - Conversation ID
+   * @param count - Number of messages marked as read
+   */
+  emitConversationRead(userId: string, conversationId: string, count: number) {
+    this.server
+      .to(`user:${userId}`)
+      .emit('conversationRead', { conversationId, count });
+    this.logger.log(
+      `Emitted conversation read to user:${userId}, conversationId:${conversationId}, count:${count}`,
+    );
+  }
+
+  /**
+   * Emit message deletion to user
+   * @param userId - User ID
+   * @param messageId - Message ID
+   * @param conversationId - Conversation ID
+   */
+  emitMessageDeleted(
+    userId: string,
+    messageId: string,
+    conversationId: string,
+  ) {
+    this.server
+      .to(`user:${userId}`)
+      .emit('messageDeleted', { messageId, conversationId });
+    this.logger.log(
+      `Emitted message deleted to user:${userId}, messageId:${messageId}`,
+    );
+  }
+
+  /**
+   * Emit typing indicator to user
+   * @param userId - User ID
+   * @param conversationId - Conversation ID
+   * @param isTyping - Whether user is typing
+   * @param typerUsername - Username of person typing
+   */
+  emitTyping(
+    userId: string,
+    conversationId: string,
+    isTyping: boolean,
+    typerUsername: string,
+  ) {
+    this.server
+      .to(`user:${userId}`)
+      .emit('typing', { conversationId, isTyping, typerUsername });
+  }
+
+  /**
    * Check if user is online (has active connections)
    * @param userId - User ID
    * @returns True if user has active connections

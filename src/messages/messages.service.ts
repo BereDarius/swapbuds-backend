@@ -1,3 +1,4 @@
+import { NotificationsGateway } from '@/notifications/notifications.gateway';
 import { PrismaService } from '@/prisma/prisma.service';
 import {
   BadRequestException,
@@ -12,7 +13,10 @@ import { SendMessageDto } from './dto/send-message.dto';
 
 @Injectable()
 export class MessagesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsGateway: NotificationsGateway,
+  ) {}
 
   /**
    * Send a message to another user
@@ -71,7 +75,15 @@ export class MessagesService {
       },
     });
 
-    return this.formatMessageResponse(message);
+    const formattedMessage = this.formatMessageResponse(message);
+
+    // Emit real-time message to recipient
+    this.notificationsGateway.emitMessageToUser(
+      dto.recipientId,
+      formattedMessage,
+    );
+
+    return formattedMessage;
   }
 
   /**
@@ -268,7 +280,16 @@ export class MessagesService {
       },
     });
 
-    return this.formatMessageResponse(updatedMessage);
+    const formattedMessage = this.formatMessageResponse(updatedMessage);
+
+    // Emit real-time read status to sender
+    this.notificationsGateway.emitMessageRead(
+      message.senderId,
+      messageId,
+      message.conversationId,
+    );
+
+    return formattedMessage;
   }
 
   /**
@@ -305,6 +326,17 @@ export class MessagesService {
       },
     });
 
+    // Emit real-time read status to other user
+    const otherUserId =
+      conversation.user1Id === userId
+        ? conversation.user2Id
+        : conversation.user1Id;
+    this.notificationsGateway.emitConversationRead(
+      otherUserId,
+      conversationId,
+      result.count,
+    );
+
     return { count: result.count };
   }
 
@@ -314,6 +346,9 @@ export class MessagesService {
   async deleteMessage(userId: string, messageId: string): Promise<void> {
     const message = await this.prisma.message.findUnique({
       where: { id: messageId },
+      include: {
+        conversation: true,
+      },
     });
 
     if (!message) {
@@ -328,6 +363,17 @@ export class MessagesService {
       where: { id: messageId },
       data: { isDeleted: true },
     });
+
+    // Emit deletion to other user
+    const otherUserId =
+      message.conversation.user1Id === userId
+        ? message.conversation.user2Id
+        : message.conversation.user1Id;
+    this.notificationsGateway.emitMessageDeleted(
+      otherUserId,
+      messageId,
+      message.conversationId,
+    );
   }
 
   /**
