@@ -36,11 +36,13 @@ This is the backend API for SWAPBUDS, providing secure authentication, item mana
 - ✅ WebSocket real-time notifications (v0.8.0)
 - ✅ Email notifications (v0.8.0)
 - ✅ Messaging system (v0.9.0)
+- ✅ Redis caching system with decorators (v0.10.0)
+- ✅ Cache warming and monitoring (v0.10.0)
+- ✅ Likes and comments (v0.5.0)
 
 ### In Progress
 
 - 🚧 Trading system (v0.6.0+)
-- 🚧 Likes and comments
 
 ---
 
