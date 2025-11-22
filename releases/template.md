@@ -180,10 +180,6 @@ yarn test:cov
 - Updated: [Doc name]
 - Added: [Doc name]
 
-## 🙏 Acknowledgments
-
-[Optional - credit contributors if applicable]
-
 ## 📝 Notes
 
 [Any additional notes, known issues, or future plans]
