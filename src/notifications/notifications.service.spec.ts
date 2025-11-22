@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotificationsService } from './notifications.service';
 
+import { CacheService } from '@/cache/cache.service';
 import { MailService } from '@/mail/mail.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import {
@@ -15,6 +16,15 @@ import { mockPrismaService } from '@/test/mocks/prisma.mock';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { NotificationType } from '@prisma/client';
 import { NotificationsGateway } from './notifications.gateway';
+
+const mockCacheService = {
+  get: jest.fn().mockResolvedValue(null),
+  set: jest.fn(),
+  del: jest.fn(),
+  getUnreadNotificationsKey: jest.fn(
+    (userId) => `users:${userId}:notifications:unread`,
+  ),
+};
 
 describe('NotificationsService', () => {
   let service: NotificationsService;
@@ -46,6 +56,10 @@ describe('NotificationsService', () => {
         {
           provide: NotificationsGateway,
           useValue: mockNotificationsGateway,
+        },
+        {
+          provide: CacheService,
+          useValue: mockCacheService,
         },
         {
           provide: MailService,

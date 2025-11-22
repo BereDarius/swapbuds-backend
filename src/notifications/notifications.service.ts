@@ -1,3 +1,4 @@
+import { CacheService } from '@/cache/cache.service';
 import { MailService } from '@/mail/mail.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import {
@@ -23,6 +24,7 @@ export class NotificationsService {
     @Inject(forwardRef(() => NotificationsGateway))
     private notificationsGateway: NotificationsGateway,
     private mailService: MailService,
+    private cacheService: CacheService,
   ) {}
 
   /**
@@ -54,6 +56,11 @@ export class NotificationsService {
     });
 
     const response = this.formatNotificationResponse(notification);
+
+    // Invalidate unread count cache after creating notification
+    await this.cacheService.del(
+      this.cacheService.getUnreadNotificationsKey(createNotificationDto.userId),
+    );
 
     // Emit real-time notification to user if they're connected
     this.notificationsGateway.emitNotificationToUser(
@@ -90,17 +97,30 @@ export class NotificationsService {
   }
 
   /**
-   * Get count of unread notifications for a user
+   * Get count of unread notifications for a user (with Redis caching)
    * @param userId - User ID
    * @returns Count of unread notifications
    */
   async getUnreadCount(userId: string): Promise<number> {
-    return this.prisma.notification.count({
+    // Try cache first
+    const cacheKey = this.cacheService.getUnreadNotificationsKey(userId);
+    const cached = await this.cacheService.get<number>(cacheKey);
+    if (cached !== null) {
+      return cached;
+    }
+
+    // Fetch from database if not cached
+    const count = await this.prisma.notification.count({
       where: {
         userId,
         isRead: false,
       },
     });
+
+    // Cache the result for 1 minute
+    await this.cacheService.set(cacheKey, count, 60000);
+
+    return count;
   }
 
   /**
@@ -132,6 +152,11 @@ export class NotificationsService {
       where: { id: notificationId },
       data: { isRead: true },
     });
+
+    // Invalidate unread count cache
+    await this.cacheService.del(
+      this.cacheService.getUnreadNotificationsKey(userId),
+    );
 
     // Emit real-time update
     this.notificationsGateway.emitNotificationRead(userId, notificationId);

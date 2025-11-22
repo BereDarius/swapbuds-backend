@@ -8,11 +8,13 @@ import { ItemCategory, ItemCondition } from './dto/create-item.dto';
 import { ItemsService } from './items.service';
 
 const mockCacheService = {
-  get: jest.fn(),
+  get: jest.fn().mockResolvedValue(null),
   set: jest.fn(),
   del: jest.fn(),
   invalidateItem: jest.fn(),
   getItemsListKey: jest.fn((page, limit) => `items:list:${page}:${limit}:all`),
+  getItemKey: jest.fn((itemId) => `items:${itemId}`),
+  getUserItemsKey: jest.fn((userId) => `users:${userId}:items`),
 };
 
 describe('ItemsService', () => {

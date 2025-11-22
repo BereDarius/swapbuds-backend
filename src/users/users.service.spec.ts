@@ -1,3 +1,4 @@
+import { CacheService } from '@/cache/cache.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { mockUser, mockUserWithProfile } from '@/test/fixtures/user.fixture';
 import { mockPrismaService } from '@/test/mocks/prisma.mock';
@@ -6,6 +7,13 @@ import { UploadService } from '@/upload/upload.service';
 import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from './users.service';
+
+const mockCacheService = {
+  get: jest.fn().mockResolvedValue(null),
+  set: jest.fn(),
+  del: jest.fn(),
+  getUserKey: jest.fn((userId) => `users:${userId}`),
+};
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -23,6 +31,10 @@ describe('UsersService', () => {
         {
           provide: UploadService,
           useValue: mockUploadService,
+        },
+        {
+          provide: CacheService,
+          useValue: mockCacheService,
         },
       ],
     }).compile();

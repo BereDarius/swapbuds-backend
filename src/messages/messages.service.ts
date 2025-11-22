@@ -1,3 +1,4 @@
+import { CacheService } from '@/cache/cache.service';
 import { NotificationsGateway } from '@/notifications/notifications.gateway';
 import { NotificationsService } from '@/notifications/notifications.service';
 import { PrismaService } from '@/prisma/prisma.service';
@@ -18,6 +19,7 @@ export class MessagesService {
     private prisma: PrismaService,
     private notificationsGateway: NotificationsGateway,
     private notificationsService: NotificationsService,
+    private cacheService: CacheService,
   ) {}
 
   /**
@@ -78,6 +80,11 @@ export class MessagesService {
     });
 
     const formattedMessage = this.formatMessageResponse(message);
+
+    // Invalidate unread count cache for the recipient
+    await this.cacheService.del(
+      this.cacheService.getUnreadMessagesKey(dto.recipientId),
+    );
 
     // Emit real-time message to recipient
     this.notificationsGateway.emitMessageToUser(
@@ -298,6 +305,9 @@ export class MessagesService {
 
     const formattedMessage = this.formatMessageResponse(updatedMessage);
 
+    // Invalidate unread count cache for the recipient
+    await this.cacheService.del(this.cacheService.getUnreadMessagesKey(userId));
+
     // Emit real-time read status to sender
     this.notificationsGateway.emitMessageRead(
       message.senderId,
@@ -393,9 +403,17 @@ export class MessagesService {
   }
 
   /**
-   * Get unread message count for a user
+   * Get unread message count for a user (with Redis caching)
    */
   async getUnreadCount(userId: string): Promise<number> {
+    // Try cache first
+    const cacheKey = this.cacheService.getUnreadMessagesKey(userId);
+    const cached = await this.cacheService.get<number>(cacheKey);
+    if (cached !== null) {
+      return cached;
+    }
+
+    // Fetch from database if not cached
     const conversations = await this.prisma.conversation.findMany({
       where: {
         OR: [{ user1Id: userId }, { user2Id: userId }],
@@ -405,7 +423,7 @@ export class MessagesService {
 
     const conversationIds = conversations.map((c) => c.id);
 
-    return this.prisma.message.count({
+    const count = await this.prisma.message.count({
       where: {
         conversationId: { in: conversationIds },
         senderId: { not: userId },
@@ -413,6 +431,11 @@ export class MessagesService {
         isDeleted: false,
       },
     });
+
+    // Cache the result for 1 minute
+    await this.cacheService.set(cacheKey, count, 60000);
+
+    return count;
   }
 
   /**

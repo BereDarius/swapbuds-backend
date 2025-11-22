@@ -1,3 +1,4 @@
+import { CacheService } from '@/cache/cache.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { UploadService } from '@/upload/upload.service';
 import { Injectable, NotFoundException } from '@nestjs/common';
@@ -13,15 +14,24 @@ export class UsersService {
   constructor(
     private prisma: PrismaService,
     private uploadService: UploadService,
+    private cacheService: CacheService,
   ) {}
 
   /**
-   * Get public user profile by ID
+   * Get public user profile by ID (with Redis caching)
    * @param userId - User ID
    * @returns Public profile information with stats
    * @throws NotFoundException if user not found
    */
   async getUserProfile(userId: string): Promise<UserProfileDto> {
+    // Try cache first
+    const cacheKey = this.cacheService.getUserKey(userId);
+    const cached = await this.cacheService.get<UserProfileDto>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    // Fetch from database if not cached
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -40,7 +50,7 @@ export class UsersService {
       throw new NotFoundException(`User with ID ${userId} not found`);
     }
 
-    return {
+    const response = {
       id: user.id,
       username: user.username,
       avatarUrl: user.avatarUrl,
@@ -51,6 +61,11 @@ export class UsersService {
       itemsCount: user._count.items,
       tradesCount: user._count.tradesProposed,
     };
+
+    // Cache the result for 10 minutes
+    await this.cacheService.set(cacheKey, response, 600000);
+
+    return response;
   }
 
   /**
@@ -76,6 +91,9 @@ export class UsersService {
       where: { id: userId },
       data: updateProfileDto,
     });
+
+    // Invalidate user cache after profile update
+    await this.cacheService.del(this.cacheService.getUserKey(userId));
 
     return this.getUserProfile(userId);
   }
@@ -118,6 +136,9 @@ export class UsersService {
       where: { id: userId },
       data: { avatarUrl: uploadResult.secure_url },
     });
+
+    // Invalidate user cache after avatar update
+    await this.cacheService.del(this.cacheService.getUserKey(userId));
 
     return this.getUserProfile(userId);
   }

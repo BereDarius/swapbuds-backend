@@ -1,3 +1,4 @@
+import { CacheService } from '@/cache/cache.service';
 import { NotificationsGateway } from '@/notifications/notifications.gateway';
 import { NotificationsService } from '@/notifications/notifications.service';
 import { PrismaService } from '@/prisma/prisma.service';
@@ -23,6 +24,15 @@ describe('MessagesService', () => {
 
   const mockNotificationsService = {
     createNotification: jest.fn(),
+  };
+
+  const mockCacheService = {
+    get: jest.fn().mockResolvedValue(null),
+    set: jest.fn(),
+    del: jest.fn(),
+    getUnreadMessagesKey: jest.fn(
+      (userId) => `users:${userId}:messages:unread`,
+    ),
   };
 
   const mockUser1 = {
@@ -81,6 +91,10 @@ describe('MessagesService', () => {
         {
           provide: NotificationsService,
           useValue: mockNotificationsService,
+        },
+        {
+          provide: CacheService,
+          useValue: mockCacheService,
         },
       ],
     }).compile();

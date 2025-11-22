@@ -68,8 +68,9 @@ export class ItemsService {
       },
     });
 
-    // Invalidate item list caches when new item is created
+    // Invalidate item list caches and user's items cache when new item is created
     await this.cacheService.invalidateItem(item.id);
+    await this.cacheService.del(this.cacheService.getUserItemsKey(userId));
 
     return this.mapToResponse(item);
   }
@@ -123,11 +124,19 @@ export class ItemsService {
   }
 
   /**
-   * Get items by user ID
+   * Get items by user ID (with Redis caching)
    * @param userId - User ID
    * @returns Array of user's items
    */
   async findByUser(userId: string): Promise<ItemResponseDto[]> {
+    // Try cache first
+    const cacheKey = this.cacheService.getUserItemsKey(userId);
+    const cached = await this.cacheService.get<ItemResponseDto[]>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    // Fetch from database if not cached
     const items = await this.prisma.item.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
@@ -149,16 +158,29 @@ export class ItemsService {
       },
     });
 
-    return items.map((item) => this.mapToResponse(item));
+    const response = items.map((item) => this.mapToResponse(item));
+
+    // Cache the result for 5 minutes
+    await this.cacheService.set(cacheKey, response, 300000);
+
+    return response;
   }
 
   /**
-   * Get a single item by ID
+   * Get a single item by ID (with Redis caching)
    * @param id - Item ID
    * @returns Item details
    * @throws NotFoundException if item not found
    */
   async findOne(id: string): Promise<ItemResponseDto> {
+    // Try cache first
+    const cacheKey = this.cacheService.getItemKey(id);
+    const cached = await this.cacheService.get<ItemResponseDto>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    // Fetch from database if not cached
     const item = await this.prisma.item.findUnique({
       where: { id },
       include: {
@@ -183,7 +205,12 @@ export class ItemsService {
       throw new NotFoundException(`Item with ID ${id} not found`);
     }
 
-    return this.mapToResponse(item);
+    const response = this.mapToResponse(item);
+
+    // Cache the result for 5 minutes
+    await this.cacheService.set(cacheKey, response, 300000);
+
+    return response;
   }
 
   /**
@@ -249,8 +276,9 @@ export class ItemsService {
       },
     });
 
-    // Invalidate cache for this item and lists
+    // Invalidate cache for this item, lists, and user's items
     await this.cacheService.invalidateItem(id);
+    await this.cacheService.del(this.cacheService.getUserItemsKey(userId));
 
     return this.mapToResponse(updatedItem);
   }
@@ -275,8 +303,9 @@ export class ItemsService {
 
     await this.prisma.item.delete({ where: { id } });
 
-    // Invalidate cache for this item and lists
+    // Invalidate cache for this item, lists, and user's items
     await this.cacheService.invalidateItem(id);
+    await this.cacheService.del(this.cacheService.getUserItemsKey(userId));
   }
 
   /**
