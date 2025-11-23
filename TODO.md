@@ -950,6 +950,7 @@ enum SupportChatStatus {
 **Technical Implementation:**
 
 **Health Checks:**
+
 - [x] HealthModule with @nestjs/terminus integration
 - [x] HealthController with 5 endpoints (overall, database, Redis, memory, disk)
 - [x] RedisHealthIndicator custom health indicator
@@ -958,6 +959,7 @@ enum SupportChatStatus {
 - [x] MemoryHealthIndicator and DiskHealthIndicator
 
 **Platform Monitoring:**
+
 - [x] MonitoringService with in-memory metrics storage
 - [x] MonitoringInterceptor for automatic request/response tracking
 - [x] MonitoringController with 3 endpoints (metrics, errors, performance)
@@ -966,6 +968,7 @@ enum SupportChatStatus {
 - [x] Global interceptor configuration via APP_INTERCEPTOR
 
 **Bulk Moderation Actions:**
+
 - [x] ModerationService bulk methods: bulkApprove, bulkReject, bulkRemove
 - [x] AdminService bulk methods: bulkBanUsers, bulkUnbanUsers, bulkChangeRole
 - [x] DTOs: BulkApproveFlagsDto, BulkRejectFlagsDto, BulkRemoveFlagsDto
@@ -975,6 +978,7 @@ enum SupportChatStatus {
 - [x] Transaction-like behavior with error handling
 
 **Swagger Updates:**
+
 - [x] All API tags standardized to uppercase format
 - [x] Descriptions added to all 18 tags
 - [x] Missing @ApiTags added to messages, reviews, cache controllers
@@ -1019,6 +1023,7 @@ enum SupportChatStatus {
 ### Monitoring Metrics
 
 **Tracked Automatically:**
+
 - API call counts by endpoint and status code
 - Response times (average, 95th percentile, 99th percentile)
 - Slowest endpoints with average response times
@@ -1026,6 +1031,7 @@ enum SupportChatStatus {
 - Active user counts and requests per user
 
 **Storage:**
+
 - In-memory storage with automatic cleanup
 - 24-hour retention window
 - Maximum 10,000 metrics stored
