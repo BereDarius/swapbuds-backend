@@ -51,7 +51,9 @@ describe('SupportCronService', () => {
     });
 
     it('should not throw when assignment fails', async () => {
-      mockSupportQueueService.autoAssignChats.mockRejectedValue(new Error('Failed'));
+      mockSupportQueueService.autoAssignChats.mockRejectedValue(
+        new Error('Failed'),
+      );
 
       await expect(service.autoAssignChats()).resolves.not.toThrow();
     });
