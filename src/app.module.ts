@@ -12,6 +12,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { redisStore } from 'cache-manager-redis-yet';
 import Redis from 'ioredis';
+import { AdminModule } from './admin/admin.module';
 import { CacheModule as AppCacheModule } from './cache/cache.module';
 import { CommentsModule } from './comments/comments.module';
 import { DisputesModule } from './disputes/disputes.module';
@@ -104,6 +105,8 @@ import { VerificationModule } from './verification/verification.module';
     DisputesModule,
 
     VerificationModule,
+
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [

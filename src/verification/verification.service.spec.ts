@@ -47,12 +47,7 @@ describe('VerificationService', () => {
   };
 
   const mockRateLimitService = {
-    checkRateLimit: jest.fn(() => ({
-      canSubmit: true,
-      attemptsUsed: 0,
-      attemptsRemaining: 3,
-      resetDate: new Date(),
-    })),
+    checkRateLimit: jest.fn(),
     getRateLimitStats: jest.fn(),
   };
 
@@ -93,6 +88,14 @@ describe('VerificationService', () => {
     service = module.get<VerificationService>(VerificationService);
 
     jest.clearAllMocks();
+
+    // Set default mock return values
+    mockRateLimitService.checkRateLimit.mockResolvedValue({
+      canSubmit: true,
+      attemptsUsed: 0,
+      attemptsRemaining: 3,
+      resetDate: new Date(),
+    });
   });
 
   it('should be defined', () => {
@@ -177,6 +180,25 @@ describe('VerificationService', () => {
       expect(mockPrismaService.userVerification.delete).toHaveBeenCalled();
       expect(result.id).toBe('new-verif');
     });
+
+    it('should throw error when rate limit exceeded', async () => {
+      mockRateLimitService.checkRateLimit.mockResolvedValue({
+        canSubmit: false,
+        attemptsUsed: 3,
+        attemptsRemaining: 0,
+        resetDate: new Date(),
+        message: 'Rate limit exceeded',
+      });
+
+      await expect(service.submitVerification(userId, dto)).rejects.toThrow(
+        'Rate limit exceeded',
+      );
+
+      expect(mockAuditService.logRateLimitViolation).toHaveBeenCalledWith(
+        userId,
+        3,
+      );
+    });
   });
 
   describe('getVerificationStatus', () => {
@@ -224,6 +246,14 @@ describe('VerificationService', () => {
       });
     });
 
+    it('should throw error if no verification found', async () => {
+      mockPrismaService.userVerification.findUnique.mockResolvedValue(null);
+
+      await expect(service.cancelVerification('user-123')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
     it('should throw error if trying to cancel non-pending', async () => {
       mockPrismaService.userVerification.findUnique.mockResolvedValue({
         status: VerificationStatus.APPROVED,
@@ -235,9 +265,81 @@ describe('VerificationService', () => {
     });
   });
 
+  describe('getVerificationById', () => {
+    it('should return verification by ID', async () => {
+      const verification = {
+        id: 'verif-1',
+        userId: 'user-123',
+        status: VerificationStatus.PENDING,
+        user: {
+          id: 'user-123',
+          username: 'testuser',
+          email: 'test@example.com',
+          createdAt: new Date(),
+          reputationScore: 100,
+        },
+      };
+
+      mockPrismaService.userVerification.findUnique.mockResolvedValue(
+        verification,
+      );
+
+      const result = await service.getVerificationById('verif-1');
+
+      expect(result).toEqual(verification);
+      expect(
+        mockPrismaService.userVerification.findUnique,
+      ).toHaveBeenCalledWith({
+        where: { id: 'verif-1' },
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              email: true,
+              createdAt: true,
+              reputationScore: true,
+            },
+          },
+        },
+      });
+    });
+
+    it('should throw NotFoundException if verification not found', async () => {
+      mockPrismaService.userVerification.findUnique.mockResolvedValue(null);
+
+      await expect(service.getVerificationById('nonexistent')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
   describe('approveVerification', () => {
     const verificationId = 'verif-1';
     const adminId = 'admin-1';
+
+    it('should throw error if verification not found', async () => {
+      mockPrismaService.userVerification.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.approveVerification(verificationId, adminId, {
+          dateOfBirth: '1995-05-15',
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw error if verification not pending', async () => {
+      mockPrismaService.userVerification.findUnique.mockResolvedValue({
+        id: verificationId,
+        status: VerificationStatus.APPROVED,
+      });
+
+      await expect(
+        service.approveVerification(verificationId, adminId, {
+          dateOfBirth: '1995-05-15',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
 
     it('should approve verification for user over 18', async () => {
       const birthDate = '1995-05-15'; // Over 18
@@ -340,6 +442,29 @@ describe('VerificationService', () => {
   });
 
   describe('rejectVerification', () => {
+    it('should throw error if verification not found', async () => {
+      mockPrismaService.userVerification.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.rejectVerification('verif-1', 'admin-1', {
+          rejectionReason: 'Test',
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw error if verification not pending', async () => {
+      mockPrismaService.userVerification.findUnique.mockResolvedValue({
+        id: 'verif-1',
+        status: VerificationStatus.APPROVED,
+      });
+
+      await expect(
+        service.rejectVerification('verif-1', 'admin-1', {
+          rejectionReason: 'Test',
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
     it('should reject verification with reason', async () => {
       const verificationId = 'verif-1';
       const adminId = 'admin-1';
@@ -411,6 +536,87 @@ describe('VerificationService', () => {
       expect(stats.underage).toBe(2);
       expect(stats.cancelled).toBe(3);
       expect(stats.total).toBe(120);
+    });
+  });
+
+  describe('getDocumentSignedUrl', () => {
+    const verificationId = 'verif-1';
+    const adminId = 'admin-1';
+
+    it('should generate signed URL for document', async () => {
+      mockPrismaService.userVerification.findUnique.mockResolvedValue({
+        id: verificationId,
+        documentUrl: 'encrypted:https://cloudinary.com/doc.jpg',
+      });
+
+      const result = await service.getDocumentSignedUrl(
+        verificationId,
+        adminId,
+      );
+
+      expect(result.signedUrl).toBe('signed:public-id-123');
+      expect(result.expiresIn).toBe(300);
+      expect(mockDocumentSecurityService.decryptUrl).toHaveBeenCalledWith(
+        'encrypted:https://cloudinary.com/doc.jpg',
+      );
+      expect(
+        mockDocumentSecurityService.generateSignedUrl,
+      ).toHaveBeenCalledWith('public-id-123', 300);
+      expect(mockAuditService.logDocumentAccess).toHaveBeenCalledWith(
+        adminId,
+        verificationId,
+        'VIEW',
+      );
+    });
+
+    it('should throw NotFoundException if verification not found', async () => {
+      mockPrismaService.userVerification.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.getDocumentSignedUrl(verificationId, adminId),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException if document not found', async () => {
+      mockPrismaService.userVerification.findUnique.mockResolvedValue({
+        id: verificationId,
+        documentUrl: null,
+      });
+
+      await expect(
+        service.getDocumentSignedUrl(verificationId, adminId),
+      ).rejects.toThrow('Document not found or already deleted');
+    });
+
+    it('should throw BadRequestException if invalid publicId', async () => {
+      mockPrismaService.userVerification.findUnique.mockResolvedValue({
+        id: verificationId,
+        documentUrl: 'encrypted:https://cloudinary.com/doc.jpg',
+      });
+      mockDocumentSecurityService.extractPublicId.mockReturnValue(null);
+
+      await expect(
+        service.getDocumentSignedUrl(verificationId, adminId),
+      ).rejects.toThrow('Invalid document URL');
+    });
+  });
+
+  describe('getRateLimitInfo', () => {
+    it('should return rate limit info for user', async () => {
+      const rateLimitInfo = {
+        canSubmit: true,
+        attemptsUsed: 1,
+        attemptsRemaining: 2,
+        resetDate: new Date(),
+      };
+      mockRateLimitService.checkRateLimit.mockResolvedValue(rateLimitInfo);
+
+      const result = await service.getRateLimitInfo('user-123');
+
+      expect(result).toEqual(rateLimitInfo);
+      expect(mockRateLimitService.checkRateLimit).toHaveBeenCalledWith(
+        'user-123',
+      );
     });
   });
 });

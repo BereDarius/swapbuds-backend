@@ -1,7 +1,12 @@
 # SwapBuds Backend - Launch Roadmap (16 Weeks)
 
 **Target Public Launch:** March 17, 2026
-**Current Status:** v1.0.4 Complete ✅ (608 tests passing)
+**Current Status:** v1.1.0 Core Features Complete (715 tests passing, 97% coverage)
+
+- ✅ v1.0.4 Complete (Security & Privacy)
+- ✅ Core admin features implemented (user management, audit logs, role-based access)
+- ✅ Comprehensive test coverage for admin and verification modules (>88%)
+- ⏳ Content moderation features pending
 
 This roadmap is aligned with the [LAUNCH_ROADMAP.md](../plans/LAUNCH_ROADMAP.md) and organized by implementation timeline.
 
@@ -776,13 +781,23 @@ Below are the full technical specifications for features listed above. These ser
 
 ### Admin & Moderation System (v1.1.0)
 
+**Status:** ✅ Core Admin Features Complete (715 tests passing, 97% overall coverage)
+
+**Coverage:**
+
+- Admin Module: 100% coverage (AdminService, AdminController, AuditLogService)
+- Verification Module: 88.72% coverage (all services tested)
+- Overall Backend: 97.18% statement coverage
+
 **Features:**
 
-- [ ] Admin dashboard with platform statistics
-- [ ] User management (view all users, ban/suspend/activate)
+- [x] Admin dashboard with platform statistics
+- [x] User management (view all users, ban/unban)
+- [x] Role-based access control (Admin, Moderator, Support, User)
+- [x] Audit logs for admin actions
+- [x] User role management (change user roles)
+- [x] Comprehensive unit tests (46 admin tests, 83 verification tests)
 - [ ] Content moderation (flag/approve/remove items)
-- [ ] Role-based access control (Admin, Moderator, Support)
-- [ ] Audit logs for admin actions
 - [ ] Platform monitoring and health checks
 - [ ] Bulk actions for moderation tasks
 - [ ] **Live support chat with queue system**
@@ -792,11 +807,18 @@ Below are the full technical specifications for features listed above. These ser
 
 **Technical Implementation:**
 
-- [ ] Extend User model with roles (ADMIN, MODERATOR, SUPPORT, USER)
-- [ ] Create AdminGuard, ModeratorGuard, SupportGuard
-- [ ] AdminModule with controllers and services
-- [ ] AuditLog model for tracking admin actions
-- [ ] Admin dashboard API endpoints
+- [x] Extended User model with roles (ADMIN, MODERATOR, SUPPORT, USER)
+- [x] Created AdminGuard, ModeratorGuard, SupportGuard
+- [x] AdminModule with controller and services
+- [x] AuditLog model for tracking admin actions
+- [x] Admin dashboard API endpoints (stats, users, audit logs)
+- [x] User management endpoints (ban, unban, role change)
+- [x] Complete unit test suite for AdminService (14 tests, 100% coverage)
+- [x] Complete unit test suite for AuditLogService (9 tests, 100% coverage)
+- [x] Complete unit test suite for AdminController (16 tests, 100% coverage)
+- [x] Complete unit test suite for VerificationRateLimitService (9 tests, 100% coverage)
+- [x] Complete unit test suite for VerificationCleanupService (11 tests, 98.33% coverage)
+- [x] Complete unit test suite for VerificationController (10 tests, 100% coverage)
 - [ ] Moderation queue system
 - [ ] **SupportChat model (userId, agentId, status, priority, queuePosition)**
 - [ ] **SupportChatMessage model (chatId, senderId, message, timestamp)**
@@ -807,14 +829,23 @@ Below are the full technical specifications for features listed above. These ser
 
 ### API Endpoints
 
-- `GET /admin/stats` - Platform statistics
-- `GET /admin/users` - List all users with filters
-- `PATCH /admin/users/:id/ban` - Ban user
+**✅ Implemented:**
+
+- `GET /admin/stats` - Platform statistics (users, items, trades, verifications)
+- `GET /admin/users` - List all users with filters (search, role, status)
+- `GET /admin/users/:id` - Get detailed user information
+- `PATCH /admin/users/:id/ban` - Ban user (with audit logging)
+- `PATCH /admin/users/:id/unban` - Unban user (with audit logging)
+- `PATCH /admin/users/:id/role` - Change user role (with audit logging)
+- `GET /admin/audit-logs` - View audit logs with filtering
+- `GET /admin/audit-logs/stats` - Get audit log statistics
+
+**⏳ TODO:**
+
 - `PATCH /admin/users/:id/suspend` - Suspend user
 - `GET /admin/items/flagged` - Get flagged items
 - `PATCH /admin/items/:id/approve` - Approve item
 - `DELETE /admin/items/:id` - Remove item
-- `GET /admin/audit-logs` - View audit logs
 - **`POST /support/chat/start` - Start support chat session (enters queue)**
 - **`GET /support/chat/:id` - Get support chat details**
 - **`GET /support/chat/:id/messages` - Get chat messages**

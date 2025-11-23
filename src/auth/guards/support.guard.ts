@@ -8,11 +8,11 @@ import {
 import { UserRole } from '@prisma/client';
 
 /**
- * Guard to check if user is an admin
- * Checks both legacy isAdmin field and new role field
+ * Guard to check if user is support staff, moderator, or admin
+ * Support staff can handle support tickets and user issues
  */
 @Injectable()
-export class AdminGuard implements CanActivate {
+export class SupportGuard implements CanActivate {
   constructor(private readonly prisma: PrismaService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -28,9 +28,15 @@ export class AdminGuard implements CanActivate {
       select: { isAdmin: true, role: true },
     });
 
-    // Check both legacy isAdmin and new role system
-    if (!user?.isAdmin && user?.role !== UserRole.ADMIN) {
-      throw new ForbiddenException('Admin access required');
+    // Allow support, moderators, and admins
+    const hasAccess =
+      user?.isAdmin ||
+      user?.role === UserRole.ADMIN ||
+      user?.role === UserRole.MODERATOR ||
+      user?.role === UserRole.SUPPORT;
+
+    if (!hasAccess) {
+      throw new ForbiddenException('Support access required');
     }
 
     return true;

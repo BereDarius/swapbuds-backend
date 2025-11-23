@@ -4,7 +4,7 @@
 
 A production-ready NestJS backend with PostgreSQL, Redis, JWT authentication, and comprehensive API documentation.
 
-**Version 1.0.4**
+**Version 1.1.0-dev** (Admin & Moderation System)
 
 [![NestJS](https://img.shields.io/badge/NestJS-10-red.svg)](https://nestjs.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
@@ -54,7 +54,8 @@ This is the production-ready backend API for SWAPBUDS, providing secure authenti
 - ✅ **Production Ready v1.0.0**
 - ✅ Delivery method & value filtering (v1.0.1)
 - ✅ Smart recommendations & matching (v1.0.2)
-- ✅ ID verification & age verification + security & privacy (v1.0.3)
+- ✅ ID verification & age verification + security & privacy (v1.0.3-v1.0.4)
+- ✅ Admin & moderation system with role-based access (v1.1.0)
 
 ---
 
@@ -298,6 +299,17 @@ Interactive Swagger documentation available at:
 - `PATCH /api/disputes/:id` - Update dispute (admin only)
 - `PATCH /api/disputes/:id/resolve` - Resolve dispute (admin only)
 - `POST /api/disputes/:id/messages` - Add message to dispute (protected)
+
+#### Admin & Moderation (v1.1.0)
+
+- `GET /api/admin/stats` - Platform statistics (admin only)
+- `GET /api/admin/users` - List all users with filtering (admin only)
+- `GET /api/admin/users/:id` - Get user details (admin only)
+- `PATCH /api/admin/users/:id/ban` - Ban user (admin only)
+- `PATCH /api/admin/users/:id/unban` - Unban user (admin only)
+- `PATCH /api/admin/users/:id/role` - Change user role (admin only)
+- `GET /api/admin/audit-logs` - View audit logs (admin only)
+- `GET /api/admin/audit-logs/stats` - Audit log statistics (admin only)
 - `GET /api/disputes/:id/messages` - Get dispute messages (protected)
 
 #### User Settings (v0.14.0)
@@ -723,6 +735,200 @@ const approve = await fetch('/verification/admin/verif-123/approve', {
 - [ ] Address verification
 - [ ] Phone number verification
 - [ ] Email notifications for verification status changes
+
+---
+
+## 👑 Admin & Moderation System (v1.1.0)
+
+### Role-Based Access Control
+
+A comprehensive admin system with hierarchical role-based access control for platform management.
+
+### User Roles
+
+- **USER**: Standard platform user (default)
+- **SUPPORT**: Customer support staff (can view user data, no moderation)
+- **MODERATOR**: Content moderator (can manage items, users)
+- **ADMIN**: Full platform access (all permissions)
+
+**Role Hierarchy:** ADMIN > MODERATOR > SUPPORT > USER
+
+### Features
+
+- ✅ Platform statistics dashboard
+- ✅ User management (list, search, filter)
+- ✅ User ban/unban with audit logging
+- ✅ Role management (change user roles)
+- ✅ Comprehensive audit log system
+- ✅ Role-based guards (AdminGuard, ModeratorGuard, SupportGuard)
+- ⏳ Content moderation (flag/approve/remove items)
+- ⏳ Bulk moderation actions
+
+### API Endpoints
+
+**Admin Statistics:**
+
+```bash
+# Get platform statistics
+GET /admin/stats
+Response: {
+  "users": {
+    "total": 1250,
+    "active": 980,
+    "inactive": 270,
+    "newLast7Days": 45
+  },
+  "items": {
+    "total": 3400,
+    "available": 2100,
+    "inTrade": 450,
+    "newLast7Days": 120
+  },
+  "trades": {
+    "total": 890,
+    "active": 156,
+    "completed": 650,
+    "newLast7Days": 34
+  },
+  "verifications": {
+    "total": 425,
+    "pending": 23,
+    "approved": 380
+  }
+}
+```
+
+**User Management:**
+
+```bash
+# List all users with filtering
+GET /admin/users?page=1&limit=20&search=john&role=USER&isActive=true
+
+# Get detailed user information
+GET /admin/users/:id
+Response: {
+  "id": "user-123",
+  "username": "john_doe",
+  "email": "john@example.com",
+  "role": "USER",
+  "isActive": true,
+  "isVerified": true,
+  "stats": { ... },
+  "auditLogs": [ ... ]  // Recent audit logs for this user
+}
+
+# Ban user
+PATCH /admin/users/:id/ban
+{
+  "reason": "Violating community guidelines"
+}
+
+# Unban user
+PATCH /admin/users/:id/unban
+{
+  "reason": "Appeal accepted, behavior improved"
+}
+
+# Change user role
+PATCH /admin/users/:id/role
+{
+  "role": "MODERATOR",
+  "reason": "Promoted to content moderator"
+}
+```
+
+**Audit Logs:**
+
+```bash
+# Get audit logs with filtering
+GET /admin/audit-logs?page=1&limit=50&action=USER_BAN&performedById=admin-123
+
+# Get audit log statistics
+GET /admin/audit-logs/stats
+Response: {
+  "totalLogs": 1450,
+  "recentLogs": 89,  // Last 24 hours
+  "byAction": {
+    "USER_BAN": 23,
+    "USER_UNBAN": 12,
+    "ROLE_CHANGE": 8,
+    ...
+  }
+}
+```
+
+### Guards & Decorators
+
+**AdminGuard:**
+
+- Requires ADMIN role (or legacy isAdmin flag)
+- Protects all `/admin/*` endpoints
+
+**ModeratorGuard:**
+
+- Requires MODERATOR or ADMIN role
+- Used for content moderation features
+
+**SupportGuard:**
+
+- Requires SUPPORT, MODERATOR, or ADMIN role
+- Used for customer support features
+
+**Usage:**
+
+```typescript
+@UseGuards(JwtAuthGuard, AdminGuard)
+@Get('admin/stats')
+async getStats() {
+  return this.adminService.getPlatformStats();
+}
+```
+
+### Audit Log System
+
+Comprehensive logging of all admin actions for compliance and security:
+
+**Tracked Actions:**
+
+- USER_BAN, USER_UNBAN, USER_SUSPEND
+- ROLE_CHANGE
+- ITEM_FLAG, ITEM_APPROVE, ITEM_REMOVE
+- VERIFICATION_APPROVE, VERIFICATION_REJECT
+- And more...
+
+**Audit Log Fields:**
+
+- Action type (enum)
+- Admin who performed action
+- Target entity (type + ID)
+- Description and reason
+- IP address
+- JSON metadata
+- Timestamp
+
+**Features:**
+
+- Paginated log retrieval
+- Filtering by action, admin, target
+- Statistics and grouping
+- Silent failure (doesn't throw errors)
+
+### Business Rules
+
+- ✅ Cannot ban admin users (protection)
+- ✅ Role changes update both `role` and legacy `isAdmin` field
+- ✅ All admin actions are logged with full context
+- ✅ Audit logs cannot be deleted (immutable)
+- ✅ Backward compatibility with existing `isAdmin` field
+
+### Future Enhancements
+
+- [ ] Content moderation queue
+- [ ] Bulk user actions
+- [ ] Automated moderation rules
+- [ ] Admin activity dashboard
+- [ ] Role permission customization
+- [ ] Admin notification system
 
 ---
 

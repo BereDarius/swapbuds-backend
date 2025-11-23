@@ -16,6 +16,16 @@ datasource db {
 }
 
 // ============================================
+// USER ROLE ENUM
+// ============================================
+enum UserRole {
+  USER // Regular user
+  MODERATOR // Can moderate content
+  SUPPORT // Can handle support tickets
+  ADMIN // Full admin access
+}
+
+// ============================================
 // USER MODEL
 // ============================================
 model User {
@@ -30,6 +40,9 @@ model User {
   // Reputation
   reputationScore Float @default(0)
 
+  // Role & Permissions
+  role UserRole @default(USER)
+
   // Timestamps
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -38,7 +51,7 @@ model User {
   // Status
   isActive   Boolean @default(true)
   isVerified Boolean @default(false)
-  isAdmin    Boolean @default(false)
+  isAdmin    Boolean @default(false) // Deprecated: use role instead
 
   // Relations
   items                   Item[]
@@ -59,10 +72,12 @@ model User {
   disputesAgainst         Dispute[]                @relation("DisputeReportedUser")
   disputesAdministered    Dispute[]                @relation("DisputeAdmin")
   verification            UserVerification?        @relation("UserVerification")
+  auditLogs               AuditLog[]               @relation("AuditLogPerformedBy")
 
   @@index([email])
   @@index([username])
   @@index([createdAt])
+  @@index([role])
   @@map("users")
 }
 
@@ -707,6 +722,52 @@ model UserVerification {
   @@index([status])
   @@index([submittedAt])
   @@map("user_verifications")
+}
+
+// ============================================
+// AUDIT LOG MODEL
+// ============================================
+enum AuditAction {
+  USER_BAN // User banned
+  USER_UNBAN // User unbanned
+  USER_SUSPEND // User suspended
+  USER_ACTIVATE // User activated
+  ITEM_FLAG // Item flagged
+  ITEM_APPROVE // Item approved
+  ITEM_REMOVE // Item removed
+  ROLE_CHANGE // User role changed
+  VERIFICATION_APPROVE // Verification approved
+  VERIFICATION_REJECT // Verification rejected
+  OTHER // Other admin action
+}
+
+model AuditLog {
+  id String @id @default(cuid())
+
+  // Who performed the action
+  performedById String
+  performedBy   User   @relation("AuditLogPerformedBy", fields: [performedById], references: [id])
+
+  // What action
+  action      AuditAction
+  description String // Human-readable description
+
+  // Target details
+  targetType String? // e.g., "User", "Item", "Trade"
+  targetId   String? // ID of the affected entity
+
+  // Additional context
+  metadata  Json? // Additional data (e.g., old/new values)
+  ipAddress String? // IP address of admin
+
+  // Timestamps
+  createdAt DateTime @default(now())
+
+  @@index([performedById])
+  @@index([action])
+  @@index([targetType, targetId])
+  @@index([createdAt])
+  @@map("audit_logs")
 }
 
 // ============================================
