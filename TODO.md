@@ -1,13 +1,14 @@
 # SwapBuds Backend - Launch Roadmap (16 Weeks)
 
 **Target Public Launch:** March 17, 2026
-**Current Status:** v1.1.2 Live Support Chat Complete (806 tests passing, 97.88% support module coverage)
+**Current Status:** v1.1.3 Platform Monitoring & Enhanced Moderation Complete (806 tests passing)
 
 - ✅ v1.0.4 Complete (Security & Privacy)
 - ✅ Core admin features implemented (user management, audit logs, role-based access)
 - ✅ Content moderation system (flag/approve/remove items) - v1.1.1
 - ✅ Live support chat with priority queue & agent assignment - v1.1.2
-- ✅ Comprehensive test coverage (806 tests, 97.88% support module coverage)
+- ✅ Platform monitoring, health checks & bulk moderation actions - v1.1.3
+- ✅ Comprehensive test coverage (806 tests passing)
 
 This roadmap is aligned with the [LAUNCH_ROADMAP.md](../plans/LAUNCH_ROADMAP.md) and organized by implementation timeline.
 
@@ -932,6 +933,103 @@ enum SupportChatStatus {
 - Support agents can't see messages marked as `isInternal`
 - Queue position updates in real-time via WebSocket
 - Default priority is 0 (can be modified by subscription tier)
+
+---
+
+### Platform Monitoring & Enhanced Moderation (v1.1.3)
+
+**Status:** ✅ Complete (806 tests passing)
+
+**Features:**
+
+- [x] **Health Check System** - Production-ready health monitoring
+- [x] **Platform Monitoring Service** - Metrics tracking and analytics
+- [x] **Bulk Moderation Actions** - Batch operations for admins/moderators
+- [x] **Swagger Documentation Standardization** - Uppercase tags with descriptions
+
+**Technical Implementation:**
+
+**Health Checks:**
+- [x] HealthModule with @nestjs/terminus integration
+- [x] HealthController with 5 endpoints (overall, database, Redis, memory, disk)
+- [x] RedisHealthIndicator custom health indicator
+- [x] Health thresholds: memory (300MB heap, 500MB RSS), disk (90%)
+- [x] PrismaHealthIndicator for database connectivity
+- [x] MemoryHealthIndicator and DiskHealthIndicator
+
+**Platform Monitoring:**
+- [x] MonitoringService with in-memory metrics storage
+- [x] MonitoringInterceptor for automatic request/response tracking
+- [x] MonitoringController with 3 endpoints (metrics, errors, performance)
+- [x] Metrics tracked: API calls, response times (avg, p95, p99), error rates, active users
+- [x] 24-hour retention window, 10,000 metrics maximum
+- [x] Global interceptor configuration via APP_INTERCEPTOR
+
+**Bulk Moderation Actions:**
+- [x] ModerationService bulk methods: bulkApprove, bulkReject, bulkRemove
+- [x] AdminService bulk methods: bulkBanUsers, bulkUnbanUsers, bulkChangeRole
+- [x] DTOs: BulkApproveFlagsDto, BulkRejectFlagsDto, BulkRemoveFlagsDto
+- [x] DTOs: BulkBanUsersDto, BulkUnbanUsersDto, BulkChangeRoleDto
+- [x] Validation: verify items exist and are in correct state
+- [x] Comprehensive audit logging for all bulk operations
+- [x] Transaction-like behavior with error handling
+
+**Swagger Updates:**
+- [x] All API tags standardized to uppercase format
+- [x] Descriptions added to all 18 tags
+- [x] Missing @ApiTags added to messages, reviews, cache controllers
+- [x] API version updated to 1.1.3
+
+### API Endpoints
+
+**Health Checks (Public):**
+
+- `GET /health` - Overall system health (all checks)
+- `GET /health/database` - Prisma database connectivity
+- `GET /health/redis` - Redis cache availability
+- `GET /health/memory` - Memory usage (heap & RSS)
+- `GET /health/disk` - Disk space availability
+
+**Monitoring (Admin-Only):**
+
+- `GET /monitoring/metrics` - Aggregated platform metrics
+- `GET /monitoring/errors?limit=50` - Recent error logs
+- `GET /monitoring/performance` - Performance statistics
+
+**Bulk Moderation (Moderator/Admin):**
+
+- `PATCH /moderation/items/flagged/bulk-approve` - Approve multiple flagged items
+- `PATCH /moderation/items/flagged/bulk-reject` - Reject multiple flags
+- `DELETE /moderation/items/flagged/bulk-remove` - Remove multiple items
+
+**Bulk Admin Actions (Admin-Only):**
+
+- `PATCH /admin/users/bulk-ban` - Ban multiple users
+- `PATCH /admin/users/bulk-unban` - Unban multiple users
+- `PATCH /admin/users/bulk-role` - Change role for multiple users
+
+### Dependencies
+
+```json
+{
+  "@nestjs/terminus": "^11.0.0"
+}
+```
+
+### Monitoring Metrics
+
+**Tracked Automatically:**
+- API call counts by endpoint and status code
+- Response times (average, 95th percentile, 99th percentile)
+- Slowest endpoints with average response times
+- Error rates and recent error details
+- Active user counts and requests per user
+
+**Storage:**
+- In-memory storage with automatic cleanup
+- 24-hour retention window
+- Maximum 10,000 metrics stored
+- Cleanup runs every hour
 
 ---
 
