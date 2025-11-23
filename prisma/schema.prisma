@@ -58,6 +58,7 @@ model User {
   disputesReported        Dispute[]                @relation("DisputeReporter")
   disputesAgainst         Dispute[]                @relation("DisputeReportedUser")
   disputesAdministered    Dispute[]                @relation("DisputeAdmin")
+  verification            UserVerification?        @relation("UserVerification")
 
   @@index([email])
   @@index([username])
@@ -653,6 +654,59 @@ model Dispute {
   @@index([status])
   @@index([createdAt])
   @@map("disputes")
+}
+
+// ============================================
+// USER VERIFICATION ENUMS
+// ============================================
+enum VerificationStatus {
+  PENDING // Submitted, awaiting review
+  APPROVED // Verified and approved
+  REJECTED // Rejected due to invalid/poor quality documents
+  UNDERAGE // Rejected - user is under 18 years old
+  CANCELLED // User cancelled the request
+}
+
+enum DocumentType {
+  ID_CARD // National ID card
+  PASSPORT // Passport
+  DRIVERS_LICENSE // Driver's license
+}
+
+// ============================================
+// USER VERIFICATION MODEL
+// ============================================
+model UserVerification {
+  id String @id @default(cuid())
+
+  userId String @unique
+  user   User   @relation("UserVerification", fields: [userId], references: [id], onDelete: Cascade)
+
+  status       VerificationStatus @default(PENDING)
+  documentType DocumentType // Type of ID document submitted
+
+  // Document storage
+  documentUrl String // Encrypted storage URL (Cloudinary with restricted access)
+
+  // Age verification
+  dateOfBirth DateTime? // Extracted from document (manual or OCR)
+  isOver18    Boolean? // Calculated from dateOfBirth
+
+  // Review information
+  submittedAt     DateTime  @default(now())
+  reviewedAt      DateTime? // When admin reviewed it
+  reviewedBy      String? // Admin/Support user ID who reviewed
+  rejectionReason String? // Reason for rejection (shown to user)
+  notes           String? // Internal notes for reviewers (not shown to user)
+
+  // Audit trail
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([submittedAt])
+  @@map("user_verifications")
 }
 
 // ============================================

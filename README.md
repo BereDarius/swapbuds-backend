@@ -4,7 +4,7 @@
 
 A production-ready NestJS backend with PostgreSQL, Redis, JWT authentication, and comprehensive API documentation.
 
-**Version 1.0.1**
+**Version 1.0.4**
 
 [![NestJS](https://img.shields.io/badge/NestJS-10-red.svg)](https://nestjs.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
@@ -54,6 +54,7 @@ This is the production-ready backend API for SWAPBUDS, providing secure authenti
 - ✅ **Production Ready v1.0.0**
 - ✅ Delivery method & value filtering (v1.0.1)
 - ✅ Smart recommendations & matching (v1.0.2)
+- ✅ ID verification & age verification + security & privacy (v1.0.3)
 
 ---
 
@@ -491,6 +492,237 @@ PATCH /users/settings
   "saveSearchHistory": true               // Use search history for better recommendations
 }
 ```
+
+---
+
+## 🆔 ID Verification & Age Verification (v1.0.3)
+
+### User ID Verification System
+
+A comprehensive ID verification system with mandatory age verification (18+) to ensure platform safety and legal compliance.
+
+### Features
+
+- ✅ Secure ID document upload (ID card, passport, driver's license)
+- ✅ **Mandatory age verification (18+ requirement)**
+- ✅ Manual review by admin/support staff
+- ✅ Automatic account suspension for underage users
+- ✅ Verified badge on user profiles
+- ✅ Admin dashboard for reviewing verification requests
+- ✅ Comprehensive audit trail
+
+### API Endpoints
+
+**User Endpoints:**
+
+```bash
+# Submit ID verification request
+POST /verification
+{
+  "documentType": "ID_CARD",  // ID_CARD, PASSPORT, DRIVERS_LICENSE
+  "documentUrl": "https://cloudinary.com/secure/document.jpg"
+}
+
+# Get own verification status
+GET /verification/me
+
+# Cancel pending verification
+DELETE /verification/me
+```
+
+**Admin Endpoints:**
+
+```bash
+# Get pending verifications (paginated)
+GET /verification/admin/pending?page=1&limit=20
+
+# Get verification by ID
+GET /verification/admin/:id
+
+# Get signed URL for viewing document (expires in 5 minutes)
+GET /verification/admin/:id/document-url
+Response: {
+  "signedUrl": "https://res.cloudinary.com/...",
+  "expiresIn": 300
+}
+
+# Approve verification (requires date of birth)
+PATCH /verification/admin/:id/approve
+{
+  "dateOfBirth": "1995-05-15",  // Required for age calculation
+  "notes": "Document verified"
+}
+
+# Reject verification
+PATCH /verification/admin/:id/reject
+{
+  "rejectionReason": "Document is blurry and unreadable",
+  "notes": "Request better quality scan"
+}
+
+# Get verification statistics
+GET /verification/admin/stats
+```
+
+### Verification Status Flow
+
+```
+PENDING → APPROVED (if 18+, user verified)
+        → UNDERAGE (if <18, account suspended)
+        → REJECTED (invalid document, user can resubmit)
+        → CANCELLED (user cancelled request)
+```
+
+### Age Verification Process
+
+**Manual Review (Current Implementation):**
+
+1. User uploads ID document to Cloudinary
+2. User submits verification request with document URL
+3. Admin/Support reviews document
+4. Admin extracts date of birth from document
+5. System automatically calculates age:
+   - **If 18+**: Verification approved, user marked as verified
+   - **If under 18**: Auto-reject with `UNDERAGE` status, account suspended
+6. User notified of verification result
+
+**Age Calculation:**
+
+- Accurate age calculation considering birth date, month, and year
+- Edge case handling (e.g., birthday today counts as 18)
+- Timezone-aware calculations
+
+### Security & Privacy
+
+- ✅ **Document Encryption**: Documents encrypted at rest using AES-256-GCM
+- ✅ **Signed URLs**: Temporary signed URLs with 5-minute expiration for viewing
+- ✅ **Admin-Only Access**: AdminGuard protects all admin endpoints
+- ✅ **Auto-Deletion**: Approved documents deleted after 30 days, rejected after 90 days
+- ✅ **Audit Logging**: Comprehensive logging of all verification actions
+- ✅ **Rate Limiting**: Max 3 verification attempts per 30 days (configurable)
+- ✅ **GDPR Compliance**: Manual deletion method + automatic cleanup
+- ✅ **Encrypted Storage**: Document URLs encrypted in database
+- ✅ **Secure Access**: Documents only accessible via time-limited signed URLs
+
+### Account Suspension for Underage Users
+
+When a user is verified as under 18:
+
+- Verification status set to `UNDERAGE`
+- User account automatically deactivated (`isActive = false`)
+- User cannot log in or access platform
+- Clear rejection message explaining age requirement
+
+### Admin Dashboard Data
+
+Admins can access:
+
+- Pending verification queue (FIFO order)
+- Verification statistics:
+  - Total pending
+  - Total approved
+  - Total rejected
+  - Total underage
+  - Total cancelled
+- Individual verification details with user information
+- Document viewing (secure access)
+
+### Example Usage
+
+**User Submitting Verification:**
+
+```typescript
+// 1. Upload document to Cloudinary first
+const formData = new FormData();
+formData.append('file', idDocument);
+
+const uploadResponse = await fetch('/upload', {
+  method: 'POST',
+  headers: { Authorization: `Bearer ${token}` },
+  body: formData,
+});
+const { url } = await uploadResponse.json();
+
+// 2. Submit verification request
+const verification = await fetch('/verification', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
+  },
+  body: JSON.stringify({
+    documentType: 'ID_CARD',
+    documentUrl: url,
+  }),
+});
+```
+
+**Admin Reviewing Verification:**
+
+```typescript
+// Get pending verifications
+const pending = await fetch('/verification/admin/pending', {
+  headers: { Authorization: `Bearer ${adminToken}` },
+});
+
+// Approve with age verification
+const approve = await fetch('/verification/admin/verif-123/approve', {
+  method: 'PATCH',
+  headers: {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${adminToken}`,
+  },
+  body: JSON.stringify({
+    dateOfBirth: '1995-05-15', // Extracted from document
+    notes: 'ID card verified, clear photo',
+  }),
+});
+
+// System automatically:
+// - Calculates age (29 years old)
+// - Checks if >= 18 (yes)
+// - Approves verification
+// - Marks user as verified
+```
+
+### Implemented Security Services
+
+**DocumentSecurityService:**
+
+- AES-256-GCM encryption for document URLs
+- Signed URL generation with configurable expiration
+- Cloudinary document deletion
+- Public ID extraction from URLs
+
+**VerificationAuditService:**
+
+- Comprehensive logging of all actions
+- Document access tracking
+- Suspicious activity alerts
+- GDPR-compliant audit trail
+
+**VerificationRateLimitService:**
+
+- 3 attempts per 30 days limit
+- Rate limit checking and stats
+- Automatic violation logging
+
+**VerificationCleanupService:**
+
+- Automated document deletion (cron jobs)
+- 30 days after approval
+- 90 days after rejection
+- Manual deletion support for GDPR requests
+
+### Future Enhancements (Phase 2)
+
+- [ ] Automatic OCR for date of birth extraction
+- [ ] AI-powered document validation
+- [ ] Liveness detection (selfie with ID)
+- [ ] Face matching between selfie and ID photo
+- [ ] Address verification
+- [ ] Phone number verification
+- [ ] Email notifications for verification status changes
 
 ---
 

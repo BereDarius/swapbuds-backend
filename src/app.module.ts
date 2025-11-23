@@ -24,6 +24,7 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { TradesModule } from './trades/trades.module';
 import { UploadModule } from './upload/upload.module';
 import { UsersModule } from './users/users.module';
+import { VerificationModule } from './verification/verification.module';
 
 @Module({
   imports: [
@@ -101,6 +102,8 @@ import { UsersModule } from './users/users.module';
     MessagesModule,
 
     DisputesModule,
+
+    VerificationModule,
   ],
   controllers: [AppController],
   providers: [
