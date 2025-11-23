@@ -1,5 +1,5 @@
+import { CacheService } from '@/cache/cache.service';
 import { Inject } from '@nestjs/common';
-import { CacheService } from '../cache.service';
 
 /**
  * Options for the @Cacheable decorator

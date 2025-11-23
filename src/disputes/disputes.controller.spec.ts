@@ -1,11 +1,11 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { DisputeReason, DisputeStatus } from '@prisma/client';
-import { AdminGuard } from '../auth/guards/admin.guard';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AdminGuard } from '@/auth/guards/admin.guard';
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 import {
   mockDisputeWithRelations,
   mockResolvedDisputeWithRelations,
-} from '../test/fixtures/dispute.fixture';
+} from '@/test/fixtures/dispute.fixture';
+import { Test, TestingModule } from '@nestjs/testing';
+import { DisputeReason, DisputeStatus } from '@prisma/client';
 import { DisputesController } from './disputes.controller';
 import { DisputesService } from './disputes.service';
 

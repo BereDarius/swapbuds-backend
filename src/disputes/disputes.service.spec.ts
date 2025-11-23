@@ -1,3 +1,9 @@
+import { PrismaService } from '@/prisma/prisma.service';
+import {
+  mockDispute,
+  mockDisputeWithRelations,
+  mockResolvedDisputeWithRelations,
+} from '@/test/fixtures/dispute.fixture';
 import {
   BadRequestException,
   ForbiddenException,
@@ -5,12 +11,6 @@ import {
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DisputeReason, DisputeStatus, TradeStatus } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
-import {
-  mockDispute,
-  mockDisputeWithRelations,
-  mockResolvedDisputeWithRelations,
-} from '../test/fixtures/dispute.fixture';
 import { DisputesService } from './disputes.service';
 
 describe('DisputesService', () => {

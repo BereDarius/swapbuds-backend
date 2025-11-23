@@ -1,7 +1,7 @@
+import { CacheService } from '@/cache/cache.service';
 import { CallHandler, ExecutionContext } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { of } from 'rxjs';
-import { CacheService } from '../cache.service';
 import { HttpCacheInterceptor } from './http-cache.interceptor';
 
 describe('HttpCacheInterceptor', () => {

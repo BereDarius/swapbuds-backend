@@ -4,7 +4,7 @@
 
 A production-ready NestJS backend with PostgreSQL, Redis, JWT authentication, and comprehensive API documentation.
 
-**Version 1.1.0-dev** (Admin & Moderation System)
+**Version 1.1.0** (Admin & Moderation System)
 
 [![NestJS](https://img.shields.io/badge/NestJS-10-red.svg)](https://nestjs.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
@@ -56,6 +56,7 @@ This is the production-ready backend API for SWAPBUDS, providing secure authenti
 - ✅ Smart recommendations & matching (v1.0.2)
 - ✅ ID verification & age verification + security & privacy (v1.0.3-v1.0.4)
 - ✅ Admin & moderation system with role-based access (v1.1.0)
+- ✅ Content moderation system (flag/approve/remove items) (v1.1.0)
 
 ---
 
@@ -302,6 +303,8 @@ Interactive Swagger documentation available at:
 
 #### Admin & Moderation (v1.1.0)
 
+**Admin Endpoints:**
+
 - `GET /api/admin/stats` - Platform statistics (admin only)
 - `GET /api/admin/users` - List all users with filtering (admin only)
 - `GET /api/admin/users/:id` - Get user details (admin only)
@@ -310,6 +313,15 @@ Interactive Swagger documentation available at:
 - `PATCH /api/admin/users/:id/role` - Change user role (admin only)
 - `GET /api/admin/audit-logs` - View audit logs (admin only)
 - `GET /api/admin/audit-logs/stats` - Audit log statistics (admin only)
+
+**Content Moderation Endpoints:**
+
+- `POST /api/moderation/items/:id/flag` - Flag item for moderation (protected)
+- `GET /api/moderation/items/flagged` - Get all flagged items (moderator only)
+- `GET /api/moderation/items/flagged/:id` - Get single flagged item (moderator only)
+- `PATCH /api/moderation/items/flagged/:id/approve` - Approve flagged item (moderator only)
+- `DELETE /api/moderation/items/flagged/:id` - Remove flagged item (moderator only)
+- `GET /api/moderation/stats` - Get moderation statistics (moderator only)
 - `GET /api/disputes/:id/messages` - Get dispute messages (protected)
 
 #### User Settings (v0.14.0)

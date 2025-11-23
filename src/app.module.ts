@@ -20,6 +20,7 @@ import { ItemsModule } from './items/items.module';
 import { LikesModule } from './likes/likes.module';
 import { MailModule } from './mail/mail.module';
 import { MessagesModule } from './messages/messages.module';
+import { ModerationModule } from './moderation/moderation.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { TradesModule } from './trades/trades.module';
@@ -107,6 +108,8 @@ import { VerificationModule } from './verification/verification.module';
     VerificationModule,
 
     AdminModule,
+
+    ModerationModule,
   ],
   controllers: [AppController],
   providers: [

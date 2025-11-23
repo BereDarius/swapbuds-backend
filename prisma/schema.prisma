@@ -73,6 +73,8 @@ model User {
   disputesAdministered    Dispute[]                @relation("DisputeAdmin")
   verification            UserVerification?        @relation("UserVerification")
   auditLogs               AuditLog[]               @relation("AuditLogPerformedBy")
+  flaggedItemsReported    FlaggedItem[]            @relation("FlagReporter")
+  flaggedItemsReviewed    FlaggedItem[]            @relation("FlagReviewer")
 
   @@index([email])
   @@index([username])
@@ -160,6 +162,9 @@ model Item {
   tradesRequested    Trade[]        @relation("TradeItemRequested")
   tradeItems         TradeItem[]
   counterOffersUsing CounterOffer[]
+
+  // Moderation
+  flags FlaggedItem[] @relation("FlaggedItems")
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -738,6 +743,8 @@ enum AuditAction {
   ROLE_CHANGE // User role changed
   VERIFICATION_APPROVE // Verification approved
   VERIFICATION_REJECT // Verification rejected
+  MODERATION_APPROVE // Flagged item approved
+  MODERATION_REMOVE // Flagged item removed
   OTHER // Other admin action
 }
 
@@ -768,6 +775,62 @@ model AuditLog {
   @@index([targetType, targetId])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// ============================================
+// CONTENT MODERATION MODELS
+// ============================================
+enum FlagReason {
+  INAPPROPRIATE // Inappropriate content (offensive, sexual, etc.)
+  SPAM // Spam or fake item
+  SCAM // Suspected scam or fraud
+  DUPLICATE // Duplicate posting
+  PROHIBITED // Prohibited items (weapons, drugs, etc.)
+  MISLEADING // Misleading description or images
+  COPYRIGHT // Copyright violation
+  OTHER // Other reason (see description)
+}
+
+enum ModerationStatus {
+  PENDING // Waiting for moderator review
+  APPROVED // Reviewed and approved (flag dismissed)
+  REMOVED // Item removed after review
+}
+
+model FlaggedItem {
+  id String @id @default(cuid())
+
+  // Item being flagged
+  itemId String
+  item   Item   @relation("FlaggedItems", fields: [itemId], references: [id], onDelete: Cascade)
+
+  // Who flagged it
+  reportedById String
+  reportedBy   User   @relation("FlagReporter", fields: [reportedById], references: [id], onDelete: Cascade)
+
+  // Flag details
+  reason      FlagReason
+  description String? // Additional details from reporter
+
+  // Moderation status
+  status ModerationStatus @default(PENDING)
+
+  // Review information (for approved or removed items)
+  reviewedById String? // Admin/Moderator who reviewed
+  reviewedBy   User?     @relation("FlagReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt   DateTime? // When it was reviewed
+  reviewNotes  String? // Admin notes on the decision
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([itemId])
+  @@index([reportedById])
+  @@index([status])
+  @@index([reason])
+  @@index([createdAt])
+  @@map("flagged_items")
 }
 
 // ============================================

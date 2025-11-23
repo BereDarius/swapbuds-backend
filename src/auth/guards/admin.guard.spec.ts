@@ -1,6 +1,6 @@
+import { PrismaService } from '@/prisma/prisma.service';
 import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaService } from '../../prisma/prisma.service';
 import { AdminGuard } from './admin.guard';
 
 describe('AdminGuard', () => {
