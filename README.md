@@ -4,7 +4,7 @@
 
 A production-ready NestJS backend with PostgreSQL, Redis, JWT authentication, and comprehensive API documentation.
 
-**Version 1.1.0** (Admin & Moderation System)
+**Version 1.1.3** (Platform Monitoring & Enhanced Moderation)
 
 [![NestJS](https://img.shields.io/badge/NestJS-10-red.svg)](https://nestjs.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
@@ -58,6 +58,7 @@ This is the production-ready backend API for SWAPBUDS, providing secure authenti
 - ✅ Admin & moderation system with role-based access (v1.1.0)
 - ✅ Content moderation system (flag/approve/remove items) (v1.1.1)
 - ✅ Live Support Chat with priority queue & agent assignment (v1.1.2)
+- ✅ Platform monitoring & health checks + bulk moderation actions (v1.1.3)
 
 ---
 
@@ -73,6 +74,7 @@ This is the production-ready backend API for SWAPBUDS, providing secure authenti
 - **Swagger** - API documentation
 - **TypeScript** - Type safety with `@/` path aliases
 - **@nestjs/schedule** - Cron jobs for trade expiration (v0.11.1)
+- **@nestjs/terminus** - Health checks and monitoring
 - **Socket.IO** - WebSocket for real-time features
 - **Nodemailer** - Email notifications
 
@@ -1589,6 +1591,233 @@ POST /cache/reset-stats
   "cache-manager": "^7.2.5",
   "cache-manager-redis-yet": "^5.1.5",
   "ioredis": "^5.8.2"
+}
+```
+
+---
+
+## 🏥 Health Checks & Monitoring (v1.1.3)
+
+Production-ready health check and monitoring system for tracking application health and performance metrics.
+
+### Health Check Endpoints
+
+**Public Health Checks:**
+
+```bash
+# Overall system health (checks all components)
+GET /health
+Response: {
+  "status": "ok" | "error",
+  "info": {
+    "database": { "status": "up" },
+    "redis": { "status": "up", "message": "Redis is healthy" },
+    "memory_heap": { "status": "up" },
+    "memory_rss": { "status": "up" }
+  },
+  "error": {
+    "disk": { "status": "down", "message": "Used disk storage exceeded threshold" }
+  },
+  "details": { ... }
+}
+
+# Database health check
+GET /health/database
+Response: { "status": "ok", "info": { "database": { "status": "up" } } }
+
+# Redis connectivity check
+GET /health/redis
+Response: { "status": "ok", "info": { "redis": { "status": "up", "message": "Redis is healthy" } } }
+
+# Memory usage check
+GET /health/memory
+Response: {
+  "status": "ok",
+  "info": {
+    "memory_heap": { "status": "up" },
+    "memory_rss": { "status": "up" }
+  }
+}
+
+# Disk space check
+GET /health/disk
+Response: { "status": "ok", "info": { "disk": { "status": "up" } } }
+```
+
+**Health Indicators:**
+
+- ✅ **Database**: Prisma connection ping
+- ✅ **Redis**: Custom health indicator with test key
+- ✅ **Memory**: Heap (300MB max) and RSS (500MB max)
+- ✅ **Disk**: Storage threshold (90% max usage)
+
+### Platform Monitoring
+
+**Admin-Only Monitoring Endpoints:**
+
+```bash
+# Get aggregated metrics
+GET /monitoring/metrics
+Authorization: Bearer <admin-token>
+Response: {
+  "apiCalls": {
+    "total": 15432,
+    "byEndpoint": {
+      "/api/items": 4532,
+      "/api/users": 3211,
+      ...
+    },
+    "byStatusCode": {
+      "200": 14123,
+      "404": 821,
+      "500": 12
+    }
+  },
+  "performance": {
+    "averageResponseTime": 87,
+    "p95ResponseTime": 234,
+    "p99ResponseTime": 456,
+    "slowestEndpoints": [
+      { "endpoint": "/api/items", "avgTime": 145 },
+      ...
+    ]
+  },
+  "errors": {
+    "total": 12,
+    "byEndpoint": { ... },
+    "errorRate": 0.08,
+    "recentErrors": [ ... ]
+  },
+  "users": {
+    "activeUsers": 342,
+    "requestsByUser": { ... }
+  }
+}
+
+# Get recent error logs
+GET /monitoring/errors?limit=50
+Authorization: Bearer <admin-token>
+Response: [
+  {
+    "endpoint": "/api/items/123",
+    "method": "GET",
+    "error": "Item not found",
+    "stack": "...",
+    "timestamp": "2025-11-23T10:30:00.000Z",
+    "userId": "user-id"
+  },
+  ...
+]
+
+# Get performance statistics
+GET /monitoring/performance
+Authorization: Bearer <admin-token>
+Response: {
+  "averageResponseTime": 87,
+  "p95ResponseTime": 234,
+  "p99ResponseTime": 456,
+  "slowestEndpoints": [ ... ]
+}
+```
+
+**Monitoring Features:**
+
+- 📊 **Automatic Tracking**: Global interceptor captures all requests/responses
+- ⚡ **Performance Metrics**: Average, P95, P99 response times
+- 🚨 **Error Tracking**: Detailed error logs with stack traces
+- 👥 **User Activity**: Active user counts and request patterns
+- 📈 **Endpoint Statistics**: Request counts by endpoint and status code
+- 💾 **In-Memory Storage**: 24-hour retention, 10,000 metrics max
+
+### Bulk Moderation Actions
+
+**Moderation Bulk Operations (Moderator/Admin):**
+
+```bash
+# Bulk approve flagged items
+PATCH /moderation/items/flagged/bulk-approve
+Authorization: Bearer <moderator-token>
+{
+  "flaggedItemIds": ["flag-id-1", "flag-id-2", "flag-id-3"],
+  "notes": "Reviewed and approved"
+}
+Response: {
+  "success": true,
+  "approvedCount": 3,
+  "approvedIds": ["flag-id-1", "flag-id-2", "flag-id-3"]
+}
+
+# Bulk reject flagged items
+PATCH /moderation/items/flagged/bulk-reject
+Authorization: Bearer <moderator-token>
+{
+  "flaggedItemIds": ["flag-id-1", "flag-id-2"],
+  "reason": "Not a policy violation"
+}
+Response: {
+  "success": true,
+  "rejectedCount": 2,
+  "rejectedIds": ["flag-id-1", "flag-id-2"]
+}
+
+# Bulk remove flagged items
+DELETE /moderation/items/flagged/bulk-remove
+Authorization: Bearer <moderator-token>
+{
+  "flaggedItemIds": ["flag-id-1", "flag-id-2"],
+  "reason": "Violates community guidelines"
+}
+Response: {
+  "success": true,
+  "removedCount": 2,
+  "removedIds": ["flag-id-1", "flag-id-2"],
+  "itemIds": ["item-id-1", "item-id-2"]
+}
+```
+
+**Admin Bulk Operations (Admin-Only):**
+
+```bash
+# Bulk ban users
+PATCH /admin/users/bulk-ban
+Authorization: Bearer <admin-token>
+{
+  "userIds": ["user-id-1", "user-id-2", "user-id-3"],
+  "reason": "Violating community guidelines"
+}
+
+# Bulk unban users
+PATCH /admin/users/bulk-unban
+Authorization: Bearer <admin-token>
+{
+  "userIds": ["user-id-1", "user-id-2"],
+  "reason": "Appeal approved"
+}
+
+# Bulk change user roles
+PATCH /admin/users/bulk-role
+Authorization: Bearer <admin-token>
+{
+  "userIds": ["user-id-1", "user-id-2"],
+  "role": "MODERATOR",
+  "reason": "Promoted to moderator"
+}
+```
+
+**Bulk Operation Features:**
+
+- ✅ **Batch Processing**: Handle multiple items in single request
+- ✅ **Validation**: Verify all items exist and are in correct state
+- ✅ **Atomic Operations**: Transaction-like behavior with rollback
+- ✅ **Audit Logging**: Comprehensive logs for all bulk actions
+- ✅ **Error Handling**: Detailed error messages for failed operations
+- ✅ **Performance**: Optimized queries with bulk updates
+
+### Dependencies
+
+```json
+{
+  "@nestjs/terminus": "^11.0.0"
 }
 ```
 
