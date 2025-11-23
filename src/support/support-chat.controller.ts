@@ -1,3 +1,5 @@
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { SupportGuard } from '@/auth/guards/support.guard';
 import {
   Body,
   Controller,
@@ -20,12 +22,10 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { SupportPriority } from '@prisma/client';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { SupportGuard } from '../auth/guards/support.guard';
 import { SupportChatGateway } from './support-chat.gateway';
 import { SupportChatService } from './support-chat.service';
 
-@ApiTags('support')
+@ApiTags('Support')
 @Controller('support')
 export class SupportChatController {
   constructor(

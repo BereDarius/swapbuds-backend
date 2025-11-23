@@ -1,6 +1,6 @@
+import { PrismaService } from '@/prisma/prisma.service';
 import { Test, TestingModule } from '@nestjs/testing';
 import { SupportChatStatus, SupportPriority, UserRole } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
 import { SupportQueueService } from './support-queue.service';
 
 describe('SupportQueueService', () => {

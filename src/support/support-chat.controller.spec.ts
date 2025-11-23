@@ -1,7 +1,7 @@
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { SupportGuard } from '@/auth/guards/support.guard';
 import { Test, TestingModule } from '@nestjs/testing';
 import { SupportChatStatus, SupportPriority, UserRole } from '@prisma/client';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { SupportGuard } from '../auth/guards/support.guard';
 import {
   CreateChatDto,
   ResolveChatDto,

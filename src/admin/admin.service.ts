@@ -307,4 +307,202 @@ export class AdminService {
 
     return { message: 'User role updated successfully' };
   }
+
+  /**
+   * Bulk ban users
+   */
+  async bulkBanUsers(
+    userIds: string[],
+    adminId: string,
+    reason: string,
+    ipAddress?: string,
+  ) {
+    // Validate all users exist
+    const users = await this.prisma.user.findMany({
+      where: {
+        id: { in: userIds },
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        isActive: true,
+      },
+    });
+
+    if (users.length !== userIds.length) {
+      throw new NotFoundException('One or more users not found');
+    }
+
+    // Check for already banned users
+    const alreadyBanned = users.filter((u) => !u.isActive);
+    if (alreadyBanned.length > 0) {
+      throw new BadRequestException(
+        `Some users are already banned: ${alreadyBanned.map((u) => u.username).join(', ')}`,
+      );
+    }
+
+    // Bulk ban users
+    await this.prisma.user.updateMany({
+      where: {
+        id: { in: userIds },
+      },
+      data: {
+        isActive: false,
+      },
+    });
+
+    // Create audit logs for each ban
+    await Promise.all(
+      users.map((user) =>
+        this.auditLog.log({
+          performedById: adminId,
+          action: AuditAction.USER_BAN,
+          description: `User ${user.username} (${user.email}) banned. Reason: ${reason}`,
+          targetType: 'User',
+          targetId: user.id,
+          metadata: { reason, ipAddress },
+        }),
+      ),
+    );
+
+    return {
+      success: true,
+      bannedCount: users.length,
+      bannedUsers: users.map((u) => ({ id: u.id, username: u.username })),
+    };
+  }
+
+  /**
+   * Bulk unban users
+   */
+  async bulkUnbanUsers(
+    userIds: string[],
+    adminId: string,
+    reason: string,
+    ipAddress?: string,
+  ) {
+    // Validate all users exist
+    const users = await this.prisma.user.findMany({
+      where: {
+        id: { in: userIds },
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        isActive: true,
+      },
+    });
+
+    if (users.length !== userIds.length) {
+      throw new NotFoundException('One or more users not found');
+    }
+
+    // Check for already active users
+    const alreadyActive = users.filter((u) => u.isActive);
+    if (alreadyActive.length > 0) {
+      throw new BadRequestException(
+        `Some users are not banned: ${alreadyActive.map((u) => u.username).join(', ')}`,
+      );
+    }
+
+    // Bulk unban users
+    await this.prisma.user.updateMany({
+      where: {
+        id: { in: userIds },
+      },
+      data: {
+        isActive: true,
+      },
+    });
+
+    // Create audit logs
+    await Promise.all(
+      users.map((user) =>
+        this.auditLog.log({
+          performedById: adminId,
+          action: AuditAction.USER_UNBAN,
+          description: `User ${user.username} (${user.email}) unbanned. Reason: ${reason}`,
+          targetType: 'User',
+          targetId: user.id,
+          metadata: { reason, ipAddress },
+        }),
+      ),
+    );
+
+    return {
+      success: true,
+      unbannedCount: users.length,
+      unbannedUsers: users.map((u) => ({ id: u.id, username: u.username })),
+    };
+  }
+
+  /**
+   * Bulk change user roles
+   */
+  async bulkChangeRole(
+    userIds: string[],
+    newRole: UserRole,
+    adminId: string,
+    reason: string,
+    ipAddress?: string,
+  ) {
+    // Validate all users exist
+    const users = await this.prisma.user.findMany({
+      where: {
+        id: { in: userIds },
+      },
+      select: {
+        id: true,
+        username: true,
+        role: true,
+      },
+    });
+
+    if (users.length !== userIds.length) {
+      throw new NotFoundException('One or more users not found');
+    }
+
+    // Update all users' roles
+    await this.prisma.user.updateMany({
+      where: {
+        id: { in: userIds },
+      },
+      data: {
+        role: newRole,
+        isAdmin: newRole === UserRole.ADMIN,
+      },
+    });
+
+    // Create audit logs
+    await Promise.all(
+      users.map((user) =>
+        this.auditLog.log({
+          performedById: adminId,
+          action: AuditAction.ROLE_CHANGE,
+          description: `User ${user.username} role changed from ${user.role} to ${newRole}. Reason: ${reason}`,
+          targetType: 'User',
+          targetId: user.id,
+          metadata: {
+            oldRole: user.role,
+            newRole,
+            reason,
+            ipAddress,
+          },
+        }),
+      ),
+    );
+
+    return {
+      success: true,
+      updatedCount: users.length,
+      updatedUsers: users.map((u) => ({
+        id: u.id,
+        username: u.username,
+        oldRole: u.role,
+        newRole,
+      })),
+    };
+  }
 }

@@ -52,3 +52,50 @@ export class GetUsersQueryDto {
   @IsBoolean()
   isActive?: boolean;
 }
+
+export class BulkBanUsersDto {
+  @ApiProperty({
+    example: ['user-id-1', 'user-id-2'],
+    description: 'Array of user IDs to ban',
+  })
+  @IsString({ each: true })
+  userIds: string[];
+
+  @ApiProperty({ example: 'Violating community guidelines' })
+  @IsString()
+  reason: string;
+}
+
+export class BulkUnbanUsersDto {
+  @ApiProperty({
+    example: ['user-id-1', 'user-id-2'],
+    description: 'Array of user IDs to unban',
+  })
+  @IsString({ each: true })
+  userIds: string[];
+
+  @ApiProperty({ example: 'Appeal approved' })
+  @IsString()
+  reason: string;
+}
+
+export class BulkChangeRoleDto {
+  @ApiProperty({
+    example: ['user-id-1', 'user-id-2'],
+    description: 'Array of user IDs to update',
+  })
+  @IsString({ each: true })
+  userIds: string[];
+
+  @ApiProperty({
+    enum: UserRole,
+    example: UserRole.MODERATOR,
+    description: 'New role for all users',
+  })
+  @IsEnum(UserRole)
+  role: UserRole;
+
+  @ApiProperty({ example: 'Promoted to moderator' })
+  @IsString()
+  reason: string;
+}

@@ -1,5 +1,5 @@
 import { PrismaService } from '@/prisma/prisma.service';
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, Optional } from '@nestjs/common';
 import { CacheService } from './cache.service';
 
 /**
@@ -45,7 +45,7 @@ export class CacheWarmingService implements OnModuleInit {
   constructor(
     private readonly cacheService: CacheService,
     private readonly prisma: PrismaService,
-    config?: CacheWarmingConfig,
+    @Optional() config?: CacheWarmingConfig,
   ) {
     this.config = {
       enabled: config?.enabled ?? true,

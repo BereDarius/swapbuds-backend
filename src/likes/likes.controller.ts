@@ -17,7 +17,7 @@ import { LikesService } from './likes.service';
  * Controller for managing item likes
  * All endpoints require authentication
  */
-@ApiTags('likes')
+@ApiTags('Likes')
 @Controller('items')
 @UseGuards(JwtAuthGuard)
 export class LikesController {

@@ -22,6 +22,9 @@ import { AdminService } from './admin.service';
 import { AuditLogService } from './audit-log.service';
 import {
   BanUserDto,
+  BulkBanUsersDto,
+  BulkChangeRoleDto,
+  BulkUnbanUsersDto,
   ChangeUserRoleDto,
   GetUsersQueryDto,
   UnbanUserDto,
@@ -31,7 +34,7 @@ import {
  * Admin controller
  * Handles admin operations: statistics, user management, audit logs
  */
-@ApiTags('admin')
+@ApiTags('Admin')
 @Controller('admin')
 @UseGuards(JwtAuthGuard, AdminGuard)
 @ApiBearerAuth()
@@ -201,5 +204,63 @@ export class AdminController {
   @ApiResponse({ status: 200, description: 'Audit log stats retrieved' })
   async getAuditStats() {
     return this.auditLogService.getAuditStats();
+  }
+
+  /**
+   * Bulk ban users
+   */
+  @Patch('users/bulk-ban')
+  @ApiOperation({
+    summary: '[Admin] Bulk ban users',
+    description: 'Ban multiple users at once',
+  })
+  @ApiResponse({ status: 200, description: 'Users banned successfully' })
+  @ApiResponse({ status: 400, description: 'Some users already banned' })
+  @ApiResponse({ status: 404, description: 'One or more users not found' })
+  async bulkBanUsers(
+    @CurrentUser('id') adminId: string,
+    @Body() dto: BulkBanUsersDto,
+  ) {
+    return this.adminService.bulkBanUsers(dto.userIds, adminId, dto.reason);
+  }
+
+  /**
+   * Bulk unban users
+   */
+  @Patch('users/bulk-unban')
+  @ApiOperation({
+    summary: '[Admin] Bulk unban users',
+    description: 'Unban multiple users at once',
+  })
+  @ApiResponse({ status: 200, description: 'Users unbanned successfully' })
+  @ApiResponse({ status: 400, description: 'Some users not banned' })
+  @ApiResponse({ status: 404, description: 'One or more users not found' })
+  async bulkUnbanUsers(
+    @CurrentUser('id') adminId: string,
+    @Body() dto: BulkUnbanUsersDto,
+  ) {
+    return this.adminService.bulkUnbanUsers(dto.userIds, adminId, dto.reason);
+  }
+
+  /**
+   * Bulk change user roles
+   */
+  @Patch('users/bulk-role')
+  @ApiOperation({
+    summary: '[Admin] Bulk change user roles',
+    description: 'Change role for multiple users at once',
+  })
+  @ApiResponse({ status: 200, description: 'User roles updated successfully' })
+  @ApiResponse({ status: 404, description: 'One or more users not found' })
+  async bulkChangeRole(
+    @CurrentUser('id') adminId: string,
+    @Body() dto: BulkChangeRoleDto,
+  ) {
+    return this.adminService.bulkChangeRole(
+      dto.userIds,
+      dto.role,
+      adminId,
+      dto.reason,
+    );
   }
 }

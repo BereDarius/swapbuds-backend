@@ -29,7 +29,7 @@ import { NotificationsService } from './notifications.service';
  * Controller for managing user notifications
  * All endpoints require authentication
  */
-@ApiTags('notifications')
+@ApiTags('Notifications')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('notifications')

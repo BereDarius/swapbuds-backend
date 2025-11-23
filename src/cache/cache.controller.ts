@@ -1,4 +1,5 @@
 import { Controller, Get, HttpCode, Post } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { CacheMonitoringService } from './cache-monitoring.service';
 
 /**
@@ -7,6 +8,7 @@ import { CacheMonitoringService } from './cache-monitoring.service';
  * Protected endpoints for monitoring and managing cache.
  * In production, these should be secured with admin-only access.
  */
+@ApiTags('Cache')
 @Controller('cache')
 export class CacheController {
   constructor(private readonly monitoringService: CacheMonitoringService) {}

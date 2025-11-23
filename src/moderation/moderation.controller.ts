@@ -23,9 +23,14 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { FlagReason, ModerationStatus } from '@prisma/client';
+import {
+  BulkApproveFlagsDto,
+  BulkRejectFlagsDto,
+  BulkRemoveFlagsDto,
+} from './dto/moderation.dto';
 import { ModerationService } from './moderation.service';
 
-@ApiTags('moderation')
+@ApiTags('Moderation')
 @Controller('moderation')
 export class ModerationController {
   constructor(private readonly moderationService: ModerationService) {}
@@ -217,5 +222,75 @@ export class ModerationController {
   })
   async getModerationStats() {
     return this.moderationService.getModerationStats();
+  }
+
+  /**
+   * Bulk approve flagged items (moderators only)
+   */
+  @Patch('items/flagged/bulk-approve')
+  @UseGuards(JwtAuthGuard, ModeratorGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Bulk approve flagged items' })
+  @ApiResponse({
+    status: 200,
+    description: 'Items approved successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 404, description: 'One or more items not found' })
+  async bulkApprove(@Body() dto: BulkApproveFlagsDto, @Request() req) {
+    const ipAddress = req.ip;
+    return this.moderationService.bulkApprove(
+      dto.flaggedItemIds,
+      req.user.userId,
+      dto.notes,
+      ipAddress,
+    );
+  }
+
+  /**
+   * Bulk reject flagged items (moderators only)
+   */
+  @Patch('items/flagged/bulk-reject')
+  @UseGuards(JwtAuthGuard, ModeratorGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Bulk reject flagged items' })
+  @ApiResponse({
+    status: 200,
+    description: 'Items rejected successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 404, description: 'One or more items not found' })
+  async bulkReject(@Body() dto: BulkRejectFlagsDto, @Request() req) {
+    const ipAddress = req.ip;
+    return this.moderationService.bulkReject(
+      dto.flaggedItemIds,
+      req.user.userId,
+      dto.reason,
+      ipAddress,
+    );
+  }
+
+  /**
+   * Bulk remove flagged items (moderators only)
+   */
+  @Delete('items/flagged/bulk-remove')
+  @UseGuards(JwtAuthGuard, ModeratorGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Bulk remove flagged items' })
+  @ApiResponse({
+    status: 200,
+    description: 'Items removed successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 404, description: 'One or more items not found' })
+  async bulkRemove(@Body() dto: BulkRemoveFlagsDto, @Request() req) {
+    const ipAddress = req.ip;
+    return this.moderationService.bulkRemove(
+      dto.flaggedItemIds,
+      req.user.userId,
+      dto.reason,
+      ipAddress,
+    );
   }
 }

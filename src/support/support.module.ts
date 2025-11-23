@@ -1,6 +1,6 @@
+import { AuthModule } from '@/auth/auth.module';
+import { PrismaModule } from '@/prisma/prisma.module';
 import { Module } from '@nestjs/common';
-import { AuthModule } from '../auth/auth.module';
-import { PrismaModule } from '../prisma/prisma.module';
 import { SupportChatController } from './support-chat.controller';
 import { SupportChatGateway } from './support-chat.gateway';
 import { SupportChatService } from './support-chat.service';

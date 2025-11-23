@@ -1,3 +1,4 @@
+import { WsJwtGuard } from '@/auth/guards/ws-jwt.guard';
 import { Logger, UseGuards } from '@nestjs/common';
 import {
   ConnectedSocket,
@@ -9,7 +10,6 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { WsJwtGuard } from '../auth/guards/ws-jwt.guard';
 import { SupportChatService } from './support-chat.service';
 
 @WebSocketGateway({

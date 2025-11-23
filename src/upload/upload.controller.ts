@@ -22,7 +22,7 @@ import { UploadService } from './upload.service';
  * Controller handling file upload operations
  * Provides endpoints for uploading images to Cloudinary
  */
-@ApiTags('upload')
+@ApiTags('Upload')
 @Controller('upload')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()

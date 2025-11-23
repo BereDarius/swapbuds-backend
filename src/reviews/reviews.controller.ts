@@ -12,11 +12,13 @@ import {
   Put,
   UseGuards,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { ReviewResponseDto } from './dto/review-response.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
 import { ReviewsService } from './reviews.service';
 
+@ApiTags('Reviews')
 @Controller('reviews')
 @UseGuards(JwtAuthGuard)
 export class ReviewsController {

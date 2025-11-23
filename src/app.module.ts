@@ -1,5 +1,3 @@
-import { AppController } from '@/app.controller';
-import { AppService } from '@/app.service';
 import { AuthModule } from '@/auth/auth.module';
 import configuration from '@/config/configuration';
 import { PrismaModule } from '@/prisma/prisma.module';
@@ -7,7 +5,7 @@ import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis'
 import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { redisStore } from 'cache-manager-redis-yet';
@@ -16,11 +14,14 @@ import { AdminModule } from './admin/admin.module';
 import { CacheModule as AppCacheModule } from './cache/cache.module';
 import { CommentsModule } from './comments/comments.module';
 import { DisputesModule } from './disputes/disputes.module';
+import { HealthModule } from './health/health.module';
 import { ItemsModule } from './items/items.module';
 import { LikesModule } from './likes/likes.module';
 import { MailModule } from './mail/mail.module';
 import { MessagesModule } from './messages/messages.module';
 import { ModerationModule } from './moderation/moderation.module';
+import { MonitoringInterceptor } from './monitoring/monitoring.interceptor';
+import { MonitoringModule } from './monitoring/monitoring.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { SupportModule } from './support/support.module';
@@ -81,6 +82,12 @@ import { VerificationModule } from './verification/verification.module';
     // Cache Service (Global)
     AppCacheModule,
 
+    // Health Checks
+    HealthModule,
+
+    // Monitoring (Global)
+    MonitoringModule,
+
     // Auth
     AuthModule,
 
@@ -114,12 +121,14 @@ import { VerificationModule } from './verification/verification.module';
 
     SupportModule,
   ],
-  controllers: [AppController],
   providers: [
-    AppService,
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: MonitoringInterceptor,
     },
   ],
 })

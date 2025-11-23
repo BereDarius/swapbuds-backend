@@ -1,6 +1,6 @@
+import { PrismaService } from '@/prisma/prisma.service';
 import { Injectable, Logger } from '@nestjs/common';
 import { SupportChatStatus, SupportPriority, UserRole } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class SupportQueueService {

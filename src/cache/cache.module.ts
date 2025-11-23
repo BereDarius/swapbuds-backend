@@ -1,3 +1,4 @@
+import { PrismaModule } from '@/prisma/prisma.module';
 import { Global, Module } from '@nestjs/common';
 import { CacheMonitoringService } from './cache-monitoring.service';
 import { CacheWarmingService } from './cache-warming.service';
@@ -18,6 +19,7 @@ import { CacheService } from './cache.service';
  */
 @Global()
 @Module({
+  imports: [PrismaModule],
   controllers: [CacheController],
   providers: [CacheService, CacheWarmingService, CacheMonitoringService],
   exports: [CacheService, CacheWarmingService, CacheMonitoringService],

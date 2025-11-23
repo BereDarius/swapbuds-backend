@@ -3,10 +3,10 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import compression from 'compression';
 import helmet from 'helmet';
 import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
+import compression = require('compression');
 
 async function bootstrap() {
   // Winston Logger Configuration
@@ -90,7 +90,7 @@ async function bootstrap() {
     const config = new DocumentBuilder()
       .setTitle('SWAPBUDS API')
       .setDescription('Trading platform API documentation')
-      .setVersion('1.0')
+      .setVersion('1.1.3')
       .addBearerAuth(
         {
           type: 'http',
@@ -102,12 +102,24 @@ async function bootstrap() {
         },
         'access-token',
       )
-      .addTag('auth', 'Authentication endpoints')
-      .addTag('users', 'User management')
-      .addTag('items', 'Item management')
-      .addTag('trades', 'Trade operations')
-      .addTag('messages', 'Messaging')
-      .addTag('reviews', 'Review system')
+      .addTag('Auth', 'Authentication and authorization endpoints')
+      .addTag('Users', 'User profile and account management')
+      .addTag('Items', 'Item listing and management')
+      .addTag('Likes', 'Like and favorite items')
+      .addTag('Comments', 'Comments on items')
+      .addTag('Trades', 'Trade creation and management')
+      .addTag('Messages', 'Direct messaging between users')
+      .addTag('Reviews', 'User reviews and ratings')
+      .addTag('Notifications', 'Notification management')
+      .addTag('Disputes', 'Trade dispute resolution')
+      .addTag('Verification', 'ID and age verification')
+      .addTag('Admin', 'Admin platform management')
+      .addTag('Moderation', 'Content moderation and flags')
+      .addTag('Support', 'Live support chat system')
+      .addTag('Upload', 'File upload operations')
+      .addTag('Cache', 'Cache monitoring and metrics')
+      .addTag('Health', 'System health checks')
+      .addTag('Monitoring', 'Platform monitoring and metrics')
       .build();
 
     const document = SwaggerModule.createDocument(app, config);

@@ -1,3 +1,4 @@
+import { PrismaService } from '@/prisma/prisma.service';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
@@ -6,7 +7,6 @@ import {
   SupportPriority,
   UserRole,
 } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateChatDto,
   ResolveChatDto,

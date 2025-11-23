@@ -31,7 +31,7 @@ import { RecommendationsService } from './recommendations.service';
  * Controller handling item-related HTTP requests
  * Provides endpoints for CRUD operations on items
  */
-@ApiTags('items')
+@ApiTags('Items')
 @Controller('items')
 @UseGuards(JwtAuthGuard)
 export class ItemsController {

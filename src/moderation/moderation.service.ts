@@ -494,4 +494,231 @@ export class ModerationService {
       recentFlags,
     };
   }
+
+  /**
+   * Bulk approve flagged items
+   */
+  async bulkApprove(
+    flaggedItemIds: string[],
+    moderatorId: string,
+    notes?: string,
+    ipAddress?: string,
+  ) {
+    // Validate all flagged items exist and are pending
+    const flaggedItems = await this.prisma.flaggedItem.findMany({
+      where: {
+        id: { in: flaggedItemIds },
+      },
+      include: {
+        item: true,
+      },
+    });
+
+    if (flaggedItems.length !== flaggedItemIds.length) {
+      throw new NotFoundException('One or more flagged items not found');
+    }
+
+    const nonPending = flaggedItems.filter(
+      (f) => f.status !== ModerationStatus.PENDING,
+    );
+    if (nonPending.length > 0) {
+      throw new BadRequestException(
+        `Cannot approve items that are not pending. IDs: ${nonPending.map((f) => f.id).join(', ')}`,
+      );
+    }
+
+    // Bulk update flagged items
+    await this.prisma.flaggedItem.updateMany({
+      where: {
+        id: { in: flaggedItemIds },
+      },
+      data: {
+        status: ModerationStatus.APPROVED,
+        reviewedById: moderatorId,
+        reviewedAt: new Date(),
+        reviewNotes: notes,
+      },
+    });
+
+    // Create audit logs for each approval
+    await Promise.all(
+      flaggedItems.map((flag) =>
+        this.auditLogService.log({
+          performedById: moderatorId,
+          action: AuditAction.ITEM_APPROVE,
+          description: `Flagged item approved (Flag ID: ${flag.id})`,
+          targetType: 'Item',
+          targetId: flag.itemId,
+          metadata: {
+            flagId: flag.id,
+            reason: flag.reason,
+            notes,
+          },
+          ipAddress,
+        }),
+      ),
+    );
+
+    return {
+      success: true,
+      approvedCount: flaggedItems.length,
+      approvedIds: flaggedItemIds,
+    };
+  }
+
+  /**
+   * Bulk reject flagged items (mark as approved but don't remove)
+   */
+  async bulkReject(
+    flaggedItemIds: string[],
+    moderatorId: string,
+    reason: string,
+    ipAddress?: string,
+  ) {
+    // Validate all flagged items exist and are pending
+    const flaggedItems = await this.prisma.flaggedItem.findMany({
+      where: {
+        id: { in: flaggedItemIds },
+      },
+      include: {
+        item: true,
+      },
+    });
+
+    if (flaggedItems.length !== flaggedItemIds.length) {
+      throw new NotFoundException('One or more flagged items not found');
+    }
+
+    const nonPending = flaggedItems.filter(
+      (f) => f.status !== ModerationStatus.PENDING,
+    );
+    if (nonPending.length > 0) {
+      throw new BadRequestException(
+        `Cannot reject items that are not pending. IDs: ${nonPending.map((f) => f.id).join(', ')}`,
+      );
+    }
+
+    // Bulk update flagged items to approved (reject the flag, not the item)
+    await this.prisma.flaggedItem.updateMany({
+      where: {
+        id: { in: flaggedItemIds },
+      },
+      data: {
+        status: ModerationStatus.APPROVED,
+        reviewedById: moderatorId,
+        reviewedAt: new Date(),
+        reviewNotes: `Rejected: ${reason}`,
+      },
+    });
+
+    // Create audit logs
+    await Promise.all(
+      flaggedItems.map((flag) =>
+        this.auditLogService.log({
+          performedById: moderatorId,
+          action: AuditAction.ITEM_APPROVE,
+          description: `Flagged item rejected (Flag ID: ${flag.id}): ${reason}`,
+          targetType: 'Item',
+          targetId: flag.itemId,
+          metadata: {
+            flagId: flag.id,
+            reason: flag.reason,
+            rejectionReason: reason,
+          },
+          ipAddress,
+        }),
+      ),
+    );
+
+    return {
+      success: true,
+      rejectedCount: flaggedItems.length,
+      rejectedIds: flaggedItemIds,
+    };
+  }
+
+  /**
+   * Bulk remove flagged items
+   */
+  async bulkRemove(
+    flaggedItemIds: string[],
+    moderatorId: string,
+    reason: string,
+    ipAddress?: string,
+  ) {
+    // Validate all flagged items exist and are pending
+    const flaggedItems = await this.prisma.flaggedItem.findMany({
+      where: {
+        id: { in: flaggedItemIds },
+      },
+      include: {
+        item: true,
+      },
+    });
+
+    if (flaggedItems.length !== flaggedItemIds.length) {
+      throw new NotFoundException('One or more flagged items not found');
+    }
+
+    const nonPending = flaggedItems.filter(
+      (f) => f.status !== ModerationStatus.PENDING,
+    );
+    if (nonPending.length > 0) {
+      throw new BadRequestException(
+        `Cannot remove items that are not pending. IDs: ${nonPending.map((f) => f.id).join(', ')}`,
+      );
+    }
+
+    // Get unique item IDs
+    const itemIds = [...new Set(flaggedItems.map((f) => f.itemId))];
+
+    // Update items status to REMOVED
+    await this.prisma.item.updateMany({
+      where: {
+        id: { in: itemIds },
+      },
+      data: {
+        status: ItemStatus.REMOVED,
+      },
+    });
+
+    // Update flagged items status
+    await this.prisma.flaggedItem.updateMany({
+      where: {
+        id: { in: flaggedItemIds },
+      },
+      data: {
+        status: ModerationStatus.REMOVED,
+        reviewedById: moderatorId,
+        reviewedAt: new Date(),
+        reviewNotes: reason,
+      },
+    });
+
+    // Create audit logs
+    await Promise.all(
+      flaggedItems.map((flag) =>
+        this.auditLogService.log({
+          performedById: moderatorId,
+          action: AuditAction.ITEM_REMOVE,
+          description: `Flagged item removed (Flag ID: ${flag.id}): ${reason}`,
+          targetType: 'Item',
+          targetId: flag.itemId,
+          metadata: {
+            flagId: flag.id,
+            reason: flag.reason,
+            removalReason: reason,
+          },
+          ipAddress,
+        }),
+      ),
+    );
+
+    return {
+      success: true,
+      removedCount: flaggedItems.length,
+      removedIds: flaggedItemIds,
+      itemIds,
+    };
+  }
 }

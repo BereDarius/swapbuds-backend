@@ -11,12 +11,14 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { ConversationResponseDto } from './dto/conversation-response.dto';
 import { GetMessagesDto } from './dto/get-messages.dto';
 import { MessageResponseDto } from './dto/message-response.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { MessagesService } from './messages.service';
 
+@ApiTags('Messages')
 @Controller('messages')
 @UseGuards(JwtAuthGuard)
 export class MessagesController {

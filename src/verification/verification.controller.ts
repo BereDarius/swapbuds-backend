@@ -29,7 +29,7 @@ import { VerificationService } from './verification.service';
 /**
  * Controller for user ID verification
  */
-@ApiTags('verification')
+@ApiTags('Verification')
 @Controller('verification')
 @UseGuards(JwtAuthGuard)
 export class VerificationController {

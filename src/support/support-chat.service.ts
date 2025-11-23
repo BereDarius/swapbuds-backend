@@ -1,3 +1,4 @@
+import { PrismaService } from '@/prisma/prisma.service';
 import {
   BadRequestException,
   ForbiddenException,
@@ -5,7 +6,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { SupportChatStatus, SupportPriority, UserRole } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
 import { SupportQueueService } from './support-queue.service';
 
 export interface CreateChatDto {

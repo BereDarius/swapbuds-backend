@@ -31,8 +31,8 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
  * Protected routes (JWT required):
  * - GET /me - Get current user profile
  */
-@ApiTags('auth') // Group in Swagger docs
-@Controller('auth') // Base route: /api/auth
+@ApiTags('Auth')
+@Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 

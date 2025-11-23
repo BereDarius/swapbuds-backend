@@ -31,7 +31,7 @@ import { TradesService } from './trades.service';
  * Controller for managing trades between users
  * All endpoints require authentication
  */
-@ApiTags('trades')
+@ApiTags('Trades')
 @Controller('trades')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()

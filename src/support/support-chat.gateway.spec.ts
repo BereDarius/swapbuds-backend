@@ -1,7 +1,7 @@
+import { WsJwtGuard } from '@/auth/guards/ws-jwt.guard';
 import { Test, TestingModule } from '@nestjs/testing';
 import { WsException } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
-import { WsJwtGuard } from '../auth/guards/ws-jwt.guard';
 import { SupportChatGateway } from './support-chat.gateway';
 import { SupportChatService } from './support-chat.service';
 

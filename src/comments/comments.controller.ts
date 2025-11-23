@@ -28,7 +28,7 @@ import { UpdateCommentDto } from './dto/update-comment.dto';
  * Controller for managing item comments
  * Read operations are public, write operations require authentication
  */
-@ApiTags('comments')
+@ApiTags('Comments')
 @Controller('items')
 @UseGuards(JwtAuthGuard)
 export class CommentsController {

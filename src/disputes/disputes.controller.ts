@@ -27,7 +27,7 @@ import { ResolveDisputeDto } from './dto/resolve-dispute.dto';
 /**
  * Controller for handling trade disputes
  */
-@ApiTags('disputes')
+@ApiTags('Disputes')
 @Controller('disputes')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()

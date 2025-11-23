@@ -35,7 +35,7 @@ import { UsersService } from './users.service';
  * Controller handling user profile operations
  * Provides endpoints for viewing and updating user profiles
  */
-@ApiTags('users')
+@ApiTags('Users')
 @Controller('users')
 @UseGuards(JwtAuthGuard)
 export class UsersController {
