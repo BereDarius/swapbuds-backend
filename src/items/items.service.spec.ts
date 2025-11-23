@@ -197,6 +197,23 @@ describe('ItemsService', () => {
       );
     });
 
+    it('should filter items by condition', async () => {
+      const filters = { condition: ItemCondition.NEW, page: 1, limit: 20 };
+      prisma.item.count.mockResolvedValue(1);
+      prisma.item.findMany.mockResolvedValue([mockItemWithRelations]);
+
+      const result = await service.findAllFiltered(filters);
+
+      expect(result.items).toHaveLength(1);
+      expect(prisma.item.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            condition: ItemCondition.NEW,
+          }),
+        }),
+      );
+    });
+
     it('should search items by title or description', async () => {
       const filters = { search: 'laptop', page: 1, limit: 20 };
       prisma.item.count.mockResolvedValue(1);
@@ -263,6 +280,127 @@ describe('ItemsService', () => {
       expect(result.items).toEqual([]);
       expect(result.total).toBe(0);
       expect(result.totalPages).toBe(0);
+    });
+
+    it('should filter items by delivery method', async () => {
+      const filters = {
+        deliveryMethod: 'PHYSICAL' as any,
+        page: 1,
+        limit: 20,
+      };
+      prisma.item.count.mockResolvedValue(1);
+      prisma.item.findMany.mockResolvedValue([mockItemWithRelations]);
+
+      const result = await service.findAllFiltered(filters);
+
+      expect(result.items).toHaveLength(1);
+      expect(prisma.item.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            deliveryMethods: { has: 'PHYSICAL' },
+          }),
+        }),
+      );
+    });
+
+    it('should filter items by delivery scope', async () => {
+      const filters = {
+        deliveryScope: 'NATIONAL' as any,
+        page: 1,
+        limit: 20,
+      };
+      prisma.item.count.mockResolvedValue(1);
+      prisma.item.findMany.mockResolvedValue([mockItemWithRelations]);
+
+      const result = await service.findAllFiltered(filters);
+
+      expect(result.items).toHaveLength(1);
+      expect(prisma.item.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            deliveryScope: 'NATIONAL',
+          }),
+        }),
+      );
+    });
+
+    it('should filter items by minimum value', async () => {
+      const filters = { minValue: 50, page: 1, limit: 20 };
+      prisma.item.count.mockResolvedValue(1);
+      prisma.item.findMany.mockResolvedValue([mockItemWithRelations]);
+
+      const result = await service.findAllFiltered(filters);
+
+      expect(result.items).toHaveLength(1);
+      expect(prisma.item.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            estimatedValue: { gte: 50 },
+          }),
+        }),
+      );
+    });
+
+    it('should filter items by maximum value', async () => {
+      const filters = { maxValue: 200, page: 1, limit: 20 };
+      prisma.item.count.mockResolvedValue(1);
+      prisma.item.findMany.mockResolvedValue([mockItemWithRelations]);
+
+      const result = await service.findAllFiltered(filters);
+
+      expect(result.items).toHaveLength(1);
+      expect(prisma.item.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            estimatedValue: { lte: 200 },
+          }),
+        }),
+      );
+    });
+
+    it('should filter items by value range', async () => {
+      const filters = { minValue: 50, maxValue: 200, page: 1, limit: 20 };
+      prisma.item.count.mockResolvedValue(1);
+      prisma.item.findMany.mockResolvedValue([mockItemWithRelations]);
+
+      const result = await service.findAllFiltered(filters);
+
+      expect(result.items).toHaveLength(1);
+      expect(prisma.item.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            estimatedValue: { gte: 50, lte: 200 },
+          }),
+        }),
+      );
+    });
+
+    it('should combine multiple filters correctly', async () => {
+      const filters = {
+        category: ItemCategory.ELECTRONICS,
+        deliveryMethod: 'MAIL' as any,
+        deliveryScope: 'INTERNATIONAL' as any,
+        minValue: 100,
+        maxValue: 500,
+        page: 1,
+        limit: 20,
+      };
+      prisma.item.count.mockResolvedValue(1);
+      prisma.item.findMany.mockResolvedValue([mockItemWithRelations]);
+
+      const result = await service.findAllFiltered(filters);
+
+      expect(result.items).toHaveLength(1);
+      expect(prisma.item.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            category: ItemCategory.ELECTRONICS,
+            deliveryMethods: { has: 'MAIL' },
+            deliveryScope: 'INTERNATIONAL',
+            estimatedValue: { gte: 100, lte: 500 },
+          }),
+        }),
+      );
     });
   });
 
@@ -453,6 +591,37 @@ describe('ItemsService', () => {
       await expect(
         service.update(itemId, userId, updateItemDto),
       ).rejects.toThrow('You can only update your own items');
+    });
+
+    it('should update an item with images', async () => {
+      const updateWithImages = {
+        title: 'Updated Title',
+        images: [
+          'https://cloudinary.com/new1.jpg',
+          'https://cloudinary.com/new2.jpg',
+        ],
+      };
+
+      prisma.item.findUnique.mockResolvedValue(mockItem);
+      prisma.item.update.mockResolvedValue({
+        ...mockItemWithRelations,
+        ...updateWithImages,
+      });
+
+      const result = await service.update(itemId, userId, updateWithImages);
+
+      expect(prisma.item.update).toHaveBeenCalledWith({
+        where: { id: itemId },
+        data: expect.objectContaining({
+          title: updateWithImages.title,
+          images: expect.objectContaining({
+            deleteMany: {},
+            create: expect.any(Array),
+          }),
+        }),
+        include: expect.any(Object),
+      });
+      expect(result.title).toBe(updateWithImages.title);
     });
   });
 

@@ -3,14 +3,22 @@ import {
   IsArray,
   IsEnum,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
+  Max,
   MaxLength,
+  Min,
   MinLength,
 } from 'class-validator';
 
 // Import enums from Prisma
-import { ItemCategory, ItemCondition } from '@prisma/client';
+import {
+  DeliveryMethod,
+  DeliveryScope,
+  ItemCategory,
+  ItemCondition,
+} from '@prisma/client';
 
 /**
  * DTO for creating a new item
@@ -70,4 +78,44 @@ export class CreateItemDto {
   @IsString({ each: true })
   @IsOptional()
   images?: string[];
+
+  @ApiProperty({
+    description: 'Delivery methods supported for this item',
+    enum: DeliveryMethod,
+    isArray: true,
+    example: [DeliveryMethod.PHYSICAL, DeliveryMethod.MAIL],
+    default: [DeliveryMethod.PHYSICAL, DeliveryMethod.MAIL],
+  })
+  @IsArray()
+  @IsEnum(DeliveryMethod, { each: true })
+  @IsOptional()
+  deliveryMethods?: DeliveryMethod[] = [
+    DeliveryMethod.PHYSICAL,
+    DeliveryMethod.MAIL,
+  ];
+
+  @ApiProperty({
+    description:
+      'Delivery scope: NATIONAL (only within your country) or INTERNATIONAL (worldwide)',
+    enum: DeliveryScope,
+    example: DeliveryScope.NATIONAL,
+    default: DeliveryScope.NATIONAL,
+  })
+  @IsEnum(DeliveryScope)
+  @IsOptional()
+  deliveryScope?: DeliveryScope = DeliveryScope.NATIONAL;
+
+  @ApiProperty({
+    description:
+      'Estimated value of the item in EUR (optional, for fair trade matching)',
+    example: 50.0,
+    minimum: 1,
+    maximum: 100000,
+    required: false,
+  })
+  @IsNumber()
+  @Min(1)
+  @Max(100000)
+  @IsOptional()
+  estimatedValue?: number;
 }

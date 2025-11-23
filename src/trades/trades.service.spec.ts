@@ -17,7 +17,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ItemStatus, TradeStatus } from '@prisma/client';
+import { DeliveryMethod, ItemStatus, TradeStatus } from '@prisma/client';
 import { TradeExpirationService } from './trade-expiration.service';
 import { TradesService } from './trades.service';
 
@@ -99,6 +99,7 @@ describe('TradesService', () => {
       const createTradeDto = {
         itemOfferedId: 'item-123',
         itemRequestedId: 'item-456',
+        deliveryMethod: DeliveryMethod.PHYSICAL,
         message: 'Would love to trade!',
       };
 
@@ -154,6 +155,7 @@ describe('TradesService', () => {
       const createTradeDto = {
         itemOfferedId: 'non-existent',
         itemRequestedId: 'item-456',
+        deliveryMethod: DeliveryMethod.PHYSICAL,
       };
 
       mockPrismaService.item.findUnique
@@ -170,6 +172,7 @@ describe('TradesService', () => {
       const createTradeDto = {
         itemOfferedId: 'item-123',
         itemRequestedId: 'non-existent',
+        deliveryMethod: DeliveryMethod.PHYSICAL,
       };
 
       mockPrismaService.item.findUnique
@@ -190,6 +193,7 @@ describe('TradesService', () => {
       const createTradeDto = {
         itemOfferedId: 'item-123',
         itemRequestedId: 'item-456',
+        deliveryMethod: DeliveryMethod.PHYSICAL,
       };
 
       const itemOffered = {
@@ -212,6 +216,7 @@ describe('TradesService', () => {
       const createTradeDto = {
         itemOfferedId: 'item-123',
         itemRequestedId: 'item-456',
+        deliveryMethod: DeliveryMethod.PHYSICAL,
       };
 
       const itemOffered = {
@@ -240,6 +245,7 @@ describe('TradesService', () => {
       const createTradeDto = {
         itemOfferedId: 'item-123',
         itemRequestedId: 'item-456',
+        deliveryMethod: DeliveryMethod.PHYSICAL,
       };
 
       const itemOffered = {
@@ -267,6 +273,7 @@ describe('TradesService', () => {
       const createTradeDto = {
         itemOfferedId: 'item-123',
         itemRequestedId: 'item-456',
+        deliveryMethod: DeliveryMethod.PHYSICAL,
       };
 
       mockPrismaService.item.findUnique
@@ -287,6 +294,122 @@ describe('TradesService', () => {
         service.createTrade(proposerId, createTradeDto),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('should throw BadRequestException when offered item does not support delivery method', async () => {
+      const proposerId = 'user-123';
+      const createTradeDto = {
+        itemOfferedId: 'item-123',
+        itemRequestedId: 'item-456',
+        deliveryMethod: DeliveryMethod.MAIL,
+      };
+
+      const itemOffered = {
+        ...mockItem,
+        id: 'item-123',
+        userId: proposerId,
+        status: ItemStatus.AVAILABLE,
+        deliveryMethods: [DeliveryMethod.PHYSICAL], // Only supports PHYSICAL
+        user: { id: proposerId },
+      };
+
+      const itemRequested = {
+        ...mockItems[1],
+        id: 'item-456',
+        userId: 'user-456',
+        status: ItemStatus.AVAILABLE,
+        deliveryMethods: [DeliveryMethod.PHYSICAL, DeliveryMethod.MAIL],
+        user: { id: 'user-456' },
+      };
+
+      mockPrismaService.item.findUnique
+        .mockResolvedValueOnce(itemOffered)
+        .mockResolvedValueOnce(itemRequested);
+
+      await expect(
+        service.createTrade(proposerId, createTradeDto),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException when requested item does not support delivery method', async () => {
+      const proposerId = 'user-123';
+      const createTradeDto = {
+        itemOfferedId: 'item-123',
+        itemRequestedId: 'item-456',
+        deliveryMethod: DeliveryMethod.MAIL,
+      };
+
+      const itemOffered = {
+        ...mockItem,
+        id: 'item-123',
+        userId: proposerId,
+        status: ItemStatus.AVAILABLE,
+        deliveryMethods: [DeliveryMethod.PHYSICAL, DeliveryMethod.MAIL],
+        user: { id: proposerId },
+      };
+
+      const itemRequested = {
+        ...mockItems[1],
+        id: 'item-456',
+        userId: 'user-456',
+        status: ItemStatus.AVAILABLE,
+        deliveryMethods: [DeliveryMethod.PHYSICAL], // Only supports PHYSICAL
+        user: { id: 'user-456' },
+      };
+
+      mockPrismaService.item.findUnique
+        .mockResolvedValueOnce(itemOffered)
+        .mockResolvedValueOnce(itemRequested);
+
+      await expect(
+        service.createTrade(proposerId, createTradeDto),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should succeed when both items support the delivery method', async () => {
+      const proposerId = 'user-123';
+      const createTradeDto = {
+        itemOfferedId: 'item-123',
+        itemRequestedId: 'item-456',
+        deliveryMethod: DeliveryMethod.PHYSICAL,
+        message: 'Would love to trade!',
+      };
+
+      const itemOffered = {
+        ...mockItem,
+        id: 'item-123',
+        userId: proposerId,
+        status: ItemStatus.AVAILABLE,
+        deliveryMethods: [DeliveryMethod.PHYSICAL, DeliveryMethod.MAIL],
+        user: { id: proposerId },
+      };
+
+      const itemRequested = {
+        ...mockItems[1],
+        id: 'item-456',
+        userId: 'user-456',
+        status: ItemStatus.AVAILABLE,
+        deliveryMethods: [DeliveryMethod.PHYSICAL],
+        user: { id: 'user-456' },
+      };
+
+      mockPrismaService.item.findUnique
+        .mockResolvedValueOnce(itemOffered)
+        .mockResolvedValueOnce(itemRequested);
+
+      mockPrismaService.trade.findFirst.mockResolvedValue(null);
+      mockPrismaService.trade.create.mockResolvedValue(mockTradeWithRelations);
+
+      const result = await service.createTrade(proposerId, createTradeDto);
+
+      expect(result).toHaveProperty('id');
+      expect(mockPrismaService.trade.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            deliveryMethod: DeliveryMethod.PHYSICAL,
+          }),
+        }),
+      );
+    });
   });
 
   describe('createTrade - Multi-Item', () => {
@@ -295,6 +418,7 @@ describe('TradesService', () => {
       const createTradeDto = {
         itemsOfferedIds: ['item-123', 'item-789'],
         itemsRequestedIds: ['item-456'],
+        deliveryMethod: DeliveryMethod.PHYSICAL,
         message: 'Would love to trade multiple items!',
       };
 
@@ -451,6 +575,7 @@ describe('TradesService', () => {
       const createTradeDto = {
         itemsOfferedIds: [],
         itemsRequestedIds: ['item-456'],
+        deliveryMethod: DeliveryMethod.PHYSICAL,
       };
 
       await expect(
@@ -463,6 +588,7 @@ describe('TradesService', () => {
       const createTradeDto = {
         itemsOfferedIds: ['item-123', 'item-nonexistent'],
         itemsRequestedIds: ['item-456'],
+        deliveryMethod: DeliveryMethod.PHYSICAL,
       };
 
       mockPrismaService.item.findMany.mockResolvedValue([
@@ -490,6 +616,7 @@ describe('TradesService', () => {
       const createTradeDto = {
         itemsOfferedIds: ['item-123', 'item-789'],
         itemsRequestedIds: ['item-456'],
+        deliveryMethod: DeliveryMethod.PHYSICAL,
       };
 
       mockPrismaService.item.findMany.mockResolvedValue([
@@ -523,6 +650,7 @@ describe('TradesService', () => {
       const createTradeDto = {
         itemsOfferedIds: ['item-123'],
         itemsRequestedIds: ['item-456', 'item-789'],
+        deliveryMethod: DeliveryMethod.PHYSICAL,
       };
 
       mockPrismaService.item.findMany.mockResolvedValue([
@@ -556,6 +684,7 @@ describe('TradesService', () => {
       const createTradeDto = {
         itemsOfferedIds: ['item-123', 'item-789'],
         itemsRequestedIds: ['item-456'],
+        deliveryMethod: DeliveryMethod.PHYSICAL,
       };
 
       mockPrismaService.item.findMany.mockResolvedValue([
@@ -592,6 +721,7 @@ describe('TradesService', () => {
       const createTradeDto = {
         itemsOfferedIds: ['item-123'],
         itemsRequestedIds: ['item-456', 'item-789'],
+        deliveryMethod: DeliveryMethod.PHYSICAL,
       };
 
       mockPrismaService.item.findMany.mockResolvedValue([
@@ -621,6 +751,142 @@ describe('TradesService', () => {
       await expect(
         service.createTrade(proposerId, createTradeDto),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException when offered items do not support delivery method', async () => {
+      const proposerId = 'user-123';
+      const createTradeDto = {
+        itemsOfferedIds: ['item-123', 'item-789'],
+        itemsRequestedIds: ['item-456'],
+        deliveryMethod: DeliveryMethod.MAIL,
+      };
+
+      mockPrismaService.item.findMany.mockResolvedValue([
+        {
+          ...mockItem,
+          id: 'item-123',
+          userId: proposerId,
+          status: ItemStatus.AVAILABLE,
+          deliveryMethods: [DeliveryMethod.PHYSICAL], // Does not support MAIL
+          user: { id: proposerId },
+        },
+        {
+          ...mockItem,
+          id: 'item-789',
+          userId: proposerId,
+          status: ItemStatus.AVAILABLE,
+          deliveryMethods: [DeliveryMethod.PHYSICAL, DeliveryMethod.MAIL],
+          user: { id: proposerId },
+        },
+        {
+          ...mockItems[1],
+          id: 'item-456',
+          userId: 'user-456',
+          status: ItemStatus.AVAILABLE,
+          deliveryMethods: [DeliveryMethod.PHYSICAL, DeliveryMethod.MAIL],
+          user: { id: 'user-456' },
+        },
+      ]);
+
+      await expect(
+        service.createTrade(proposerId, createTradeDto),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.createTrade(proposerId, createTradeDto),
+      ).rejects.toThrow("don't support MAIL delivery");
+    });
+
+    it('should throw BadRequestException when requested items do not support delivery method', async () => {
+      const proposerId = 'user-123';
+      const createTradeDto = {
+        itemsOfferedIds: ['item-123'],
+        itemsRequestedIds: ['item-456', 'item-789'],
+        deliveryMethod: DeliveryMethod.MAIL,
+      };
+
+      mockPrismaService.item.findMany.mockResolvedValue([
+        {
+          ...mockItem,
+          id: 'item-123',
+          userId: proposerId,
+          status: ItemStatus.AVAILABLE,
+          deliveryMethods: [DeliveryMethod.PHYSICAL, DeliveryMethod.MAIL],
+          user: { id: proposerId },
+        },
+        {
+          ...mockItems[1],
+          id: 'item-456',
+          userId: 'user-456',
+          status: ItemStatus.AVAILABLE,
+          deliveryMethods: [DeliveryMethod.PHYSICAL, DeliveryMethod.MAIL],
+          user: { id: 'user-456' },
+        },
+        {
+          ...mockItems[1],
+          id: 'item-789',
+          userId: 'user-456',
+          status: ItemStatus.AVAILABLE,
+          deliveryMethods: [DeliveryMethod.PHYSICAL], // Does not support MAIL
+          user: { id: 'user-456' },
+        },
+      ]);
+
+      await expect(
+        service.createTrade(proposerId, createTradeDto),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.createTrade(proposerId, createTradeDto),
+      ).rejects.toThrow("don't support MAIL delivery");
+    });
+
+    it('should succeed when all items support the delivery method', async () => {
+      const proposerId = 'user-123';
+      const createTradeDto = {
+        itemsOfferedIds: ['item-123', 'item-789'],
+        itemsRequestedIds: ['item-456'],
+        deliveryMethod: DeliveryMethod.PHYSICAL,
+        message: 'Multi-item trade!',
+      };
+
+      mockPrismaService.item.findMany.mockResolvedValue([
+        {
+          ...mockItem,
+          id: 'item-123',
+          userId: proposerId,
+          status: ItemStatus.AVAILABLE,
+          deliveryMethods: [DeliveryMethod.PHYSICAL, DeliveryMethod.MAIL],
+          user: { id: proposerId },
+        },
+        {
+          ...mockItem,
+          id: 'item-789',
+          userId: proposerId,
+          status: ItemStatus.AVAILABLE,
+          deliveryMethods: [DeliveryMethod.PHYSICAL],
+          user: { id: proposerId },
+        },
+        {
+          ...mockItems[1],
+          id: 'item-456',
+          userId: 'user-456',
+          status: ItemStatus.AVAILABLE,
+          deliveryMethods: [DeliveryMethod.PHYSICAL, DeliveryMethod.MAIL],
+          user: { id: 'user-456' },
+        },
+      ]);
+
+      mockPrismaService.trade.create.mockResolvedValue(mockTradeWithRelations);
+
+      const result = await service.createTrade(proposerId, createTradeDto);
+
+      expect(result).toHaveProperty('id');
+      expect(mockPrismaService.trade.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            deliveryMethod: DeliveryMethod.PHYSICAL,
+          }),
+        }),
+      );
     });
   });
 

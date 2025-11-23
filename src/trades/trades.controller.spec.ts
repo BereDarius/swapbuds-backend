@@ -10,7 +10,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { TradeStatus } from '@prisma/client';
+import { DeliveryMethod, TradeStatus } from '@prisma/client';
 import { CreateTradeDto } from './dto/create-trade.dto';
 
 describe('TradesController', () => {
@@ -25,6 +25,10 @@ describe('TradesController', () => {
     acceptTrade: jest.fn(),
     rejectTrade: jest.fn(),
     cancelTrade: jest.fn(),
+    createCounterOffer: jest.fn(),
+    getTradeCounterOffers: jest.fn(),
+    acceptCounterOffer: jest.fn(),
+    rejectCounterOffer: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -54,6 +58,7 @@ describe('TradesController', () => {
       const createTradeDto: CreateTradeDto = {
         itemOfferedId: 'item-123',
         itemRequestedId: 'item-456',
+        deliveryMethod: DeliveryMethod.PHYSICAL,
         message: 'Would love to trade!',
       };
 
@@ -74,6 +79,7 @@ describe('TradesController', () => {
       const createTradeDto: CreateTradeDto = {
         itemOfferedId: 'non-existent',
         itemRequestedId: 'item-456',
+        deliveryMethod: DeliveryMethod.PHYSICAL,
       };
 
       mockTradesService.createTrade.mockRejectedValue(
@@ -94,6 +100,7 @@ describe('TradesController', () => {
       const createTradeDto: CreateTradeDto = {
         itemOfferedId: 'item-123',
         itemRequestedId: 'item-456',
+        deliveryMethod: DeliveryMethod.PHYSICAL,
       };
 
       mockTradesService.createTrade.mockRejectedValue(
@@ -110,6 +117,7 @@ describe('TradesController', () => {
       const createTradeDto: CreateTradeDto = {
         itemOfferedId: 'item-123',
         itemRequestedId: 'item-456',
+        deliveryMethod: DeliveryMethod.PHYSICAL,
       };
 
       mockTradesService.createTrade.mockRejectedValue(
@@ -351,6 +359,131 @@ describe('TradesController', () => {
 
       await expect(controller.cancelTrade(tradeId, userId)).rejects.toThrow(
         BadRequestException,
+      );
+    });
+  });
+
+  describe('createCounterOffer', () => {
+    it('should create counter-offer successfully', async () => {
+      const tradeId = 'trade-123';
+      const userId = 'user-123';
+      const createDto = {
+        itemOfferedId: 'item-789',
+        message: 'How about this instead?',
+        alternativeItemId: 'item-101',
+      };
+      const mockCounterOffer = {
+        id: 'counter-123',
+        tradeId,
+        proposerId: userId,
+        itemOfferedId: createDto.itemOfferedId,
+        message: createDto.message,
+        status: TradeStatus.PENDING,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      mockTradesService.createCounterOffer.mockResolvedValue(mockCounterOffer);
+
+      const result = await controller.createCounterOffer(
+        tradeId,
+        userId,
+        createDto,
+      );
+
+      expect(result).toEqual(mockCounterOffer);
+      expect(tradesService.createCounterOffer).toHaveBeenCalledWith(
+        userId,
+        tradeId,
+        createDto,
+      );
+    });
+  });
+
+  describe('getTradeCounterOffers', () => {
+    it('should return all counter-offers for a trade', async () => {
+      const tradeId = 'trade-123';
+      const userId = 'user-123';
+      const mockCounterOffers = [
+        {
+          id: 'counter-1',
+          tradeId,
+          proposerId: userId,
+          itemOfferedId: 'item-789',
+          status: TradeStatus.PENDING,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+
+      mockTradesService.getTradeCounterOffers.mockResolvedValue(
+        mockCounterOffers,
+      );
+
+      const result = await controller.getTradeCounterOffers(tradeId, userId);
+
+      expect(result).toEqual(mockCounterOffers);
+      expect(tradesService.getTradeCounterOffers).toHaveBeenCalledWith(
+        tradeId,
+        userId,
+      );
+    });
+  });
+
+  describe('acceptCounterOffer', () => {
+    it('should accept counter-offer successfully', async () => {
+      const counterOfferId = 'counter-123';
+      const userId = 'user-123';
+      const mockCounterOffer = {
+        id: counterOfferId,
+        tradeId: 'trade-123',
+        proposerId: 'user-456',
+        itemOfferedId: 'item-789',
+        status: TradeStatus.ACCEPTED,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      mockTradesService.acceptCounterOffer.mockResolvedValue(mockCounterOffer);
+
+      const result = await controller.acceptCounterOffer(
+        counterOfferId,
+        userId,
+      );
+
+      expect(result).toEqual(mockCounterOffer);
+      expect(tradesService.acceptCounterOffer).toHaveBeenCalledWith(
+        userId,
+        counterOfferId,
+      );
+    });
+  });
+
+  describe('rejectCounterOffer', () => {
+    it('should reject counter-offer successfully', async () => {
+      const counterOfferId = 'counter-123';
+      const userId = 'user-123';
+      const mockCounterOffer = {
+        id: counterOfferId,
+        tradeId: 'trade-123',
+        proposerId: 'user-456',
+        itemOfferedId: 'item-789',
+        status: TradeStatus.REJECTED,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      mockTradesService.rejectCounterOffer.mockResolvedValue(mockCounterOffer);
+
+      const result = await controller.rejectCounterOffer(
+        counterOfferId,
+        userId,
+      );
+
+      expect(result).toEqual(mockCounterOffer);
+      expect(tradesService.rejectCounterOffer).toHaveBeenCalledWith(
+        userId,
+        counterOfferId,
       );
     });
   });

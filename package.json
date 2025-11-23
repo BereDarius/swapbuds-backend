@@ -1,6 +1,6 @@
 {
   "name": "swapbuds-backend",
-  "version": "0.12.0",
+  "version": "1.0.1",
   "description": "SWAPBUDS Backend API - NestJS REST API for trading platform",
   "author": "BereDarius",
   "private": true,
@@ -38,6 +38,7 @@
     "@prisma/client": "5.22.0",
     "@types/multer": "^2.0.0",
     "@types/nodemailer": "^7.0.4",
+    "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
     "cache-manager": "^7.2.5",
     "cache-manager-redis-yet": "^5.1.5",
@@ -116,10 +117,10 @@
     },
     "coverageThreshold": {
       "global": {
-        "branches": 70,
-        "functions": 70,
-        "lines": 70,
-        "statements": 70
+        "branches": 85,
+        "functions": 85,
+        "lines": 85,
+        "statements": 85
       }
     }
   },

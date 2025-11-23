@@ -423,6 +423,152 @@ describe('MailService', () => {
     });
   });
 
+  describe('sendTradeExpired', () => {
+    const tradeData = {
+      itemName: 'Gaming Console',
+      otherPartyName: 'other_user',
+      tradeId: 'trade-123',
+      isProposer: true,
+    };
+
+    it('should send trade expired email successfully', async () => {
+      mockMailerService.sendMail.mockResolvedValue({ messageId: 'msg-123' });
+
+      await service.sendTradeExpired(
+        'user@example.com',
+        'user_name',
+        tradeData,
+      );
+
+      expect(mockMailerService.sendMail).toHaveBeenCalledWith({
+        to: 'user@example.com',
+        subject: '⏰ Trade Expired - SwapBuds',
+        template: './trade-expired',
+        context: {
+          userName: 'user_name',
+          itemName: tradeData.itemName,
+          otherPartyName: tradeData.otherPartyName,
+          isProposer: tradeData.isProposer,
+          tradeUrl: `http://localhost:3000/trades/${tradeData.tradeId}`,
+        },
+      });
+    });
+
+    it('should handle email sending error gracefully', async () => {
+      mockMailerService.sendMail.mockRejectedValue(new Error('Failed to send'));
+
+      await expect(
+        service.sendTradeExpired('user@example.com', 'user_name', tradeData),
+      ).resolves.not.toThrow();
+    });
+
+    it('should skip sending when email is disabled', async () => {
+      const mockConfigWithoutCreds = {
+        get: jest.fn().mockReturnValue(undefined),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          MailService,
+          {
+            provide: MailerService,
+            useValue: mockMailerService,
+          },
+          {
+            provide: ConfigService,
+            useValue: mockConfigWithoutCreds,
+          },
+        ],
+      }).compile();
+
+      const disabledService = module.get<MailService>(MailService);
+
+      await disabledService.sendTradeExpired(
+        'user@example.com',
+        'user_name',
+        tradeData,
+      );
+
+      expect(mockMailerService.sendMail).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('sendTradeExpiringWarning', () => {
+    const tradeData = {
+      proposerName: 'proposer_user',
+      offeredItemName: 'Laptop',
+      requestedItemName: 'Camera',
+      hoursRemaining: 24,
+      tradeId: 'trade-123',
+    };
+
+    it('should send trade expiring warning email successfully', async () => {
+      mockMailerService.sendMail.mockResolvedValue({ messageId: 'msg-123' });
+
+      await service.sendTradeExpiringWarning(
+        'user@example.com',
+        'user_name',
+        tradeData,
+      );
+
+      expect(mockMailerService.sendMail).toHaveBeenCalledWith({
+        to: 'user@example.com',
+        subject: '⏳ Trade Expiring in 24 Hours - SwapBuds',
+        template: './trade-expiring',
+        context: {
+          userName: 'user_name',
+          proposerName: tradeData.proposerName,
+          offeredItemName: tradeData.offeredItemName,
+          requestedItemName: tradeData.requestedItemName,
+          hoursRemaining: tradeData.hoursRemaining,
+          tradeUrl: `http://localhost:3000/trades/${tradeData.tradeId}`,
+        },
+      });
+    });
+
+    it('should handle email sending error gracefully', async () => {
+      mockMailerService.sendMail.mockRejectedValue(new Error('Failed to send'));
+
+      await expect(
+        service.sendTradeExpiringWarning(
+          'user@example.com',
+          'user_name',
+          tradeData,
+        ),
+      ).resolves.not.toThrow();
+    });
+
+    it('should skip sending when email is disabled', async () => {
+      const mockConfigWithoutCreds = {
+        get: jest.fn().mockReturnValue(undefined),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          MailService,
+          {
+            provide: MailerService,
+            useValue: mockMailerService,
+          },
+          {
+            provide: ConfigService,
+            useValue: mockConfigWithoutCreds,
+          },
+        ],
+      }).compile();
+
+      const disabledService = module.get<MailService>(MailService);
+
+      await disabledService.sendTradeExpiringWarning(
+        'user@example.com',
+        'user_name',
+        tradeData,
+      );
+
+      expect(mockMailerService.sendMail).not.toHaveBeenCalled();
+    });
+  });
+
   describe('error handling', () => {
     it('should not throw errors when email fails', async () => {
       mockMailerService.sendMail.mockRejectedValue(

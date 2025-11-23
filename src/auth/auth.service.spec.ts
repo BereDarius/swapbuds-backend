@@ -1,4 +1,5 @@
 import { PrismaService } from '@/prisma/prisma.service';
+import { RecaptchaService } from '@/recaptcha/recaptcha.service';
 import { mockUser } from '@/test/fixtures/user.fixture';
 import { mockConfigService } from '@/test/mocks/config.mock';
 import { mockJwtService } from '@/test/mocks/jwt.mock';
@@ -16,6 +17,11 @@ describe('AuthService', () => {
   let service: AuthService;
   let prisma: typeof mockPrismaService;
   let jwtService: typeof mockJwtService;
+  let recaptchaService: jest.Mocked<RecaptchaService>;
+
+  const mockRecaptchaService = {
+    verifyToken: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -33,12 +39,17 @@ describe('AuthService', () => {
           provide: ConfigService,
           useValue: mockConfigService,
         },
+        {
+          provide: RecaptchaService,
+          useValue: mockRecaptchaService,
+        },
       ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
     prisma = mockPrismaService;
     jwtService = mockJwtService;
+    recaptchaService = module.get(RecaptchaService);
 
     // Reset all mocks
     jest.clearAllMocks();
@@ -107,6 +118,120 @@ describe('AuthService', () => {
       await expect(service.register(registerDto)).rejects.toThrow(
         'Username already taken',
       );
+    });
+
+    it('should register successfully with valid reCAPTCHA token', async () => {
+      const registerDtoWithToken = {
+        ...registerDto,
+        recaptchaToken: 'valid-token',
+      };
+      const hashedPassword = 'hashedPassword123';
+      const token = 'jwt-token';
+
+      recaptchaService.verifyToken.mockResolvedValue({
+        success: true,
+        score: 0.9,
+        action: 'register',
+      });
+      prisma.user.findFirst.mockResolvedValue(null);
+      prisma.user.create.mockResolvedValue({
+        ...mockUser,
+        username: registerDto.username,
+        email: registerDto.email,
+        password: hashedPassword,
+      });
+      (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
+      jwtService.sign.mockReturnValue(token);
+
+      const result = await service.register(registerDtoWithToken);
+
+      expect(recaptchaService.verifyToken).toHaveBeenCalledWith(
+        'valid-token',
+        'register',
+      );
+      expect(result.accessToken).toBe(token);
+      expect(result.user.email).toBe(registerDto.email);
+    });
+
+    it('should register successfully even with low reCAPTCHA score (graceful handling)', async () => {
+      const registerDtoWithToken = {
+        ...registerDto,
+        recaptchaToken: 'low-score-token',
+      };
+      const hashedPassword = 'hashedPassword123';
+      const token = 'jwt-token';
+
+      recaptchaService.verifyToken.mockResolvedValue({
+        success: false,
+        score: 0.3,
+        action: 'register',
+        reason: 'Score below threshold',
+      });
+      prisma.user.findFirst.mockResolvedValue(null);
+      prisma.user.create.mockResolvedValue({
+        ...mockUser,
+        username: registerDto.username,
+        email: registerDto.email,
+        password: hashedPassword,
+      });
+      (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
+      jwtService.sign.mockReturnValue(token);
+
+      const result = await service.register(registerDtoWithToken);
+
+      expect(recaptchaService.verifyToken).toHaveBeenCalled();
+      expect(result.accessToken).toBe(token);
+      // Should still allow registration despite low score
+    });
+
+    it('should register successfully without reCAPTCHA token', async () => {
+      const hashedPassword = 'hashedPassword123';
+      const token = 'jwt-token';
+
+      prisma.user.findFirst.mockResolvedValue(null);
+      prisma.user.create.mockResolvedValue({
+        ...mockUser,
+        username: registerDto.username,
+        email: registerDto.email,
+        password: hashedPassword,
+      });
+      (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
+      jwtService.sign.mockReturnValue(token);
+
+      const result = await service.register(registerDto);
+
+      expect(recaptchaService.verifyToken).not.toHaveBeenCalled();
+      expect(result.accessToken).toBe(token);
+    });
+
+    it('should register successfully when reCAPTCHA verification fails due to network error', async () => {
+      const registerDtoWithToken = {
+        ...registerDto,
+        recaptchaToken: 'token-with-network-error',
+      };
+      const hashedPassword = 'hashedPassword123';
+      const token = 'jwt-token';
+
+      recaptchaService.verifyToken.mockResolvedValue({
+        success: true,
+        score: 0.5,
+        action: 'register',
+        reason: 'Verification error, allowed by default',
+      });
+      prisma.user.findFirst.mockResolvedValue(null);
+      prisma.user.create.mockResolvedValue({
+        ...mockUser,
+        username: registerDto.username,
+        email: registerDto.email,
+        password: hashedPassword,
+      });
+      (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
+      jwtService.sign.mockReturnValue(token);
+
+      const result = await service.register(registerDtoWithToken);
+
+      expect(result.accessToken).toBe(token);
+      // Should allow registration on network errors
     });
   });
 
@@ -177,6 +302,137 @@ describe('AuthService', () => {
       await expect(service.login(loginDto)).rejects.toThrow(
         'Account is deactivated',
       );
+    });
+
+    it('should login successfully with valid reCAPTCHA token', async () => {
+      const loginDtoWithToken = {
+        ...loginDto,
+        recaptchaToken: 'valid-token',
+      };
+      const token = 'jwt-token';
+
+      recaptchaService.verifyToken.mockResolvedValue({
+        success: true,
+        score: 0.9,
+        action: 'login',
+      });
+      prisma.user.findUnique.mockResolvedValue(mockUser);
+      prisma.user.update.mockResolvedValue({
+        ...mockUser,
+        lastLoginAt: new Date(),
+      });
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      jwtService.sign.mockReturnValue(token);
+
+      const result = await service.login(loginDtoWithToken);
+
+      expect(recaptchaService.verifyToken).toHaveBeenCalledWith(
+        'valid-token',
+        'login',
+      );
+      expect(result.accessToken).toBe(token);
+      expect(result.user.email).toBe(mockUser.email);
+    });
+
+    it('should login successfully even with low reCAPTCHA score (graceful handling)', async () => {
+      const loginDtoWithToken = {
+        ...loginDto,
+        recaptchaToken: 'low-score-token',
+      };
+      const token = 'jwt-token';
+
+      recaptchaService.verifyToken.mockResolvedValue({
+        success: false,
+        score: 0.2,
+        action: 'login',
+        reason: 'Score below threshold',
+      });
+      prisma.user.findUnique.mockResolvedValue(mockUser);
+      prisma.user.update.mockResolvedValue({
+        ...mockUser,
+        lastLoginAt: new Date(),
+      });
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      jwtService.sign.mockReturnValue(token);
+
+      const result = await service.login(loginDtoWithToken);
+
+      expect(recaptchaService.verifyToken).toHaveBeenCalled();
+      expect(result.accessToken).toBe(token);
+      // Should still allow login despite low score (graceful handling)
+    });
+
+    it('should login successfully without reCAPTCHA token', async () => {
+      const token = 'jwt-token';
+
+      prisma.user.findUnique.mockResolvedValue(mockUser);
+      prisma.user.update.mockResolvedValue({
+        ...mockUser,
+        lastLoginAt: new Date(),
+      });
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      jwtService.sign.mockReturnValue(token);
+
+      const result = await service.login(loginDto);
+
+      expect(recaptchaService.verifyToken).not.toHaveBeenCalled();
+      expect(result.accessToken).toBe(token);
+    });
+
+    it('should login successfully when reCAPTCHA verification fails due to network error', async () => {
+      const loginDtoWithToken = {
+        ...loginDto,
+        recaptchaToken: 'token-with-network-error',
+      };
+      const token = 'jwt-token';
+
+      recaptchaService.verifyToken.mockResolvedValue({
+        success: true,
+        score: 0.5,
+        action: 'login',
+        reason: 'Verification error, allowed by default',
+      });
+      prisma.user.findUnique.mockResolvedValue(mockUser);
+      prisma.user.update.mockResolvedValue({
+        ...mockUser,
+        lastLoginAt: new Date(),
+      });
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      jwtService.sign.mockReturnValue(token);
+
+      const result = await service.login(loginDtoWithToken);
+
+      expect(result.accessToken).toBe(token);
+      // Should allow login on network errors
+    });
+
+    it('should login successfully with high reCAPTCHA score and verify action', async () => {
+      const loginDtoWithToken = {
+        ...loginDto,
+        recaptchaToken: 'high-score-token',
+      };
+      const token = 'jwt-token';
+
+      recaptchaService.verifyToken.mockResolvedValue({
+        success: true,
+        score: 0.95,
+        action: 'login',
+      });
+      prisma.user.findUnique.mockResolvedValue(mockUser);
+      prisma.user.update.mockResolvedValue({
+        ...mockUser,
+        lastLoginAt: new Date(),
+      });
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      jwtService.sign.mockReturnValue(token);
+
+      const result = await service.login(loginDtoWithToken);
+
+      expect(recaptchaService.verifyToken).toHaveBeenCalledWith(
+        'high-score-token',
+        'login',
+      );
+      expect(result.accessToken).toBe(token);
     });
   });
 

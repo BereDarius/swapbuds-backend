@@ -40,15 +40,24 @@ export class TradesController {
 
   /**
    * Create a new trade proposal
+   * The selected delivery method must be supported by all items in the trade
    */
   @Post()
-  @ApiOperation({ summary: 'Create a trade proposal' })
+  @ApiOperation({
+    summary: 'Create a trade proposal',
+    description:
+      'Creates a new trade proposal. The delivery method must be supported by all items involved (both offered and requested). Supports both single-item and multi-item trades.',
+  })
   @ApiResponse({
     status: 201,
     description: 'Trade proposal created successfully',
     type: TradeResponseDto,
   })
-  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Bad request - invalid data or incompatible delivery method with items',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - not your item' })
   @ApiResponse({ status: 404, description: 'Item not found' })

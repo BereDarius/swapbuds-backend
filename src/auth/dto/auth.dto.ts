@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsEmail,
+  IsOptional,
   IsString,
   Matches,
   MaxLength,
@@ -46,6 +47,15 @@ export class RegisterDto {
       'Password must contain at least one uppercase letter, one lowercase letter, and one number',
   })
   password: string;
+
+  @ApiProperty({
+    example: 'google-recaptcha-token-here',
+    required: false,
+    description: 'Optional reCAPTCHA v3 token for bot protection',
+  })
+  @IsOptional()
+  @IsString()
+  recaptchaToken?: string;
 }
 
 /**
@@ -61,6 +71,15 @@ export class LoginDto {
   @ApiProperty({ example: 'StrongP@ssw0rd!' })
   @IsString()
   password: string; // No validation rules - any string accepted during login
+
+  @ApiProperty({
+    example: 'google-recaptcha-token-here',
+    required: false,
+    description: 'Optional reCAPTCHA v3 token for bot protection',
+  })
+  @IsOptional()
+  @IsString()
+  recaptchaToken?: string;
 }
 
 /**

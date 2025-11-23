@@ -1,4 +1,10 @@
-import { ItemCategory, ItemCondition, ItemStatus } from '@prisma/client';
+import {
+  DeliveryMethod,
+  DeliveryScope,
+  ItemCategory,
+  ItemCondition,
+  ItemStatus,
+} from '@prisma/client';
 
 /**
  * Test fixtures for Item entities
@@ -11,6 +17,10 @@ export const mockItem = {
   category: ItemCategory.ELECTRONICS,
   status: ItemStatus.AVAILABLE,
   userId: 'user-1',
+  deliveryMethods: [DeliveryMethod.PHYSICAL, DeliveryMethod.MAIL],
+  deliveryScope: DeliveryScope.NATIONAL,
+  estimatedValue: null,
+  currency: 'EUR',
   viewCount: 0,
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),

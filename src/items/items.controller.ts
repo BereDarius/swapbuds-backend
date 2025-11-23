@@ -89,7 +89,36 @@ export class ItemsController {
     required: false,
     enum: ['NEW', 'LIKE_NEW', 'EXCELLENT', 'GOOD', 'FAIR', 'POOR'],
   })
-  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Search by title or description',
+  })
+  @ApiQuery({
+    name: 'deliveryMethod',
+    required: false,
+    enum: ['PHYSICAL', 'MAIL'],
+    description: 'Filter by delivery method',
+  })
+  @ApiQuery({
+    name: 'deliveryScope',
+    required: false,
+    enum: ['NATIONAL', 'INTERNATIONAL'],
+    description: 'Filter by delivery scope',
+  })
+  @ApiQuery({
+    name: 'minValue',
+    required: false,
+    type: Number,
+    description: 'Minimum estimated value in EUR',
+  })
+  @ApiQuery({
+    name: 'maxValue',
+    required: false,
+    type: Number,
+    description: 'Maximum estimated value in EUR',
+  })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({
@@ -125,6 +154,10 @@ export class ItemsController {
       !filters.category &&
       !filters.condition &&
       !filters.search &&
+      !filters.deliveryMethod &&
+      !filters.deliveryScope &&
+      !filters.minValue &&
+      !filters.maxValue &&
       !filters.page &&
       !filters.limit &&
       !filters.sortBy &&

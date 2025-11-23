@@ -144,6 +144,7 @@ export class TradesService {
         proposerId,
         itemsOfferedIds || [],
         itemsRequestedIds || [],
+        createTradeDto.deliveryMethod,
         message,
       );
     }
@@ -153,6 +154,7 @@ export class TradesService {
       proposerId,
       itemOfferedId!,
       itemRequestedId!,
+      createTradeDto.deliveryMethod,
       message,
     );
   }
@@ -164,6 +166,7 @@ export class TradesService {
     proposerId: string,
     itemOfferedId: string,
     itemRequestedId: string,
+    deliveryMethod: any,
     message?: string,
   ): Promise<TradeResponseDto> {
     // Validate items exist
@@ -207,6 +210,18 @@ export class TradesService {
       );
     }
 
+    // Validate delivery method
+    if (!itemOffered.deliveryMethods.includes(deliveryMethod)) {
+      throw new BadRequestException(
+        `Your item does not support ${deliveryMethod} delivery method`,
+      );
+    }
+    if (!itemRequested.deliveryMethods.includes(deliveryMethod)) {
+      throw new BadRequestException(
+        `The requested item does not support ${deliveryMethod} delivery method`,
+      );
+    }
+
     // Check for duplicate pending trades
     const existingTrade = await this.prisma.trade.findFirst({
       where: {
@@ -231,6 +246,7 @@ export class TradesService {
         itemOfferedId,
         itemRequestedId,
         message,
+        deliveryMethod,
         status: TradeStatus.PENDING,
         expiresAt: this.tradeExpirationService.calculateExpirationDate(),
       },
@@ -291,6 +307,7 @@ export class TradesService {
     proposerId: string,
     itemsOfferedIds: string[],
     itemsRequestedIds: string[],
+    deliveryMethod: any,
     message?: string,
   ): Promise<TradeResponseDto> {
     // Validate at least one item on each side
@@ -365,12 +382,32 @@ export class TradesService {
       );
     }
 
+    // Validate delivery method for all items
+    const incompatibleOffered = itemsOffered.filter(
+      (i) => !i.deliveryMethods.includes(deliveryMethod),
+    );
+    if (incompatibleOffered.length > 0) {
+      throw new BadRequestException(
+        `These items you're offering don't support ${deliveryMethod} delivery: ${incompatibleOffered.map((i) => i.title).join(', ')}`,
+      );
+    }
+
+    const incompatibleRequested = itemsRequested.filter(
+      (i) => !i.deliveryMethods.includes(deliveryMethod),
+    );
+    if (incompatibleRequested.length > 0) {
+      throw new BadRequestException(
+        `These requested items don't support ${deliveryMethod} delivery: ${incompatibleRequested.map((i) => i.title).join(', ')}`,
+      );
+    }
+
     // Create the trade with trade items
     const trade = await this.prisma.trade.create({
       data: {
         proposerId,
         responderId,
         message,
+        deliveryMethod,
         status: TradeStatus.PENDING,
         expiresAt: this.tradeExpirationService.calculateExpirationDate(),
         tradeItems: {

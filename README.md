@@ -4,7 +4,7 @@
 
 A production-ready NestJS backend with PostgreSQL, Redis, JWT authentication, and comprehensive API documentation.
 
-**Version 1.0.0**
+**Version 1.0.1**
 
 [![NestJS](https://img.shields.io/badge/NestJS-10-red.svg)](https://nestjs.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
@@ -51,7 +51,8 @@ This is the production-ready backend API for SWAPBUDS, providing secure authenti
 - ✅ Dispute resolution (v0.12.0)
 - ✅ Multi-item trades (v0.13.0)
 - ✅ User settings and preferences (v0.14.0)
-- ✅ **Production Ready v1.0.0** - 484 tests passing
+- ✅ **Production Ready v1.0.0**
+- ✅ Delivery method & value filtering (v1.0.1)
 
 ---
 
@@ -207,7 +208,9 @@ Interactive Swagger documentation available at:
 #### Items
 
 - `POST /api/items` - Create item (protected)
-- `GET /api/items` - List all items (public, paginated)
+- `GET /api/items` - List all items with filtering (public, paginated)
+  - Filter by: status, category, condition, search, deliveryMethod, deliveryScope, minValue, maxValue
+  - Supports: pagination (page, limit), sorting (sortBy, sortOrder)
 - `GET /api/items/:id` - Get item details (public)
 - `GET /api/items/user/:userId` - Get user's items (public)
 - `PATCH /api/items/:id` - Update item (owner only)
@@ -300,6 +303,109 @@ Interactive Swagger documentation available at:
 - `GET /api/users/settings` - Get user settings (protected)
 - `PATCH /api/users/settings` - Update user settings (protected)
 - `DELETE /api/users/account` - Delete user account (protected)
+
+---
+
+## 🚚 Delivery Method & Value Filtering (v1.0.1)
+
+### Enhanced Item Filtering
+
+Items can now be filtered by delivery methods, delivery scope, and estimated value:
+
+```bash
+# Find items available for mail delivery
+GET /api/items?deliveryMethod=MAIL
+
+# Find items worth between 50-200 EUR
+GET /api/items?minValue=50&maxValue=200
+
+# Find national mail-deliverable electronics
+GET /api/items?category=ELECTRONICS&deliveryMethod=MAIL&deliveryScope=NATIONAL
+
+# Complex filter: high-value, international, good condition
+GET /api/items?minValue=100&deliveryScope=INTERNATIONAL&condition=GOOD
+```
+
+#### Query Parameters
+
+| Parameter        | Type   | Values                      | Description                                  |
+| ---------------- | ------ | --------------------------- | -------------------------------------------- |
+| `deliveryMethod` | enum   | `PHYSICAL`, `MAIL`          | Filter items supporting this delivery method |
+| `deliveryScope`  | enum   | `NATIONAL`, `INTERNATIONAL` | Filter by delivery scope                     |
+| `minValue`       | number | 0-∞                         | Minimum estimated value in EUR               |
+| `maxValue`       | number | 0-∞                         | Maximum estimated value in EUR               |
+
+### Trade Delivery Method Validation
+
+**Breaking Change:** Trade creation now requires a `deliveryMethod` field:
+
+```typescript
+POST /api/trades
+{
+  "itemOfferedId": "cm123abc",
+  "itemRequestedId": "cm456def",
+  "deliveryMethod": "MAIL",  // Required - must be supported by both items
+  "message": "Would love to trade!"
+}
+```
+
+The system validates that:
+
+- All offered items support the selected delivery method
+- All requested items support the selected delivery method
+- Returns `400 Bad Request` if any item doesn't support the delivery method
+
+**Error Response Example:**
+
+```json
+{
+  "statusCode": 400,
+  "message": "Item 'Vintage Pokemon Cards' (cm789xyz) does not support the selected delivery method: MAIL",
+  "error": "Bad Request"
+}
+```
+
+### Item Schema Updates
+
+Items now include delivery-related fields:
+
+```typescript
+{
+  "deliveryMethods": ["PHYSICAL", "MAIL"],  // Array of supported methods
+  "deliveryScope": "NATIONAL",              // NATIONAL or INTERNATIONAL
+  "estimatedValue": 150,                     // Value in EUR
+  "currency": "EUR"                          // Currency (default: EUR)
+}
+```
+
+### Migration Guide
+
+If you have existing code creating trades, update it to include `deliveryMethod`:
+
+**Before:**
+
+```typescript
+const trade = await fetch('/api/trades', {
+  method: 'POST',
+  body: JSON.stringify({
+    itemOfferedId: offeredId,
+    itemRequestedId: requestedId,
+  }),
+});
+```
+
+**After:**
+
+```typescript
+const trade = await fetch('/api/trades', {
+  method: 'POST',
+  body: JSON.stringify({
+    itemOfferedId: offeredId,
+    itemRequestedId: requestedId,
+    deliveryMethod: 'PHYSICAL', // or 'MAIL'
+  }),
+});
+```
 
 ---
 

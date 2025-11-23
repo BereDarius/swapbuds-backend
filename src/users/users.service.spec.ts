@@ -270,6 +270,176 @@ describe('UsersService', () => {
       expect(result.bio).toBe(updateProfileDto.bio);
       expect(result.location).toBe(updateProfileDto.location);
     });
+
+    it('should throw NotFoundException if user not found', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.updateProfile(userId, updateProfileDto),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        service.updateProfile(userId, updateProfileDto),
+      ).rejects.toThrow(`User with ID ${userId} not found`);
+    });
+  });
+
+  describe('getUserSettings', () => {
+    const userId = 'user-1';
+
+    it('should return existing user settings', async () => {
+      const mockSettings = {
+        id: 'settings-1',
+        userId,
+        emailNotifications: true,
+        pushNotifications: true,
+        emailTradeProposal: true,
+        emailTradeAccepted: true,
+        pushTradeProposal: true,
+        pushTradeAccepted: true,
+      };
+
+      prisma.user.findUnique.mockResolvedValue(mockUser);
+      prisma.userSettings.findUnique.mockResolvedValue(mockSettings);
+
+      const result = await service.getUserSettings(userId);
+
+      expect(result).toEqual(mockSettings);
+      expect(prisma.userSettings.findUnique).toHaveBeenCalledWith({
+        where: { userId },
+      });
+    });
+
+    it('should create default settings if none exist', async () => {
+      const mockSettings = {
+        id: 'settings-1',
+        userId,
+        emailNotifications: true,
+        pushNotifications: true,
+      };
+
+      prisma.user.findUnique.mockResolvedValue(mockUser);
+      prisma.userSettings.findUnique.mockResolvedValue(null);
+      prisma.userSettings.create.mockResolvedValue(mockSettings);
+
+      const result = await service.getUserSettings(userId);
+
+      expect(result).toEqual(mockSettings);
+      expect(prisma.userSettings.create).toHaveBeenCalledWith({
+        data: { userId },
+      });
+    });
+
+    it('should throw NotFoundException if user not found', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+
+      await expect(service.getUserSettings(userId)).rejects.toThrow(
+        NotFoundException,
+      );
+      await expect(service.getUserSettings(userId)).rejects.toThrow(
+        'User not found',
+      );
+    });
+  });
+
+  describe('updateUserSettings', () => {
+    const userId = 'user-1';
+    const updateData = {
+      emailNotifications: false,
+      pushNotifications: true,
+    };
+
+    it('should update existing settings successfully', async () => {
+      const existingSettings = {
+        id: 'settings-1',
+        userId,
+        emailNotifications: true,
+        pushNotifications: false,
+      };
+      const updatedSettings = {
+        ...existingSettings,
+        ...updateData,
+      };
+
+      prisma.user.findUnique.mockResolvedValue(mockUser);
+      prisma.userSettings.findUnique.mockResolvedValue(existingSettings);
+      prisma.userSettings.update.mockResolvedValue(updatedSettings);
+
+      const result = await service.updateUserSettings(userId, updateData);
+
+      expect(result).toEqual(updatedSettings);
+      expect(prisma.userSettings.update).toHaveBeenCalledWith({
+        where: { userId },
+        data: updateData,
+      });
+    });
+
+    it('should create settings if none exist', async () => {
+      const newSettings = {
+        id: 'settings-1',
+        userId,
+        ...updateData,
+      };
+
+      prisma.user.findUnique.mockResolvedValue(mockUser);
+      prisma.userSettings.findUnique.mockResolvedValue(null);
+      prisma.userSettings.create.mockResolvedValue(newSettings);
+
+      const result = await service.updateUserSettings(userId, updateData);
+
+      expect(result).toEqual(newSettings);
+      expect(prisma.userSettings.create).toHaveBeenCalledWith({
+        data: { userId, ...updateData },
+      });
+    });
+
+    it('should throw NotFoundException if user not found', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.updateUserSettings(userId, updateData),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        service.updateUserSettings(userId, updateData),
+      ).rejects.toThrow('User not found');
+    });
+  });
+
+  describe('resetUserSettings', () => {
+    const userId = 'user-1';
+
+    it('should reset user settings to defaults', async () => {
+      const mockSettings = {
+        id: 'settings-1',
+        userId,
+        emailNotifications: true,
+        pushNotifications: true,
+      };
+
+      prisma.user.findUnique.mockResolvedValue(mockUser);
+      prisma.userSettings.deleteMany.mockResolvedValue({ count: 1 });
+      prisma.userSettings.create.mockResolvedValue(mockSettings);
+
+      const result = await service.resetUserSettings(userId);
+
+      expect(result).toEqual(mockSettings);
+      expect(prisma.userSettings.deleteMany).toHaveBeenCalledWith({
+        where: { userId },
+      });
+      expect(prisma.userSettings.create).toHaveBeenCalledWith({
+        data: { userId },
+      });
+    });
+
+    it('should throw NotFoundException if user not found', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+
+      await expect(service.resetUserSettings(userId)).rejects.toThrow(
+        NotFoundException,
+      );
+      await expect(service.resetUserSettings(userId)).rejects.toThrow(
+        'User not found',
+      );
+    });
   });
 
   describe('uploadAvatar', () => {

@@ -95,6 +95,22 @@ enum ItemCategory {
   OTHER
 }
 
+// ============================================
+// DELIVERY ENUMS
+// ============================================
+enum DeliveryMethod {
+  PHYSICAL // In-person meetup/exchange
+  MAIL // Ship via postal service
+}
+
+enum DeliveryScope {
+  NATIONAL // Only within item owner's country
+  INTERNATIONAL // Worldwide shipping/trades
+}
+
+// ============================================
+// ITEM MODEL
+// ============================================
 model Item {
   id          String        @id @default(cuid())
   title       String
@@ -106,6 +122,14 @@ model Item {
   // Ownership
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Delivery Options
+  deliveryMethods DeliveryMethod[] @default([PHYSICAL, MAIL])
+  deliveryScope   DeliveryScope    @default(NATIONAL)
+
+  // Value Information
+  estimatedValue Decimal? // Optional estimated value in EUR
+  currency       String   @default("EUR")
 
   // Media
   images ItemImage[]
@@ -183,6 +207,9 @@ model Trade {
 
   // Multi-item trade support
   tradeItems TradeItem[]
+
+  // Delivery Method
+  deliveryMethod DeliveryMethod // Agreed delivery method for this trade
 
   // Additional info
   message String?
@@ -625,4 +652,21 @@ model Dispute {
   @@index([status])
   @@index([createdAt])
   @@map("disputes")
+}
+
+// ============================================
+// RECAPTCHA LOG MODEL (Optional - Analytics)
+// ============================================
+model RecaptchaLog {
+  id        String   @id @default(cuid())
+  action    String // register, login, etc.
+  score     Float // 0.0 - 1.0
+  ip        String? // IP address of the request
+  success   Boolean // true if score >= threshold
+  timestamp DateTime @default(now())
+
+  @@index([action])
+  @@index([score])
+  @@index([timestamp])
+  @@map("recaptcha_logs")
 }

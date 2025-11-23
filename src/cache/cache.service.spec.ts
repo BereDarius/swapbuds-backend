@@ -231,5 +231,82 @@ describe('CacheService', () => {
       const key = service.getUnreadMessagesKey('user-123');
       expect(key).toBe('users:user-123:messages:unread');
     });
+
+    it('should generate conversations key', () => {
+      const key = service.getConversationsKey('user-123');
+      expect(key).toBe('users:user-123:conversations');
+    });
+
+    it('should generate trade key', () => {
+      const key = service.getTradeKey('trade-123');
+      expect(key).toBe('trades:trade-123');
+    });
+
+    it('should generate user trades key', () => {
+      const key = service.getUserTradesKey('user-123');
+      expect(key).toBe('users:user-123:trades');
+    });
+  });
+
+  describe('invalidateItem', () => {
+    it('should delete item key and invalidate item lists', async () => {
+      const itemId = 'item-123';
+      mockCacheManager.del.mockResolvedValue(undefined);
+      mockRedisClient.scan.mockResolvedValue(['0', []]);
+
+      await service.invalidateItem(itemId);
+
+      expect(mockCacheManager.del).toHaveBeenCalledWith('items:item-123');
+      // delPattern called for 'items:list:*'
+    });
+  });
+
+  describe('invalidateUser', () => {
+    it('should delete all user-related cache keys', async () => {
+      const userId = 'user-123';
+      mockCacheManager.del.mockResolvedValue(undefined);
+
+      await service.invalidateUser(userId);
+
+      expect(mockCacheManager.del).toHaveBeenCalledWith('users:user-123');
+      expect(mockCacheManager.del).toHaveBeenCalledWith('users:user-123:items');
+      expect(mockCacheManager.del).toHaveBeenCalledWith(
+        'users:user-123:trades',
+      );
+      expect(mockCacheManager.del).toHaveBeenCalledWith(
+        'users:user-123:conversations',
+      );
+      expect(mockCacheManager.del).toHaveBeenCalledTimes(4);
+    });
+  });
+
+  describe('invalidateUnreadCounts', () => {
+    it('should delete unread notifications and messages keys', async () => {
+      const userId = 'user-123';
+      mockCacheManager.del.mockResolvedValue(undefined);
+
+      await service.invalidateUnreadCounts(userId);
+
+      expect(mockCacheManager.del).toHaveBeenCalledWith(
+        'users:user-123:notifications:unread',
+      );
+      expect(mockCacheManager.del).toHaveBeenCalledWith(
+        'users:user-123:messages:unread',
+      );
+      expect(mockCacheManager.del).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('invalidateTrade', () => {
+    it('should delete trade key and invalidate user trade lists', async () => {
+      const tradeId = 'trade-123';
+      mockCacheManager.del.mockResolvedValue(undefined);
+      mockRedisClient.scan.mockResolvedValue(['0', []]);
+
+      await service.invalidateTrade(tradeId);
+
+      expect(mockCacheManager.del).toHaveBeenCalledWith('trades:trade-123');
+      // delPattern called for 'users:*:trades'
+    });
   });
 });

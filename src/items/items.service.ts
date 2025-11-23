@@ -129,6 +129,10 @@ export class ItemsService {
       category,
       condition,
       search,
+      deliveryMethod,
+      deliveryScope,
+      minValue,
+      maxValue,
       page = 1,
       limit = 20,
       sortBy = 'createdAt',
@@ -155,6 +159,29 @@ export class ItemsService {
         { title: { contains: search, mode: 'insensitive' } },
         { description: { contains: search, mode: 'insensitive' } },
       ];
+    }
+
+    // Filter by delivery method (check if array contains the specified method)
+    if (deliveryMethod) {
+      where.deliveryMethods = {
+        has: deliveryMethod,
+      };
+    }
+
+    // Filter by delivery scope
+    if (deliveryScope) {
+      where.deliveryScope = deliveryScope;
+    }
+
+    // Filter by estimated value range
+    if (minValue !== undefined || maxValue !== undefined) {
+      where.estimatedValue = {};
+      if (minValue !== undefined) {
+        where.estimatedValue.gte = minValue;
+      }
+      if (maxValue !== undefined) {
+        where.estimatedValue.lte = maxValue;
+      }
     }
 
     // Build orderBy clause

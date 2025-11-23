@@ -407,4 +407,76 @@ describe('NotificationsGateway', () => {
       );
     });
   });
+
+  describe('emitMessageToUser', () => {
+    it('should emit message event to user room', () => {
+      const message = { id: 'msg-1', content: 'Hello', senderId: 'user-2' };
+
+      gateway.emitMessageToUser('user-123', message);
+
+      expect(mockServer.to).toHaveBeenCalledWith('user:user-123');
+      expect(mockServer.emit).toHaveBeenCalledWith('message', message);
+    });
+  });
+
+  describe('emitMessageRead', () => {
+    it('should emit messageRead event to user room', () => {
+      gateway.emitMessageRead('user-123', 'msg-1', 'conv-1');
+
+      expect(mockServer.to).toHaveBeenCalledWith('user:user-123');
+      expect(mockServer.emit).toHaveBeenCalledWith('messageRead', {
+        messageId: 'msg-1',
+        conversationId: 'conv-1',
+      });
+    });
+  });
+
+  describe('emitConversationRead', () => {
+    it('should emit conversationRead event to user room', () => {
+      gateway.emitConversationRead('user-123', 'conv-1', 5);
+
+      expect(mockServer.to).toHaveBeenCalledWith('user:user-123');
+      expect(mockServer.emit).toHaveBeenCalledWith('conversationRead', {
+        conversationId: 'conv-1',
+        count: 5,
+      });
+    });
+  });
+
+  describe('emitMessageDeleted', () => {
+    it('should emit messageDeleted event to user room', () => {
+      gateway.emitMessageDeleted('user-123', 'msg-1', 'conv-1');
+
+      expect(mockServer.to).toHaveBeenCalledWith('user:user-123');
+      expect(mockServer.emit).toHaveBeenCalledWith('messageDeleted', {
+        messageId: 'msg-1',
+        conversationId: 'conv-1',
+      });
+    });
+  });
+
+  describe('emitTyping', () => {
+    it('should emit typing indicator to user room', () => {
+      gateway.emitTyping('user-123', 'conv-1', true, 'other_user');
+
+      expect(mockServer.to).toHaveBeenCalledWith('user:user-123');
+      expect(mockServer.emit).toHaveBeenCalledWith('typing', {
+        conversationId: 'conv-1',
+        isTyping: true,
+        typerUsername: 'other_user',
+      });
+    });
+  });
+
+  describe('isUserOnline', () => {
+    it('should return true when user has active connections', () => {
+      gateway['userSockets'].set('user-123', new Set(['socket-1']));
+
+      expect(gateway.isUserOnline('user-123')).toBe(true);
+    });
+
+    it('should return false when user has no active connections', () => {
+      expect(gateway.isUserOnline('user-123')).toBe(false);
+    });
+  });
 });

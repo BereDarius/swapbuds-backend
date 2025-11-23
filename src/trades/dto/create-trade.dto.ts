@@ -1,8 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { DeliveryMethod } from '@prisma/client';
 import {
   ArrayMinSize,
   ArrayNotEmpty,
   IsArray,
+  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -81,4 +83,15 @@ export class CreateTradeDto {
   @IsOptional()
   @MaxLength(500)
   message?: string;
+
+  @ApiProperty({
+    description:
+      'Delivery method for the trade (must be supported by both items)',
+    enum: DeliveryMethod,
+    example: DeliveryMethod.PHYSICAL,
+    required: true,
+  })
+  @IsEnum(DeliveryMethod)
+  @IsNotEmpty()
+  deliveryMethod: DeliveryMethod;
 }

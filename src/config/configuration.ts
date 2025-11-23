@@ -45,4 +45,13 @@ export default () => ({
     ttl: 60000, // Time window in milliseconds (1 minute)
     limit: 100, // Maximum requests per time window (100 requests/minute)
   },
+
+  // reCAPTCHA v3 bot protection settings
+  recaptcha: {
+    secretKey: process.env.RECAPTCHA_SECRET_KEY, // Secret key from Google reCAPTCHA
+    verifyUrl:
+      process.env.RECAPTCHA_VERIFY_URL ||
+      'https://www.google.com/recaptcha/api/siteverify', // Google verification endpoint
+    minScore: parseFloat(process.env.RECAPTCHA_MIN_SCORE) || 0.5, // Minimum acceptable score (0.0-1.0)
+  },
 });

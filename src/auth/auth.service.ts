@@ -1,6 +1,7 @@
 import { AuthResponseDto, LoginDto, RegisterDto } from '@/auth/dto/auth.dto';
 import { JwtPayload } from '@/auth/strategies/jwt.strategy';
 import { PrismaService } from '@/prisma/prisma.service';
+import { RecaptchaService } from '@/recaptcha/recaptcha.service';
 import {
   ConflictException,
   Injectable,
@@ -20,10 +21,31 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private recaptchaService: RecaptchaService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
-    const { username, email, password } = registerDto;
+    const { username, email, password, recaptchaToken } = registerDto;
+
+    // Verify reCAPTCHA token if provided
+    if (recaptchaToken) {
+      const verification = await this.recaptchaService.verifyToken(
+        recaptchaToken,
+        'register',
+      );
+
+      if (!verification.success) {
+        this.logger.warn(
+          `reCAPTCHA verification failed for registration: ${email}. Reason: ${verification.reason}`,
+        );
+        // Allow registration to continue but log the warning
+        // In production, you might want to throw an exception here
+      } else {
+        this.logger.log(
+          `reCAPTCHA verification successful for registration: ${email}. Score: ${verification.score}`,
+        );
+      }
+    }
 
     // Check if user exists
     const existingUser = await this.prisma.user.findFirst({
@@ -69,7 +91,27 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
-    const { email, password } = loginDto;
+    const { email, password, recaptchaToken } = loginDto;
+
+    // Verify reCAPTCHA token if provided
+    if (recaptchaToken) {
+      const verification = await this.recaptchaService.verifyToken(
+        recaptchaToken,
+        'login',
+      );
+
+      if (!verification.success) {
+        this.logger.warn(
+          `reCAPTCHA verification failed for login: ${email}. Reason: ${verification.reason}`,
+        );
+        // Allow login to continue but log the warning
+        // In production with high bot activity, you might want to block here
+      } else {
+        this.logger.log(
+          `reCAPTCHA verification successful for login: ${email}. Score: ${verification.score}`,
+        );
+      }
+    }
 
     // Find user
     const user = await this.prisma.user.findUnique({
