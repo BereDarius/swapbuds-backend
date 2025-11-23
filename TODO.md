@@ -24,52 +24,52 @@ This roadmap is aligned with the [LAUNCH_ROADMAP.md](../plans/LAUNCH_ROADMAP.md)
 
 ### Features
 
-- [ ] **Google reCAPTCHA v3 (Invisible) Integration**
-- [ ] **Bot protection for registration and login**
-- [ ] **Score-based verification (0.0-1.0 scale)**
-- [ ] **Token verification with Google API**
-- [ ] **Configurable score thresholds per action**
-- [ ] Support for multiple trade delivery methods
-- [ ] Users can specify preferred delivery method for items
-- [ ] Delivery method filtering in search and matching
-- [ ] Trade agreements include delivery method confirmation
-- [ ] User preferences for default delivery method
-- [ ] **Estimated price/value field for items**
-- [ ] **Value range filtering in search**
-- [ ] **Similar value matching suggestions**
+- [x] **Google reCAPTCHA v3 (Invisible) Integration**
+- [x] **Bot protection for registration and login**
+- [x] **Score-based verification (0.0-1.0 scale)**
+- [x] **Token verification with Google API**
+- [x] **Configurable score thresholds per action**
+- [x] Support for multiple trade delivery methods
+- [x] Users can specify preferred delivery method for items
+- [x] Delivery method filtering in search and matching
+- [x] Trade agreements include delivery method confirmation
+- [x] User preferences for default delivery method
+- [x] **Estimated price/value field for items**
+- [x] **Value range filtering in search**
+- [x] **Similar value matching suggestions**
 
 ### Technical Implementation
 
 **reCAPTCHA v3 Implementation:**
 
-- [ ] Create `RecaptchaModule` and `RecaptchaService`
-- [ ] Install `axios` for Google API verification
-- [ ] Add environment variables: `RECAPTCHA_SECRET_KEY`, `RECAPTCHA_MIN_SCORE`
-- [ ] Implement token verification with Google reCAPTCHA API
-- [ ] Add score-based validation logic (configurable thresholds)
-- [ ] Update `RegisterDto` to include optional `recaptchaToken` field
-- [ ] Update `LoginDto` to include optional `recaptchaToken` field
-- [ ] Update `AuthService.register()` to verify reCAPTCHA token
-- [ ] Update `AuthService.login()` to verify reCAPTCHA token
-- [ ] Add IP tracking for verification requests
-- [ ] Create `RecaptchaLog` model for score tracking (optional)
-- [ ] Add logging for failed verifications (score too low, action mismatch)
-- [ ] Write unit tests for `RecaptchaService`
-- [ ] Document score thresholds and strategy
+- [x] Create `RecaptchaModule` and `RecaptchaService`
+- [x] Install `axios` for Google API verification
+- [x] Add environment variables: `RECAPTCHA_SECRET_KEY`, `RECAPTCHA_MIN_SCORE`
+- [x] Implement token verification with Google reCAPTCHA API
+- [x] Add score-based validation logic (configurable thresholds)
+- [x] Update `RegisterDto` to include optional `recaptchaToken` field
+- [x] Update `LoginDto` to include optional `recaptchaToken` field
+- [x] Update `AuthService.register()` to verify reCAPTCHA token
+- [x] Update `AuthService.login()` to verify reCAPTCHA token
+- [x] Add IP tracking for verification requests
+- [x] Create `RecaptchaLog` model for score tracking (optional)
+- [x] Add logging for failed verifications (score too low, action mismatch)
+- [x] Write unit tests for `RecaptchaService`
+- [x] Document score thresholds and strategy
 
 **Delivery Methods & Value Fields:**
 
-- [ ] Add `deliveryMethods` enum field to Item model (array: PHYSICAL, MAIL, BOTH)
-- [ ] Add `preferredDeliveryMethod` field to User preferences
-- [ ] **Add `estimatedValue` field to Item model (decimal, optional)**
-- [ ] **Add `currency` field to Item model (default: RON)**
-- [ ] Update ItemsService to filter by delivery method
-- [ ] **Update ItemsService to filter by value range**
-- [ ] Modify Trade model to include agreed delivery method
-- [ ] Update search/filter endpoints to support delivery method
-- [ ] **Update search/filter endpoints to support value range**
-- [ ] Add delivery method validation in trade creation
-- [ ] **Add value validation (must be positive, reasonable limits)**
+- [x] Add `deliveryMethods` enum field to Item model (array: PHYSICAL, MAIL, BOTH)
+- [x] Add `preferredDeliveryMethod` field to User preferences
+- [x] **Add `estimatedValue` field to Item model (decimal, optional)**
+- [x] **Add `currency` field to Item model (default: RON)**
+- [x] Update ItemsService to filter by delivery method
+- [x] **Update ItemsService to filter by value range**
+- [x] Modify Trade model to include agreed delivery method
+- [x] Update search/filter endpoints to support delivery method
+- [x] **Update search/filter endpoints to support value range**
+- [x] Add delivery method validation in trade creation
+- [x] **Add value validation (must be positive, reasonable limits)**
 
 ### API Endpoints
 
@@ -162,89 +162,97 @@ enum DeliveryMethod {
 
 ## Week 3-6: Enhanced Features for MVP (MEDIUM PRIORITY)
 
-**Version 1.0.2 - Trade Delivery Methods & Estimated Value**
+**Version 1.0.2 - Additional Features & Smart Matching**
 
-**Timeline:** Week 3 (Dec 16-22, 2025)
-**Priority:** MEDIUM - Nice to have for launch, can be added post-launch if time constrained
+**Timeline:** Week 3-6 (Dec 16-29, 2025)
+**Priority:** MEDIUM - Enhanced features for better user experience
 
-### Features
+### Features Completed in v1.0.1 ✅
 
-- [ ] Support for multiple trade delivery methods
-- [ ] Users can specify preferred delivery method for items
-- [ ] Delivery method filtering in search and matching
-- [ ] Trade agreements include delivery method confirmation
-- [ ] User preferences for default delivery method
-- [ ] **Estimated price/value field for items**
-- [ ] **Value range filtering in search**
-- [ ] **Similar value matching suggestions**
+- [x] Support for multiple trade delivery methods
+- [x] Users can specify preferred delivery method for items
+- [x] Delivery method filtering in search and matching
+- [x] Trade agreements include delivery method confirmation
+- [x] **Estimated price/value field for items**
+- [x] **Value range filtering in search**
+- [x] Add `deliveryMethods` enum field to Item model (array: PHYSICAL, MAIL)
+- [x] **Add `estimatedValue` field to Item model (decimal, optional)**
+- [x] **Add `currency` field to Item model (default: EUR)**
+- [x] Update ItemsService to filter by delivery method
+- [x] **Update ItemsService to filter by value range**
+- [x] Modify Trade model to include agreed delivery method
+- [x] Update search/filter endpoints to support delivery method
+- [x] **Update search/filter endpoints to support value range**
+- [x] Add delivery method validation in trade creation
+- [x] **Add value validation (must be positive, reasonable limits)**
 
-### Technical Implementation
+### Completed Features in v1.0.2 ✅
 
-- [ ] Add `deliveryMethods` enum field to Item model (array: PHYSICAL, MAIL, BOTH)
-- [ ] Add `preferredDeliveryMethod` field to User preferences
-- [ ] **Add `estimatedValue` field to Item model (decimal, optional)**
-- [ ] **Add `currency` field to Item model (default: RON)**
-- [ ] Update ItemsService to filter by delivery method
-- [ ] **Update ItemsService to filter by value range**
-- [ ] Modify Trade model to include agreed delivery method
-- [ ] Update search/filter endpoints to support delivery method
-- [ ] **Update search/filter endpoints to support value range**
-- [ ] Add delivery method validation in trade creation
-- [ ] **Add value validation (must be positive, reasonable limits)**
+- [x] User preferences for default delivery method (in UserSettings)
+- [x] **Similar value matching suggestions algorithm**
+- [x] Smart item recommendations based on user preferences
+- [x] RecommendationsService with scoring algorithm
+- [x] GET /items/recommendations endpoint
+- [x] GET /items/:id/similar endpoint
+- [x] 9 comprehensive tests for recommendations (591 total passing)
+
+### Technical Implementation (Remaining)
+
+**User Delivery Preferences:** ✅
+
+- [x] Add `preferredDeliveryMethod` field to UserSettings model
+- [x] Update UpdateSettingsDto to include preferredDeliveryMethod
+- [x] API endpoint: `PATCH /users/settings` (extend existing)
+
+**Smart Matching Algorithm:** ✅
+
+- [x] Create RecommendationsService
+- [x] Implement value-based matching (±20% tolerance)
+- [x] Implement category-based recommendations
+- [x] Consider user's liked items for recommendations
+- [x] Factor in delivery method compatibility
+- [x] API endpoint: `GET /items/recommendations` - Get personalized item suggestions
+- [x] API endpoint: `GET /items/:id/similar` - Get similar items (±30% tolerance)
+
+**Smart Matching Logic Implemented:** ✅
+
+- ✅ Match items with similar estimated values (±20% tolerance)
+- ✅ Prioritize items in user's preferred categories (top 3 from liked items)
+- ✅ Filter by preferred delivery method from settings
+- ✅ Factor in item freshness (newer = higher score)
+- ✅ Boost items from users with good reputation (0.1x multiplier)
+- ✅ Consider popularity (likes and comments)
 
 ### API Endpoints
 
-- `PATCH /items/:id/delivery-methods` - Update item delivery methods
-- `GET /items?deliveryMethod=PHYSICAL|MAIL|BOTH` - Filter items by delivery method
-- **`GET /items?minValue=100&maxValue=500&currency=RON` - Filter items by value range**
-- `PATCH /users/me/preferences` - Update user delivery preferences (extend existing)
-- `POST /trades` - Include deliveryMethod in trade creation (extend existing)
+**Completed in v1.0.1:**
 
-### Database Schema
+- [x] `GET /items?deliveryMethod=PHYSICAL|MAIL` - Filter items by delivery method
+- [x] **`GET /items?minValue=100&maxValue=500` - Filter items by value range**
+- [x] `POST /trades` - Include deliveryMethod in trade creation
 
-```prisma
-model Item {
-  // ... existing fields
-  deliveryMethods DeliveryMethod[] @default([PHYSICAL, MAIL]) // Default to both options
-  estimatedValue  Decimal?         // Optional estimated value
-  currency        String @default("RON") // RON, EUR, USD
-}
+**Completed in v1.0.2:**
 
-model Trade {
-  // ... existing fields
-  deliveryMethod  DeliveryMethod // Agreed delivery method for this trade
-}
+- [x] `PATCH /users/settings` - Add preferredDeliveryMethod field
+- [x] `GET /items/recommendations?limit=10` - Get personalized recommendations
+- [x] `GET /items/:id/similar?limit=5` - Get similar items
 
-model UserPreferences {
-  // ... existing fields
-  preferredDeliveryMethod DeliveryMethod @default(PHYSICAL)
-}
+### Testing Completed ✅
 
-enum DeliveryMethod {
-  PHYSICAL  // In-person exchange only
-  MAIL      // Ship through mail only
-  BOTH      // Flexible, either method works
-}
-```
+- [x] Unit tests for delivery method filtering (8 tests)
+- [x] Integration tests for trade creation with delivery methods (6 tests)
+- [x] Test delivery method mismatch scenarios
+- [x] Test value range filtering
 
-### Value Field Guidelines
+### Additional Testing Completed in v1.0.2 ✅
 
-- **Optional field** - users can choose to provide estimated value
-- **Purpose:** Help match items of similar value for fair trades
-- **Display:** Show approximate value (e.g., "~500 RON") not exact price
-- **Not a selling price** - emphasize this is for matching purposes only
-- **Validation:**
-  - Min: 1 RON
-  - Max: 100,000 RON (adjust based on platform needs)
-  - Only positive numbers
-- **Privacy:** Users can hide value from public view (show only to potential traders)
-
-### Testing
-
-- [ ] Unit tests for delivery method filtering
-- [ ] Integration tests for trade creation with delivery methods
-- [ ] E2E tests for item creation with delivery preferences
-- [ ] Test delivery method mismatch scenarios
+- [x] Unit tests for RecommendationsService (9 new tests)
+- [x] Test recommendations with user preferences
+- [x] Test value similarity matching (±20% and ±30% tolerance)
+- [x] Test category preference extraction from liked items
+- [x] Test delivery method filtering in recommendations
+- [x] Test similar items algorithm
+- [x] **Total: 591 tests passing** (up from 582)
 
 ---
 

@@ -554,9 +554,10 @@ model UserSettings {
   showStatistics    Boolean @default(true) // Show trade statistics
 
   // Trade Settings
-  autoDeclineExpiredTrades Boolean @default(true) // Auto-decline when trades expire
-  allowCounterOffers       Boolean @default(true) // Allow others to send counter-offers
-  requireTradeMessage      Boolean @default(false) // Require message with trade proposals
+  autoDeclineExpiredTrades Boolean        @default(true) // Auto-decline when trades expire
+  allowCounterOffers       Boolean        @default(true) // Allow others to send counter-offers
+  requireTradeMessage      Boolean        @default(false) // Require message with trade proposals
+  preferredDeliveryMethod  DeliveryMethod @default(PHYSICAL) // Preferred delivery method for trades
 
   // Notification Frequency
   emailDigestFrequency String @default("DAILY") // REALTIME, DAILY, WEEKLY, NEVER

@@ -53,6 +53,7 @@ This is the production-ready backend API for SWAPBUDS, providing secure authenti
 - ✅ User settings and preferences (v0.14.0)
 - ✅ **Production Ready v1.0.0**
 - ✅ Delivery method & value filtering (v1.0.1)
+- ✅ Smart recommendations & matching (v1.0.2)
 
 ---
 
@@ -405,6 +406,90 @@ const trade = await fetch('/api/trades', {
     deliveryMethod: 'PHYSICAL', // or 'MAIL'
   }),
 });
+```
+
+---
+
+## 🤖 Smart Recommendations & Matching (v1.0.2)
+
+### Personalized Item Recommendations
+
+Get personalized item recommendations based on user preferences, liked items, and smart matching algorithms:
+
+```bash
+# Get personalized recommendations (requires authentication)
+GET /items/recommendations?limit=10
+```
+
+**Recommendation Algorithm:**
+
+The system uses a sophisticated scoring algorithm that considers multiple factors:
+
+1. **Value Similarity** (±20% tolerance)
+   - Matches items with similar estimated values to user's items
+   - Example: If user has items worth €100, recommends items worth €80-120
+
+2. **Category Preferences**
+   - Analyzes user's liked items to extract top 3 preferred categories
+   - Prioritizes items in these categories
+
+3. **Delivery Method Compatibility**
+   - Filters by user's preferred delivery method from settings
+   - Only shows items compatible with user's preferences
+
+4. **Reputation Scoring**
+   - Boosts items from users with high reputation scores
+   - Helps users discover reliable traders
+
+5. **Item Freshness**
+   - Prioritizes recently listed items
+   - Ensures recommendations stay current
+
+6. **Popularity**
+   - Considers likes and comments
+   - Highlights items the community finds interesting
+
+### Similar Items
+
+Find items similar to a specific item:
+
+```bash
+# Get similar items (public endpoint)
+GET /items/:id/similar?limit=5
+```
+
+**Similarity Criteria:**
+
+- Same category
+- Similar value (±30% tolerance)
+- Compatible delivery methods
+- Same delivery scope (national/international)
+- Recent listings
+
+**Example Usage:**
+
+```typescript
+// Get personalized recommendations
+const recommendations = await fetch('/items/recommendations?limit=10', {
+  headers: { Authorization: `Bearer ${token}` },
+});
+
+// Get similar items (useful for "You might also like" sections)
+const similar = await fetch('/items/item-123/similar?limit=5');
+```
+
+### User Settings
+
+Users can control recommendations through their settings:
+
+```typescript
+PATCH /users/settings
+{
+  "preferredDeliveryMethod": "MAIL",      // Preferred method for filtering
+  "enableRecommendations": true,          // Toggle recommendations on/off
+  "showSimilarItems": true,               // Show similar items on item pages
+  "saveSearchHistory": true               // Use search history for better recommendations
+}
 ```
 
 ---

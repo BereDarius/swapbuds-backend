@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { DeliveryMethod } from '@prisma/client';
 import {
   IsBoolean,
   IsEnum,
@@ -108,6 +109,16 @@ export class UpdateSettingsDto {
   @IsOptional()
   @IsBoolean()
   requireTradeMessage?: boolean;
+
+  @ApiProperty({
+    description: 'Preferred delivery method for trades',
+    enum: DeliveryMethod,
+    example: DeliveryMethod.PHYSICAL,
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(DeliveryMethod)
+  preferredDeliveryMethod?: DeliveryMethod;
 
   // Notification Frequency
   @ApiProperty({

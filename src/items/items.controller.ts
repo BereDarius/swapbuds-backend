@@ -25,6 +25,7 @@ import { ItemFilterDto } from './dto/item-filter.dto';
 import { ItemResponseDto } from './dto/item-response.dto';
 import { UpdateItemDto } from './dto/update-item.dto';
 import { ItemsService } from './items.service';
+import { RecommendationsService } from './recommendations.service';
 
 /**
  * Controller handling item-related HTTP requests
@@ -34,7 +35,10 @@ import { ItemsService } from './items.service';
 @Controller('items')
 @UseGuards(JwtAuthGuard)
 export class ItemsController {
-  constructor(private readonly itemsService: ItemsService) {}
+  constructor(
+    private readonly itemsService: ItemsService,
+    private readonly recommendationsService: RecommendationsService,
+  ) {}
 
   /**
    * Create a new item
@@ -247,5 +251,67 @@ export class ItemsController {
     @CurrentUser('sub') userId: string,
   ): Promise<void> {
     return this.itemsService.remove(id, userId);
+  }
+
+  /**
+   * Get personalized item recommendations
+   * Requires authentication
+   */
+  @Get('recommendations')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Get personalized item recommendations',
+    description:
+      'Returns items recommended based on user preferences, liked items, and value similarity',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of recommendations to return',
+    example: 10,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Recommendations retrieved successfully',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getRecommendations(
+    @CurrentUser('sub') userId: string,
+    @Query('limit') limit?: string,
+  ) {
+    const limitNum = limit ? parseInt(limit, 10) : 10;
+    return this.recommendationsService.getRecommendations(userId, limitNum);
+  }
+
+  /**
+   * Get items similar to a specific item
+   * Public endpoint
+   */
+  @Get(':id/similar')
+  @Public()
+  @ApiOperation({
+    summary: 'Get similar items',
+    description:
+      'Returns items similar to the specified item based on category, value, and delivery methods',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of similar items to return',
+    example: 5,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Similar items retrieved successfully',
+  })
+  @ApiResponse({ status: 404, description: 'Item not found' })
+  async getSimilarItems(
+    @Param('id') itemId: string,
+    @Query('limit') limit?: string,
+  ) {
+    const limitNum = limit ? parseInt(limit, 10) : 5;
+    return this.recommendationsService.getSimilarItems(itemId, limitNum);
   }
 }

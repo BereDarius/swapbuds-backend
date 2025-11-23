@@ -1,5 +1,6 @@
 import { ItemsController } from '@/items/items.controller';
 import { ItemsService } from '@/items/items.service';
+import { RecommendationsService } from '@/items/recommendations.service';
 import {
   mockItem,
   mockItemWithRelations,
@@ -25,6 +26,11 @@ describe('ItemsController', () => {
     remove: jest.fn(),
   };
 
+  const mockRecommendationsService = {
+    getRecommendations: jest.fn(),
+    getSimilarItems: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ItemsController],
@@ -32,6 +38,10 @@ describe('ItemsController', () => {
         {
           provide: ItemsService,
           useValue: mockItemsService,
+        },
+        {
+          provide: RecommendationsService,
+          useValue: mockRecommendationsService,
         },
       ],
     }).compile();
