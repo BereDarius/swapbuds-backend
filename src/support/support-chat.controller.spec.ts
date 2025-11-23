@@ -93,33 +93,35 @@ describe('SupportChatController', () => {
     };
 
     const mockRequest = {
-      user: { sub: 'user-1', username: 'testuser', role: UserRole.USER },
+      user: {
+        sub: 'user-1',
+        userId: 'user-1',
+        username: 'testuser',
+        role: UserRole.USER,
+      },
     };
 
     it('should create chat and emit queue position', async () => {
-      const mockResult = {
-        chat: mockChat,
-        queuePosition: 1,
-      };
+      mockSupportChatService.createChat.mockResolvedValue(mockChat);
 
-      mockSupportChatService.createChat.mockResolvedValue(mockResult);
+      mockSupportChatService.createChat.mockResolvedValue(mockChat);
 
       const result = await controller.createChat(createDto, mockRequest as any);
 
-      expect(result).toEqual(mockResult);
+      expect(result).toEqual(mockChat);
       expect(mockSupportChatService.createChat).toHaveBeenCalledWith(
         'user-1',
         createDto,
       );
       expect(
         mockSupportChatGateway.emitQueuePositionUpdate,
-      ).toHaveBeenCalledWith('user-1', 'chat-1', 1);
+      ).toHaveBeenCalledWith('user-1', mockChat.id, mockChat.queuePosition);
     });
   });
 
   describe('getUserChats', () => {
     const mockRequest = {
-      user: { sub: 'user-1', username: 'testuser' },
+      user: { sub: 'user-1', userId: 'user-1', username: 'testuser' },
     };
 
     it('should return user chats without resolved by default', async () => {
@@ -127,8 +129,8 @@ describe('SupportChatController', () => {
       mockSupportChatService.getUserChats.mockResolvedValue(mockChats);
 
       const result = await controller.getUserChats(
-        undefined,
         mockRequest as any,
+        undefined,
       );
 
       expect(result).toEqual(mockChats);
@@ -142,7 +144,7 @@ describe('SupportChatController', () => {
       const mockChats = [mockChat];
       mockSupportChatService.getUserChats.mockResolvedValue(mockChats);
 
-      const result = await controller.getUserChats('true', mockRequest as any);
+      const result = await controller.getUserChats(mockRequest as any, 'true');
 
       expect(result).toEqual(mockChats);
       expect(mockSupportChatService.getUserChats).toHaveBeenCalledWith(
@@ -154,7 +156,7 @@ describe('SupportChatController', () => {
 
   describe('getChat', () => {
     const mockRequest = {
-      user: { sub: 'user-1', role: UserRole.USER },
+      user: { sub: 'user-1', userId: 'user-1', role: UserRole.USER },
     };
 
     it('should return chat details', async () => {
@@ -177,7 +179,7 @@ describe('SupportChatController', () => {
     };
 
     const mockRequest = {
-      user: { sub: 'user-1', role: UserRole.USER },
+      user: { sub: 'user-1', userId: 'user-1', role: UserRole.USER },
     };
 
     it('should send message and emit via WebSocket', async () => {
@@ -205,7 +207,7 @@ describe('SupportChatController', () => {
 
   describe('closeChat', () => {
     const mockRequest = {
-      user: { sub: 'user-1', role: UserRole.USER },
+      user: { sub: 'user-1', userId: 'user-1', role: UserRole.USER },
     };
 
     it('should close chat and emit via WebSocket', async () => {
@@ -228,7 +230,7 @@ describe('SupportChatController', () => {
 
   describe('getAgentChats', () => {
     const mockRequest = {
-      user: { sub: 'agent-1', role: UserRole.SUPPORT },
+      user: { sub: 'agent-1', userId: 'agent-1', role: UserRole.SUPPORT },
     };
 
     it('should return agent chats', async () => {
@@ -250,7 +252,7 @@ describe('SupportChatController', () => {
     };
 
     const mockRequest = {
-      user: { sub: 'agent-1', role: UserRole.SUPPORT },
+      user: { sub: 'agent-1', userId: 'agent-1', role: UserRole.SUPPORT },
     };
 
     it('should resolve chat and emit via WebSocket', async () => {
@@ -272,12 +274,9 @@ describe('SupportChatController', () => {
         'chat-1',
         'agent-1',
         resolveDto,
-        UserRole.SUPPORT,
       );
       expect(mockSupportChatGateway.emitChatResolved).toHaveBeenCalledWith(
         'chat-1',
-        'user-1',
-        resolvedChat,
       );
     });
   });

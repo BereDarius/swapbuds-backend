@@ -83,10 +83,24 @@ export class MonitoringService {
   // Configuration
   private readonly MAX_METRICS = 10000; // Maximum metrics to keep in memory
   private readonly RETENTION_HOURS = 24; // Hours to retain metrics
+  private cleanupInterval: NodeJS.Timeout | null = null;
 
   constructor() {
     // Clean up old metrics every hour
-    setInterval(() => this.cleanupOldMetrics(), 60 * 60 * 1000);
+    this.cleanupInterval = setInterval(
+      () => this.cleanupOldMetrics(),
+      60 * 60 * 1000,
+    );
+  }
+
+  /**
+   * Cleanup resources (useful for testing and graceful shutdown)
+   */
+  onModuleDestroy(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
+    }
   }
 
   /**

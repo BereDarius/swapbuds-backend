@@ -14,6 +14,7 @@ describe('AdminService', () => {
       findMany: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
     },
     item: {
       count: jest.fn(),
@@ -493,6 +494,347 @@ describe('AdminService', () => {
           'Test',
         ),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('bulkBanUsers', () => {
+    it('should successfully ban multiple users', async () => {
+      const mockUsers = [
+        {
+          id: 'user-1',
+          username: 'john_doe',
+          email: 'john@example.com',
+          isActive: true,
+        },
+        {
+          id: 'user-2',
+          username: 'jane_doe',
+          email: 'jane@example.com',
+          isActive: true,
+        },
+      ];
+
+      mockPrismaService.user.findMany.mockResolvedValue(mockUsers);
+      mockPrismaService.user.updateMany.mockResolvedValue({ count: 2 });
+
+      const result = await service.bulkBanUsers(
+        ['user-1', 'user-2'],
+        'admin-1',
+        'Mass violation',
+      );
+
+      expect(result).toEqual({
+        success: true,
+        bannedCount: 2,
+        bannedUsers: [
+          { id: 'user-1', username: 'john_doe' },
+          { id: 'user-2', username: 'jane_doe' },
+        ],
+      });
+
+      expect(mockPrismaService.user.updateMany).toHaveBeenCalledWith({
+        where: { id: { in: ['user-1', 'user-2'] } },
+        data: { isActive: false },
+      });
+
+      expect(mockAuditLogService.log).toHaveBeenCalledTimes(2);
+    });
+
+    it('should throw NotFoundException if not all users found', async () => {
+      mockPrismaService.user.findMany.mockResolvedValue([
+        {
+          id: 'user-1',
+          username: 'john_doe',
+          email: 'john@example.com',
+          isActive: true,
+        },
+      ]);
+
+      await expect(
+        service.bulkBanUsers(
+          ['user-1', 'user-2', 'user-3'],
+          'admin-1',
+          'Reason',
+        ),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw BadRequestException if some users already banned', async () => {
+      const mockUsers = [
+        {
+          id: 'user-1',
+          username: 'john_doe',
+          email: 'john@example.com',
+          isActive: false, // Already banned
+        },
+        {
+          id: 'user-2',
+          username: 'jane_doe',
+          email: 'jane@example.com',
+          isActive: true,
+        },
+      ];
+
+      mockPrismaService.user.findMany.mockResolvedValue(mockUsers);
+
+      await expect(
+        service.bulkBanUsers(['user-1', 'user-2'], 'admin-1', 'Reason'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should create audit logs with ipAddress metadata', async () => {
+      const mockUsers = [
+        {
+          id: 'user-1',
+          username: 'john_doe',
+          email: 'john@example.com',
+          isActive: true,
+        },
+      ];
+
+      mockPrismaService.user.findMany.mockResolvedValue(mockUsers);
+      mockPrismaService.user.updateMany.mockResolvedValue({ count: 1 });
+
+      await service.bulkBanUsers(
+        ['user-1'],
+        'admin-1',
+        'Reason',
+        '192.168.1.1',
+      );
+
+      expect(mockAuditLogService.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          metadata: expect.objectContaining({
+            ipAddress: '192.168.1.1',
+          }),
+        }),
+      );
+    });
+  });
+
+  describe('bulkUnbanUsers', () => {
+    it('should successfully unban multiple users', async () => {
+      const mockUsers = [
+        {
+          id: 'user-1',
+          username: 'john_doe',
+          email: 'john@example.com',
+          isActive: false,
+        },
+        {
+          id: 'user-2',
+          username: 'jane_doe',
+          email: 'jane@example.com',
+          isActive: false,
+        },
+      ];
+
+      mockPrismaService.user.findMany.mockResolvedValue(mockUsers);
+      mockPrismaService.user.updateMany.mockResolvedValue({ count: 2 });
+
+      const result = await service.bulkUnbanUsers(
+        ['user-1', 'user-2'],
+        'admin-1',
+        'Appeals accepted',
+      );
+
+      expect(result).toEqual({
+        success: true,
+        unbannedCount: 2,
+        unbannedUsers: [
+          { id: 'user-1', username: 'john_doe' },
+          { id: 'user-2', username: 'jane_doe' },
+        ],
+      });
+
+      expect(mockPrismaService.user.updateMany).toHaveBeenCalledWith({
+        where: { id: { in: ['user-1', 'user-2'] } },
+        data: { isActive: true },
+      });
+
+      expect(mockAuditLogService.log).toHaveBeenCalledTimes(2);
+    });
+
+    it('should throw NotFoundException if not all users found', async () => {
+      mockPrismaService.user.findMany.mockResolvedValue([
+        {
+          id: 'user-1',
+          username: 'john_doe',
+          email: 'john@example.com',
+          isActive: false,
+        },
+      ]);
+
+      await expect(
+        service.bulkUnbanUsers(
+          ['user-1', 'user-2', 'user-3'],
+          'admin-1',
+          'Reason',
+        ),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw BadRequestException if some users not banned', async () => {
+      const mockUsers = [
+        {
+          id: 'user-1',
+          username: 'john_doe',
+          email: 'john@example.com',
+          isActive: true, // Not banned
+        },
+        {
+          id: 'user-2',
+          username: 'jane_doe',
+          email: 'jane@example.com',
+          isActive: false,
+        },
+      ];
+
+      mockPrismaService.user.findMany.mockResolvedValue(mockUsers);
+
+      await expect(
+        service.bulkUnbanUsers(['user-1', 'user-2'], 'admin-1', 'Reason'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should create audit logs with ipAddress metadata', async () => {
+      const mockUsers = [
+        {
+          id: 'user-1',
+          username: 'john_doe',
+          email: 'john@example.com',
+          isActive: false,
+        },
+      ];
+
+      mockPrismaService.user.findMany.mockResolvedValue(mockUsers);
+      mockPrismaService.user.updateMany.mockResolvedValue({ count: 1 });
+
+      await service.bulkUnbanUsers(
+        ['user-1'],
+        'admin-1',
+        'Reason',
+        '192.168.1.1',
+      );
+
+      expect(mockAuditLogService.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          metadata: expect.objectContaining({
+            ipAddress: '192.168.1.1',
+          }),
+        }),
+      );
+    });
+  });
+
+  describe('bulkChangeRole', () => {
+    it('should successfully change roles for multiple users', async () => {
+      const mockUsers = [
+        { id: 'user-1', username: 'john_doe', role: UserRole.USER },
+        { id: 'user-2', username: 'jane_doe', role: UserRole.USER },
+      ];
+
+      mockPrismaService.user.findMany.mockResolvedValue(mockUsers);
+      mockPrismaService.user.updateMany.mockResolvedValue({ count: 2 });
+
+      const result = await service.bulkChangeRole(
+        ['user-1', 'user-2'],
+        UserRole.MODERATOR,
+        'admin-1',
+        'Promoted',
+      );
+
+      expect(result).toEqual({
+        success: true,
+        updatedCount: 2,
+        updatedUsers: [
+          {
+            id: 'user-1',
+            username: 'john_doe',
+            oldRole: UserRole.USER,
+            newRole: UserRole.MODERATOR,
+          },
+          {
+            id: 'user-2',
+            username: 'jane_doe',
+            oldRole: UserRole.USER,
+            newRole: UserRole.MODERATOR,
+          },
+        ],
+      });
+
+      expect(mockPrismaService.user.updateMany).toHaveBeenCalledWith({
+        where: { id: { in: ['user-1', 'user-2'] } },
+        data: { role: UserRole.MODERATOR, isAdmin: false },
+      });
+
+      expect(mockAuditLogService.log).toHaveBeenCalledTimes(2);
+    });
+
+    it('should set isAdmin=true when changing role to ADMIN', async () => {
+      const mockUsers = [
+        { id: 'user-1', username: 'john_doe', role: UserRole.MODERATOR },
+      ];
+
+      mockPrismaService.user.findMany.mockResolvedValue(mockUsers);
+      mockPrismaService.user.updateMany.mockResolvedValue({ count: 1 });
+
+      await service.bulkChangeRole(
+        ['user-1'],
+        UserRole.ADMIN,
+        'admin-1',
+        'Promoted to admin',
+      );
+
+      expect(mockPrismaService.user.updateMany).toHaveBeenCalledWith({
+        where: { id: { in: ['user-1'] } },
+        data: { role: UserRole.ADMIN, isAdmin: true },
+      });
+    });
+
+    it('should throw NotFoundException if not all users found', async () => {
+      mockPrismaService.user.findMany.mockResolvedValue([
+        { id: 'user-1', username: 'john_doe', role: UserRole.USER },
+      ]);
+
+      await expect(
+        service.bulkChangeRole(
+          ['user-1', 'user-2', 'user-3'],
+          UserRole.MODERATOR,
+          'admin-1',
+          'Reason',
+        ),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should create audit logs with role change details', async () => {
+      const mockUsers = [
+        { id: 'user-1', username: 'john_doe', role: UserRole.USER },
+      ];
+
+      mockPrismaService.user.findMany.mockResolvedValue(mockUsers);
+      mockPrismaService.user.updateMany.mockResolvedValue({ count: 1 });
+
+      await service.bulkChangeRole(
+        ['user-1'],
+        UserRole.MODERATOR,
+        'admin-1',
+        'Promoted',
+        '192.168.1.1',
+      );
+
+      expect(mockAuditLogService.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'ROLE_CHANGE',
+          description: expect.stringContaining('USER to MODERATOR'),
+          metadata: expect.objectContaining({
+            oldRole: UserRole.USER,
+            newRole: UserRole.MODERATOR,
+            reason: 'Promoted',
+            ipAddress: '192.168.1.1',
+          }),
+        }),
+      );
     });
   });
 });

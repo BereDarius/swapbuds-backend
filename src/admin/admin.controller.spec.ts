@@ -16,6 +16,9 @@ describe('AdminController', () => {
     banUser: jest.fn(),
     unbanUser: jest.fn(),
     changeUserRole: jest.fn(),
+    bulkBanUsers: jest.fn(),
+    bulkUnbanUsers: jest.fn(),
+    bulkChangeRole: jest.fn(),
   };
 
   const mockAuditLogService = {
@@ -323,6 +326,99 @@ describe('AdminController', () => {
 
       expect(result).toEqual(mockStats);
       expect(mockAuditLogService.getAuditStats).toHaveBeenCalled();
+    });
+  });
+
+  describe('bulkBanUsers', () => {
+    it('should ban multiple users at once', async () => {
+      const mockResponse = {
+        success: true,
+        bannedCount: 2,
+        bannedUsers: [
+          { id: 'user-1', username: 'john_doe' },
+          { id: 'user-2', username: 'jane_doe' },
+        ],
+      };
+
+      mockAdminService.bulkBanUsers.mockResolvedValue(mockResponse);
+
+      const result = await controller.bulkBanUsers('admin-1', {
+        userIds: ['user-1', 'user-2'],
+        reason: 'Mass violation',
+      });
+
+      expect(result).toEqual(mockResponse);
+      expect(mockAdminService.bulkBanUsers).toHaveBeenCalledWith(
+        ['user-1', 'user-2'],
+        'admin-1',
+        'Mass violation',
+      );
+    });
+  });
+
+  describe('bulkUnbanUsers', () => {
+    it('should unban multiple users at once', async () => {
+      const mockResponse = {
+        success: true,
+        unbannedCount: 2,
+        unbannedUsers: [
+          { id: 'user-1', username: 'john_doe' },
+          { id: 'user-2', username: 'jane_doe' },
+        ],
+      };
+
+      mockAdminService.bulkUnbanUsers.mockResolvedValue(mockResponse);
+
+      const result = await controller.bulkUnbanUsers('admin-1', {
+        userIds: ['user-1', 'user-2'],
+        reason: 'Appeals accepted',
+      });
+
+      expect(result).toEqual(mockResponse);
+      expect(mockAdminService.bulkUnbanUsers).toHaveBeenCalledWith(
+        ['user-1', 'user-2'],
+        'admin-1',
+        'Appeals accepted',
+      );
+    });
+  });
+
+  describe('bulkChangeRole', () => {
+    it('should change roles for multiple users at once', async () => {
+      const mockResponse = {
+        success: true,
+        updatedCount: 2,
+        updatedUsers: [
+          {
+            id: 'user-1',
+            username: 'john_doe',
+            oldRole: UserRole.USER,
+            newRole: UserRole.MODERATOR,
+          },
+          {
+            id: 'user-2',
+            username: 'jane_doe',
+            oldRole: UserRole.USER,
+            newRole: UserRole.MODERATOR,
+          },
+        ],
+      };
+
+      mockAdminService.bulkChangeRole.mockResolvedValue(mockResponse);
+
+      const result = await controller.bulkChangeRole('admin-1', {
+        userIds: ['user-1', 'user-2'],
+        role: UserRole.MODERATOR,
+        reason: 'Promoted to moderators',
+      });
+
+      expect(result).toEqual(mockResponse);
+      expect(mockAdminService.bulkChangeRole).toHaveBeenCalledWith(
+        ['user-1', 'user-2'],
+        UserRole.MODERATOR,
+        'admin-1',
+        'Promoted to moderators',
+      );
     });
   });
 });

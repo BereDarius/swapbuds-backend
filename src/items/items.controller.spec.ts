@@ -302,4 +302,117 @@ describe('ItemsController', () => {
       expect(itemsService.remove).toHaveBeenCalledWith(itemId, userId);
     });
   });
+
+  describe('getRecommendations', () => {
+    it('should return personalized recommendations for user', async () => {
+      const userId = 'user-123';
+      const mockRecommendations = {
+        recommendations: [mockItem, mockItemWithRelations],
+        metadata: {
+          basedOn: ['user-interests', 'recent-activity'],
+          totalFound: 2,
+        },
+      };
+
+      mockRecommendationsService.getRecommendations.mockResolvedValue(
+        mockRecommendations,
+      );
+
+      const result = await controller.getRecommendations(userId);
+
+      expect(result).toEqual(mockRecommendations);
+      expect(
+        mockRecommendationsService.getRecommendations,
+      ).toHaveBeenCalledWith(userId, 10);
+    });
+
+    it('should use custom limit when provided', async () => {
+      const userId = 'user-123';
+      const limit = '20';
+
+      mockRecommendationsService.getRecommendations.mockResolvedValue({
+        recommendations: [],
+        metadata: { basedOn: [], totalFound: 0 },
+      });
+
+      await controller.getRecommendations(userId, limit);
+
+      expect(
+        mockRecommendationsService.getRecommendations,
+      ).toHaveBeenCalledWith(userId, 20);
+    });
+
+    it('should default to 10 items when limit not provided', async () => {
+      const userId = 'user-123';
+
+      mockRecommendationsService.getRecommendations.mockResolvedValue({
+        recommendations: [],
+        metadata: { basedOn: [], totalFound: 0 },
+      });
+
+      await controller.getRecommendations(userId);
+
+      expect(
+        mockRecommendationsService.getRecommendations,
+      ).toHaveBeenCalledWith(userId, 10);
+    });
+  });
+
+  describe('getSimilarItems', () => {
+    it('should return similar items for a given item', async () => {
+      const itemId = 'item-123';
+      const mockSimilarItems = {
+        similarItems: [mockItem, mockItemWithRelations],
+        metadata: {
+          similarity: 'category-and-condition',
+          totalFound: 2,
+        },
+      };
+
+      mockRecommendationsService.getSimilarItems.mockResolvedValue(
+        mockSimilarItems,
+      );
+
+      const result = await controller.getSimilarItems(itemId);
+
+      expect(result).toEqual(mockSimilarItems);
+      expect(mockRecommendationsService.getSimilarItems).toHaveBeenCalledWith(
+        itemId,
+        5,
+      );
+    });
+
+    it('should use custom limit when provided', async () => {
+      const itemId = 'item-123';
+      const limit = '10';
+
+      mockRecommendationsService.getSimilarItems.mockResolvedValue({
+        similarItems: [],
+        metadata: { similarity: '', totalFound: 0 },
+      });
+
+      await controller.getSimilarItems(itemId, limit);
+
+      expect(mockRecommendationsService.getSimilarItems).toHaveBeenCalledWith(
+        itemId,
+        10,
+      );
+    });
+
+    it('should default to 5 items when limit not provided', async () => {
+      const itemId = 'item-123';
+
+      mockRecommendationsService.getSimilarItems.mockResolvedValue({
+        similarItems: [],
+        metadata: { similarity: '', totalFound: 0 },
+      });
+
+      await controller.getSimilarItems(itemId);
+
+      expect(mockRecommendationsService.getSimilarItems).toHaveBeenCalledWith(
+        itemId,
+        5,
+      );
+    });
+  });
 });

@@ -311,6 +311,20 @@ describe('DisputesService', () => {
         NotFoundException,
       );
     });
+
+    it('should throw BadRequestException if dispute is already resolved', async () => {
+      const resolvedDispute = {
+        ...mockDispute,
+        status: DisputeStatus.RESOLVED,
+      };
+      jest
+        .spyOn(prisma.dispute, 'findUnique')
+        .mockResolvedValue(resolvedDispute as any);
+
+      await expect(service.assignDispute(disputeId, adminId)).rejects.toThrow(
+        'Cannot assign a resolved dispute',
+      );
+    });
   });
 
   describe('resolveDispute', () => {

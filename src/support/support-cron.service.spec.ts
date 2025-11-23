@@ -37,7 +37,7 @@ describe('SupportCronService', () => {
       await service.autoAssignChats();
 
       expect(mockQueueService.autoAssignChats).toHaveBeenCalled();
-      expect(logSpy).toHaveBeenCalledWith('Auto-assigned 3 chats');
+      expect(logSpy).toHaveBeenCalledWith('Auto-assigned 3 support chats');
     });
 
     it('should log error if auto-assignment fails', async () => {
@@ -48,8 +48,8 @@ describe('SupportCronService', () => {
       await service.autoAssignChats();
 
       expect(errorSpy).toHaveBeenCalledWith(
-        'Error in auto-assigning chats',
-        testError.stack,
+        'Failed to auto-assign chats:',
+        testError,
       );
     });
 
