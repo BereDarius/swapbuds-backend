@@ -1,23 +1,12 @@
 import { AdminGuard } from '@/auth/guards/admin.guard';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { mockVerificationService } from '@/test/mocks/verification.mock';
 import { Test, TestingModule } from '@nestjs/testing';
 import { VerificationController } from './verification.controller';
 import { VerificationService } from './verification.service';
 
 describe('VerificationController', () => {
   let controller: VerificationController;
-
-  const mockVerificationService = {
-    submitVerification: jest.fn(),
-    getVerificationStatus: jest.fn(),
-    cancelVerification: jest.fn(),
-    getPendingVerifications: jest.fn(),
-    getVerificationStats: jest.fn(),
-    getVerificationById: jest.fn(),
-    getDocumentSignedUrl: jest.fn(),
-    approveVerification: jest.fn(),
-    rejectVerification: jest.fn(),
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

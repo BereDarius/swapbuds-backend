@@ -4,24 +4,14 @@ import {
   mockDisputeWithRelations,
   mockResolvedDisputeWithRelations,
 } from '@/test/fixtures/dispute.fixture';
+import { mockDisputesService } from '@/test/mocks/disputes.mock';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DisputeReason, DisputeStatus } from '@prisma/client';
 import { DisputesController } from './disputes.controller';
 import { DisputesService } from './disputes.service';
-
 describe('DisputesController', () => {
   let controller: DisputesController;
   let service: DisputesService;
-
-  const mockDisputesService = {
-    createDispute: jest.fn(),
-    getUserDisputes: jest.fn(),
-    getDispute: jest.fn(),
-    getAllDisputes: jest.fn(),
-    assignDispute: jest.fn(),
-    resolveDispute: jest.fn(),
-    closeDispute: jest.fn(),
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

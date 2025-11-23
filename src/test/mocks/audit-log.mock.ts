@@ -4,6 +4,9 @@ export const mockAuditLogService = {
   getUserLogs: jest.fn(),
   getLogsByAction: jest.fn(),
   deleteOldLogs: jest.fn(),
+  getAuditLogs: jest.fn(),
+  getAuditStats: jest.fn(),
+  getLogsForTarget: jest.fn(),
 };
 
 export const resetAuditLogMocks = () => {

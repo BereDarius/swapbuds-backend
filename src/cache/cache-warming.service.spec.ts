@@ -1,4 +1,6 @@
 import { PrismaService } from '@/prisma/prisma.service';
+import { mockCacheService } from '@/test/mocks/cache.mock';
+import { mockPrismaService } from '@/test/mocks/prisma.mock';
 import { Logger } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CacheWarmingService } from './cache-warming.service';
@@ -8,20 +10,6 @@ describe('CacheWarmingService', () => {
   let service: CacheWarmingService;
   let cacheService: CacheService;
   let prisma: PrismaService;
-
-  const mockCacheService = {
-    set: jest.fn(),
-    getItemsListKey: jest.fn(
-      (page, limit) => `items:list:${page}:${limit}:all`,
-    ),
-    getItemKey: jest.fn((id) => `items:${id}`),
-  };
-
-  const mockPrismaService = {
-    item: {
-      findMany: jest.fn(),
-    },
-  };
 
   const mockItems = [
     {

@@ -1,4 +1,9 @@
 import { PrismaService } from '@/prisma/prisma.service';
+import { mockPrismaService } from '@/test/mocks/prisma.mock';
+import {
+  mockDocumentSecurityService,
+  mockVerificationAuditService,
+} from '@/test/mocks/verification.mock';
 import { Test, TestingModule } from '@nestjs/testing';
 import { VerificationStatus } from '@prisma/client';
 import { DocumentSecurityService } from './document-security.service';
@@ -7,26 +12,6 @@ import { VerificationCleanupService } from './verification-cleanup.service';
 
 describe('VerificationCleanupService', () => {
   let service: VerificationCleanupService;
-
-  const mockPrismaService = {
-    userVerification: {
-      findMany: jest.fn(),
-      findUnique: jest.fn(),
-      update: jest.fn(),
-      count: jest.fn(),
-    },
-  };
-
-  const mockDocumentSecurity = {
-    decryptUrl: jest.fn(),
-    extractPublicId: jest.fn(),
-    deleteDocument: jest.fn(),
-    isCloudinaryUrl: jest.fn(),
-  };
-
-  const mockAuditService = {
-    logDocumentDeletion: jest.fn(),
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -38,11 +23,11 @@ describe('VerificationCleanupService', () => {
         },
         {
           provide: DocumentSecurityService,
-          useValue: mockDocumentSecurity,
+          useValue: mockDocumentSecurityService,
         },
         {
           provide: VerificationAuditService,
-          useValue: mockAuditService,
+          useValue: mockVerificationAuditService,
         },
       ],
     }).compile();
@@ -83,14 +68,20 @@ describe('VerificationCleanupService', () => {
       mockPrismaService.userVerification.findMany.mockResolvedValue(
         mockVerifications,
       );
-      mockDocumentSecurity.decryptUrl.mockImplementation(
+      mockDocumentSecurityService.decryptUrl.mockImplementation(
         (url) => `decrypted-${url}`,
       );
-      mockDocumentSecurity.extractPublicId.mockReturnValue('documents/test');
-      mockDocumentSecurity.isCloudinaryUrl.mockReturnValue(true);
-      mockDocumentSecurity.deleteDocument.mockResolvedValue({ result: 'ok' });
+      mockDocumentSecurityService.extractPublicId.mockReturnValue(
+        'documents/test',
+      );
+      mockDocumentSecurityService.isCloudinaryUrl.mockReturnValue(true);
+      mockDocumentSecurityService.deleteDocument.mockResolvedValue({
+        result: 'ok',
+      });
       mockPrismaService.userVerification.update.mockResolvedValue({});
-      mockAuditService.logDocumentDeletion.mockResolvedValue(undefined);
+      mockVerificationAuditService.logDocumentDeletion.mockResolvedValue(
+        undefined,
+      );
 
       await service.deleteOldApprovedDocuments();
 
@@ -105,11 +96,15 @@ describe('VerificationCleanupService', () => {
           }),
         }),
       );
-      expect(mockDocumentSecurity.deleteDocument).toHaveBeenCalledTimes(2);
+      expect(mockDocumentSecurityService.deleteDocument).toHaveBeenCalledTimes(
+        2,
+      );
       expect(mockPrismaService.userVerification.update).toHaveBeenCalledTimes(
         2,
       );
-      expect(mockAuditService.logDocumentDeletion).toHaveBeenCalledTimes(2);
+      expect(
+        mockVerificationAuditService.logDocumentDeletion,
+      ).toHaveBeenCalledTimes(2);
     });
 
     it('should handle deletion errors gracefully', async () => {
@@ -135,21 +130,27 @@ describe('VerificationCleanupService', () => {
       mockPrismaService.userVerification.findMany.mockResolvedValue(
         mockVerifications,
       );
-      mockDocumentSecurity.decryptUrl.mockImplementation(
+      mockDocumentSecurityService.decryptUrl.mockImplementation(
         (url) => `decrypted-${url}`,
       );
-      mockDocumentSecurity.extractPublicId.mockReturnValue('documents/test');
-      mockDocumentSecurity.isCloudinaryUrl.mockReturnValue(true);
-      mockDocumentSecurity.deleteDocument
+      mockDocumentSecurityService.extractPublicId.mockReturnValue(
+        'documents/test',
+      );
+      mockDocumentSecurityService.isCloudinaryUrl.mockReturnValue(true);
+      mockDocumentSecurityService.deleteDocument
         .mockRejectedValueOnce(new Error('Deletion failed'))
         .mockResolvedValueOnce({ result: 'ok' });
       mockPrismaService.userVerification.update.mockResolvedValue({});
-      mockAuditService.logDocumentDeletion.mockResolvedValue(undefined);
+      mockVerificationAuditService.logDocumentDeletion.mockResolvedValue(
+        undefined,
+      );
 
       await service.deleteOldApprovedDocuments();
 
       // Should continue after error
-      expect(mockDocumentSecurity.deleteDocument).toHaveBeenCalledTimes(2);
+      expect(mockDocumentSecurityService.deleteDocument).toHaveBeenCalledTimes(
+        2,
+      );
       expect(mockPrismaService.userVerification.update).toHaveBeenCalledTimes(
         1,
       );
@@ -160,7 +161,7 @@ describe('VerificationCleanupService', () => {
 
       await service.deleteOldApprovedDocuments();
 
-      expect(mockDocumentSecurity.deleteDocument).not.toHaveBeenCalled();
+      expect(mockDocumentSecurityService.deleteDocument).not.toHaveBeenCalled();
       expect(mockPrismaService.userVerification.update).not.toHaveBeenCalled();
     });
   });
@@ -190,14 +191,20 @@ describe('VerificationCleanupService', () => {
       mockPrismaService.userVerification.findMany.mockResolvedValue(
         mockVerifications,
       );
-      mockDocumentSecurity.decryptUrl.mockImplementation(
+      mockDocumentSecurityService.decryptUrl.mockImplementation(
         (url) => `decrypted-${url}`,
       );
-      mockDocumentSecurity.extractPublicId.mockReturnValue('documents/test');
-      mockDocumentSecurity.isCloudinaryUrl.mockReturnValue(true);
-      mockDocumentSecurity.deleteDocument.mockResolvedValue({ result: 'ok' });
+      mockDocumentSecurityService.extractPublicId.mockReturnValue(
+        'documents/test',
+      );
+      mockDocumentSecurityService.isCloudinaryUrl.mockReturnValue(true);
+      mockDocumentSecurityService.deleteDocument.mockResolvedValue({
+        result: 'ok',
+      });
       mockPrismaService.userVerification.update.mockResolvedValue({});
-      mockAuditService.logDocumentDeletion.mockResolvedValue(undefined);
+      mockVerificationAuditService.logDocumentDeletion.mockResolvedValue(
+        undefined,
+      );
 
       await service.deleteOldRejectedDocuments();
 
@@ -213,8 +220,12 @@ describe('VerificationCleanupService', () => {
           }),
         }),
       );
-      expect(mockDocumentSecurity.deleteDocument).toHaveBeenCalledTimes(2);
-      expect(mockAuditService.logDocumentDeletion).toHaveBeenCalledWith(
+      expect(mockDocumentSecurityService.deleteDocument).toHaveBeenCalledTimes(
+        2,
+      );
+      expect(
+        mockVerificationAuditService.logDocumentDeletion,
+      ).toHaveBeenCalledWith(
         'verif-1',
         'AUTO_DELETION_REJECTED',
         expect.any(Number),
@@ -235,12 +246,18 @@ describe('VerificationCleanupService', () => {
       mockPrismaService.userVerification.findUnique.mockResolvedValue(
         mockVerification,
       );
-      mockDocumentSecurity.decryptUrl.mockReturnValue('decrypted-url');
-      mockDocumentSecurity.extractPublicId.mockReturnValue('documents/test');
-      mockDocumentSecurity.isCloudinaryUrl.mockReturnValue(true);
-      mockDocumentSecurity.deleteDocument.mockResolvedValue({ result: 'ok' });
+      mockDocumentSecurityService.decryptUrl.mockReturnValue('decrypted-url');
+      mockDocumentSecurityService.extractPublicId.mockReturnValue(
+        'documents/test',
+      );
+      mockDocumentSecurityService.isCloudinaryUrl.mockReturnValue(true);
+      mockDocumentSecurityService.deleteDocument.mockResolvedValue({
+        result: 'ok',
+      });
       mockPrismaService.userVerification.update.mockResolvedValue({});
-      mockAuditService.logDocumentDeletion.mockResolvedValue(undefined);
+      mockVerificationAuditService.logDocumentDeletion.mockResolvedValue(
+        undefined,
+      );
 
       await service.deleteDocumentManually('verif-1');
 
@@ -249,14 +266,12 @@ describe('VerificationCleanupService', () => {
       ).toHaveBeenCalledWith({
         where: { id: 'verif-1' },
       });
-      expect(mockDocumentSecurity.deleteDocument).toHaveBeenCalledWith(
+      expect(mockDocumentSecurityService.deleteDocument).toHaveBeenCalledWith(
         'documents/test',
       );
-      expect(mockAuditService.logDocumentDeletion).toHaveBeenCalledWith(
-        'verif-1',
-        'MANUAL',
-        expect.any(Number),
-      );
+      expect(
+        mockVerificationAuditService.logDocumentDeletion,
+      ).toHaveBeenCalledWith('verif-1', 'MANUAL', expect.any(Number));
     });
 
     it('should throw error if verification not found', async () => {

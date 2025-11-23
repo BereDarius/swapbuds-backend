@@ -10,6 +10,8 @@ export const mockMonitoringService = {
   recordMetric: jest.fn(),
   recordApiCall: jest.fn(),
   recordError: jest.fn(),
+  getUptime: jest.fn(),
+  reset: jest.fn(),
 };
 
 export const resetMonitoringMocks = () => {

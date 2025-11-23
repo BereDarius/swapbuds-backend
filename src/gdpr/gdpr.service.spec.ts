@@ -1,3 +1,7 @@
+import {
+  mockDataDeletionService,
+  mockDataExportService,
+} from '@/test/mocks/gdpr.mock';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DataDeletionService } from './data-deletion.service';
 import { DataExportService } from './data-export.service';
@@ -5,17 +9,6 @@ import { GdprService } from './gdpr.service';
 
 describe('GdprService', () => {
   let service: GdprService;
-
-  const mockDataExportService = {
-    generateExport: jest.fn(),
-    getExport: jest.fn(),
-  };
-
-  const mockDataDeletionService = {
-    requestDeletion: jest.fn(),
-    cancelDeletion: jest.fn(),
-    getDeletionStatus: jest.fn(),
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

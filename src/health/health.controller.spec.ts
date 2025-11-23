@@ -1,4 +1,5 @@
 import { PrismaService } from '@/prisma/prisma.service';
+import { mockPrismaService } from '@/test/mocks/prisma.mock';
 import {
   DiskHealthIndicator,
   HealthCheckResult,
@@ -39,11 +40,6 @@ describe('HealthController', () => {
 
   const mockRedisHealthIndicator = {
     isHealthy: jest.fn(),
-  };
-
-  const mockPrismaService = {
-    $connect: jest.fn(),
-    $disconnect: jest.fn(),
   };
 
   beforeEach(async () => {

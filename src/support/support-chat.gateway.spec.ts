@@ -1,4 +1,5 @@
 import { WsJwtGuard } from '@/auth/guards/ws-jwt.guard';
+import { mockSupportChatService } from '@/test/mocks/support.mock';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Socket } from 'socket.io';
 import { SupportChatGateway } from './support-chat.gateway';
@@ -6,10 +7,6 @@ import { SupportChatService } from './support-chat.service';
 
 describe('SupportChatGateway', () => {
   let gateway: SupportChatGateway;
-
-  const mockSupportChatService = {
-    getChat: jest.fn(),
-  };
 
   const mockSocket = {
     id: 'socket-1',

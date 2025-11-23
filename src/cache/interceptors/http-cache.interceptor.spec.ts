@@ -1,4 +1,5 @@
 import { CacheService } from '@/cache/cache.service';
+import { mockCacheService } from '@/test/mocks/cache.mock';
 import { CallHandler, ExecutionContext } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { of } from 'rxjs';
@@ -7,11 +8,6 @@ import { HttpCacheInterceptor } from './http-cache.interceptor';
 describe('HttpCacheInterceptor', () => {
   let interceptor: HttpCacheInterceptor;
   let cacheService: CacheService;
-
-  const mockCacheService = {
-    get: jest.fn(),
-    set: jest.fn(),
-  };
 
   const mockRequest = {
     method: 'GET',

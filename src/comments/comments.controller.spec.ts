@@ -4,6 +4,7 @@ import {
   mockComments,
   mockCommentWithUser,
 } from '@/test/fixtures/comment.fixture';
+import { mockCommentsService } from '@/test/mocks/comments.mock';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CreateCommentDto } from './dto/create-comment.dto';
@@ -12,14 +13,6 @@ import { UpdateCommentDto } from './dto/update-comment.dto';
 describe('CommentsController', () => {
   let controller: CommentsController;
   let commentsService: CommentsService;
-
-  const mockCommentsService = {
-    createComment: jest.fn(),
-    getItemComments: jest.fn(),
-    updateComment: jest.fn(),
-    deleteComment: jest.fn(),
-    getCommentsCount: jest.fn(),
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

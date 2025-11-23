@@ -2,16 +2,12 @@ import { AuthController } from '@/auth/auth.controller';
 import { AuthService } from '@/auth/auth.service';
 import { LoginDto, RegisterDto } from '@/auth/dto/auth.dto';
 import { mockUser } from '@/test/fixtures/user.fixture';
+import { mockAuthService } from '@/test/mocks/auth.mock';
 import { Test, TestingModule } from '@nestjs/testing';
 
 describe('AuthController', () => {
   let controller: AuthController;
   let authService: AuthService;
-
-  const mockAuthService = {
-    register: jest.fn(),
-    login: jest.fn(),
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

@@ -1,20 +1,13 @@
 import { LikesController } from '@/likes/likes.controller';
 import { LikesService } from '@/likes/likes.service';
 import { mockLikes } from '@/test/fixtures/like.fixture';
+import { mockLikesService } from '@/test/mocks/likes.mock';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 
 describe('LikesController', () => {
   let controller: LikesController;
   let likesService: LikesService;
-
-  const mockLikesService = {
-    likeItem: jest.fn(),
-    unlikeItem: jest.fn(),
-    getLikesCount: jest.fn(),
-    hasUserLikedItem: jest.fn(),
-    getUsersWhoLiked: jest.fn(),
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

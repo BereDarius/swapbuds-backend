@@ -1,24 +1,11 @@
 import { PrismaService } from '@/prisma/prisma.service';
+import { mockPrismaService } from '@/test/mocks/prisma.mock';
 import { Test, TestingModule } from '@nestjs/testing';
 import { SupportChatStatus, SupportPriority, UserRole } from '@prisma/client';
 import { SupportQueueService } from './support-queue.service';
 
 describe('SupportQueueService', () => {
   let service: SupportQueueService;
-
-  const mockPrismaService = {
-    supportChat: {
-      findUnique: jest.fn(),
-      findFirst: jest.fn(),
-      findMany: jest.fn(),
-      update: jest.fn(),
-      count: jest.fn(),
-      groupBy: jest.fn(),
-    },
-    user: {
-      findMany: jest.fn(),
-    },
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

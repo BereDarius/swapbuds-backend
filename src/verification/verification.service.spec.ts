@@ -3,6 +3,12 @@ import { NotificationsService } from '@/notifications/notifications.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { mockMailService } from '@/test/mocks/mail.mock';
 import { mockNotificationsService } from '@/test/mocks/notifications.mock';
+import { mockPrismaService } from '@/test/mocks/prisma.mock';
+import {
+  mockDocumentSecurityService,
+  mockVerificationAuditService,
+  mockVerificationRateLimitService,
+} from '@/test/mocks/verification.mock';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -14,47 +20,6 @@ import { VerificationService } from './verification.service';
 
 describe('VerificationService', () => {
   let service: VerificationService;
-
-  const mockPrismaService = {
-    userVerification: {
-      findUnique: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-      findMany: jest.fn(),
-      count: jest.fn(),
-    },
-    user: {
-      findUnique: jest.fn(),
-      update: jest.fn(),
-    },
-  };
-
-  const mockDocumentSecurityService = {
-    encryptUrl: jest.fn((url) => `encrypted:${url}`),
-    decryptUrl: jest.fn((url) => url.replace('encrypted:', '')),
-    generateSignedUrl: jest.fn((publicId) => `signed:${publicId}`),
-    extractPublicId: jest.fn(() => 'public-id-123'),
-    deleteDocument: jest.fn(),
-    isCloudinaryUrl: jest.fn(() => true),
-  };
-
-  const mockAuditService = {
-    logSubmission: jest.fn(),
-    logDocumentAccess: jest.fn(),
-    logApproval: jest.fn(),
-    logRejection: jest.fn(),
-    logUnderageAccountSuspension: jest.fn(),
-    logCancellation: jest.fn(),
-    logSuspiciousActivity: jest.fn(),
-    logDocumentDeletion: jest.fn(),
-    logRateLimitViolation: jest.fn(),
-  };
-
-  const mockRateLimitService = {
-    checkRateLimit: jest.fn(),
-    getRateLimitStats: jest.fn(),
-  };
 
   const mockConfigService = {
     get: jest.fn((key: string) => {
@@ -77,11 +42,11 @@ describe('VerificationService', () => {
         },
         {
           provide: VerificationAuditService,
-          useValue: mockAuditService,
+          useValue: mockVerificationAuditService,
         },
         {
           provide: VerificationRateLimitService,
-          useValue: mockRateLimitService,
+          useValue: mockVerificationRateLimitService,
         },
         {
           provide: ConfigService,
@@ -103,7 +68,7 @@ describe('VerificationService', () => {
     jest.clearAllMocks();
 
     // Set default mock return values
-    mockRateLimitService.checkRateLimit.mockResolvedValue({
+    mockVerificationRateLimitService.checkRateLimit.mockResolvedValue({
       canSubmit: true,
       attemptsUsed: 0,
       attemptsRemaining: 3,
@@ -137,7 +102,7 @@ describe('VerificationService', () => {
       expect(mockDocumentSecurityService.encryptUrl).toHaveBeenCalledWith(
         dto.documentUrl,
       );
-      expect(mockAuditService.logSubmission).toHaveBeenCalledWith(
+      expect(mockVerificationAuditService.logSubmission).toHaveBeenCalledWith(
         userId,
         'verif-1',
         dto.documentType,
@@ -195,7 +160,7 @@ describe('VerificationService', () => {
     });
 
     it('should throw error when rate limit exceeded', async () => {
-      mockRateLimitService.checkRateLimit.mockResolvedValue({
+      mockVerificationRateLimitService.checkRateLimit.mockResolvedValue({
         canSubmit: false,
         attemptsUsed: 3,
         attemptsRemaining: 0,
@@ -207,10 +172,9 @@ describe('VerificationService', () => {
         'Rate limit exceeded',
       );
 
-      expect(mockAuditService.logRateLimitViolation).toHaveBeenCalledWith(
-        userId,
-        3,
-      );
+      expect(
+        mockVerificationAuditService.logRateLimitViolation,
+      ).toHaveBeenCalledWith(userId, 3);
     });
   });
 
@@ -575,11 +539,9 @@ describe('VerificationService', () => {
       expect(
         mockDocumentSecurityService.generateSignedUrl,
       ).toHaveBeenCalledWith('public-id-123', 300);
-      expect(mockAuditService.logDocumentAccess).toHaveBeenCalledWith(
-        adminId,
-        verificationId,
-        'VIEW',
-      );
+      expect(
+        mockVerificationAuditService.logDocumentAccess,
+      ).toHaveBeenCalledWith(adminId, verificationId, 'VIEW');
     });
 
     it('should throw NotFoundException if verification not found', async () => {
@@ -622,14 +584,16 @@ describe('VerificationService', () => {
         attemptsRemaining: 2,
         resetDate: new Date(),
       };
-      mockRateLimitService.checkRateLimit.mockResolvedValue(rateLimitInfo);
+      mockVerificationRateLimitService.checkRateLimit.mockResolvedValue(
+        rateLimitInfo,
+      );
 
       const result = await service.getRateLimitInfo('user-123');
 
       expect(result).toEqual(rateLimitInfo);
-      expect(mockRateLimitService.checkRateLimit).toHaveBeenCalledWith(
-        'user-123',
-      );
+      expect(
+        mockVerificationRateLimitService.checkRateLimit,
+      ).toHaveBeenCalledWith('user-123');
     });
   });
 });

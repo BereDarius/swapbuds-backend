@@ -1,4 +1,6 @@
 import { PrismaService } from '@/prisma/prisma.service';
+import { mockPrismaService } from '@/test/mocks/prisma.mock';
+import { mockSupportQueueService } from '@/test/mocks/support.mock';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
@@ -33,31 +35,6 @@ describe('SupportChatService', () => {
     closedAt: null,
   };
 
-  const mockPrismaService = {
-    supportChat: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      findFirst: jest.fn(),
-      findMany: jest.fn(),
-      update: jest.fn(),
-      count: jest.fn(),
-    },
-    supportMessage: {
-      create: jest.fn(),
-    },
-    user: {
-      findUnique: jest.fn(),
-    },
-  };
-
-  const mockQueueService = {
-    addToQueue: jest.fn(),
-    removeFromQueue: jest.fn(),
-    autoAssignChats: jest.fn(),
-    getQueueStats: jest.fn(),
-    getAverageWaitTime: jest.fn(),
-  };
-
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -68,7 +45,7 @@ describe('SupportChatService', () => {
         },
         {
           provide: SupportQueueService,
-          useValue: mockQueueService,
+          useValue: mockSupportQueueService,
         },
       ],
     }).compile();
@@ -96,8 +73,8 @@ describe('SupportChatService', () => {
       });
       mockPrismaService.supportChat.create.mockResolvedValue(mockChat);
       mockPrismaService.supportMessage.create.mockResolvedValue({});
-      mockQueueService.addToQueue.mockResolvedValue(1);
-      mockQueueService.autoAssignChats.mockResolvedValue(0);
+      mockSupportQueueService.addToQueue.mockResolvedValue(1);
+      mockSupportQueueService.autoAssignChats.mockResolvedValue(0);
 
       const result = await service.createChat('user-1', createDto);
 
@@ -122,8 +99,8 @@ describe('SupportChatService', () => {
         priority: SupportPriority.HIGH,
       });
       mockPrismaService.supportMessage.create.mockResolvedValue({});
-      mockQueueService.addToQueue.mockResolvedValue(1);
-      mockQueueService.autoAssignChats.mockResolvedValue(0);
+      mockSupportQueueService.addToQueue.mockResolvedValue(1);
+      mockSupportQueueService.autoAssignChats.mockResolvedValue(0);
 
       await service.createChat('user-1', createDto);
 
@@ -151,8 +128,8 @@ describe('SupportChatService', () => {
       });
       mockPrismaService.supportChat.create.mockResolvedValue(mockChat);
       mockPrismaService.supportMessage.create.mockResolvedValue({});
-      mockQueueService.addToQueue.mockResolvedValue(1);
-      mockQueueService.autoAssignChats.mockResolvedValue(0);
+      mockSupportQueueService.addToQueue.mockResolvedValue(1);
+      mockSupportQueueService.autoAssignChats.mockResolvedValue(0);
 
       await service.createChat('user-1', createDto);
 
@@ -378,12 +355,14 @@ describe('SupportChatService', () => {
         ...mockChat,
         status: SupportChatStatus.CLOSED,
       });
-      mockQueueService.removeFromQueue.mockResolvedValue(undefined);
+      mockSupportQueueService.removeFromQueue.mockResolvedValue(undefined);
 
       const result = await service.closeChat('chat-1', 'user-1', UserRole.USER);
 
       expect(result.status).toBe(SupportChatStatus.CLOSED);
-      expect(mockQueueService.removeFromQueue).toHaveBeenCalledWith('chat-1');
+      expect(mockSupportQueueService.removeFromQueue).toHaveBeenCalledWith(
+        'chat-1',
+      );
     });
 
     it('should close chat by assigned agent', async () => {
@@ -397,7 +376,7 @@ describe('SupportChatService', () => {
         ...assignedChat,
         status: SupportChatStatus.CLOSED,
       });
-      mockQueueService.removeFromQueue.mockResolvedValue(undefined);
+      mockSupportQueueService.removeFromQueue.mockResolvedValue(undefined);
 
       await service.closeChat('chat-1', 'agent-1', UserRole.SUPPORT);
 
@@ -421,7 +400,7 @@ describe('SupportChatService', () => {
         .mockResolvedValueOnce(10) // waiting
         .mockResolvedValueOnce(65); // resolved
 
-      mockQueueService.getQueueStats.mockResolvedValue({
+      mockSupportQueueService.getQueueStats.mockResolvedValue({
         total: 10,
         byPriority: [],
         averageWaitTime: 5,

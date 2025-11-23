@@ -1,15 +1,10 @@
 import { PrismaService } from '@/prisma/prisma.service';
+import { mockPrismaService } from '@/test/mocks/prisma.mock';
 import { Test, TestingModule } from '@nestjs/testing';
 import { VerificationAuditService } from './verification-audit.service';
 
 describe('VerificationAuditService', () => {
   let service: VerificationAuditService;
-
-  const mockPrismaService = {
-    verificationAuditLog: {
-      create: jest.fn(),
-    },
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

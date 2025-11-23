@@ -4,6 +4,7 @@ import { mockUser } from '@/test/fixtures/user.fixture';
 import { mockConfigService } from '@/test/mocks/config.mock';
 import { mockJwtService } from '@/test/mocks/jwt.mock';
 import { mockPrismaService } from '@/test/mocks/prisma.mock';
+import { mockRecaptchaService } from '@/test/mocks/recaptcha.mock';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -18,10 +19,6 @@ describe('AuthService', () => {
   let prisma: typeof mockPrismaService;
   let jwtService: typeof mockJwtService;
   let recaptchaService: jest.Mocked<RecaptchaService>;
-
-  const mockRecaptchaService = {
-    verifyToken: jest.fn(),
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

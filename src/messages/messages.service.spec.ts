@@ -2,6 +2,9 @@ import { CacheService } from '@/cache/cache.service';
 import { NotificationsGateway } from '@/notifications/gateway/notifications.gateway';
 import { NotificationsService } from '@/notifications/notifications.service';
 import { PrismaService } from '@/prisma/prisma.service';
+import { mockCacheService } from '@/test/mocks/cache.mock';
+import { mockNotificationsGateway } from '@/test/mocks/notifications-gateway.mock';
+import { mockNotificationsService } from '@/test/mocks/notifications.mock';
 import { mockPrismaService } from '@/test/mocks/prisma.mock';
 import {
   BadRequestException,
@@ -13,27 +16,6 @@ import { MessagesService } from './messages.service';
 
 describe('MessagesService', () => {
   let service: MessagesService;
-
-  const mockNotificationsGateway = {
-    emitMessageToUser: jest.fn(),
-    emitMessageRead: jest.fn(),
-    emitConversationRead: jest.fn(),
-    emitMessageDeleted: jest.fn(),
-    emitTyping: jest.fn(),
-  };
-
-  const mockNotificationsService = {
-    createNotification: jest.fn(),
-  };
-
-  const mockCacheService = {
-    get: jest.fn().mockResolvedValue(null),
-    set: jest.fn(),
-    del: jest.fn(),
-    getUnreadMessagesKey: jest.fn(
-      (userId) => `users:${userId}:messages:unread`,
-    ),
-  };
 
   const mockUser1 = {
     id: 'user-1',

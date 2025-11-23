@@ -8,6 +8,7 @@ export const mockPrismaService = {
     findMany: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
+    updateMany: jest.fn(),
     delete: jest.fn(),
     count: jest.fn(),
   },
@@ -110,10 +111,18 @@ export const mockPrismaService = {
   },
   supportMessage: {
     findMany: jest.fn(),
+    create: jest.fn(),
     deleteMany: jest.fn(),
   },
   supportChat: {
+    findUnique: jest.fn(),
+    findFirst: jest.fn(),
     findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    count: jest.fn(),
+    groupBy: jest.fn(),
+
     deleteMany: jest.fn(),
   },
   verification: {
@@ -127,14 +136,26 @@ export const mockPrismaService = {
   },
   userVerification: {
     findUnique: jest.fn(),
+    findMany: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
     deleteMany: jest.fn(),
+    count: jest.fn(),
   },
   dispute: {
+    findUnique: jest.fn(),
+    findFirst: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
     findMany: jest.fn(),
     updateMany: jest.fn(),
+  },
+  auditLog: {
+    create: jest.fn(),
+    findMany: jest.fn(),
+    count: jest.fn(),
+    groupBy: jest.fn(),
   },
   flaggedItem: {
     findFirst: jest.fn(),
@@ -147,6 +168,8 @@ export const mockPrismaService = {
     groupBy: jest.fn(),
   },
   $transaction: jest.fn(),
+  $connect: jest.fn(),
+  $disconnect: jest.fn(),
 };
 
 /**

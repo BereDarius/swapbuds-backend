@@ -1,5 +1,7 @@
 import { AdminGuard } from '@/auth/guards/admin.guard';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { mockAdminService } from '@/test/mocks/admin.mock';
+import { mockAuditLogService } from '@/test/mocks/audit-log.mock';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuditAction, UserRole } from '@prisma/client';
 import { AdminController } from './admin.controller';
@@ -8,23 +10,6 @@ import { AuditLogService } from './audit-log.service';
 
 describe('AdminController', () => {
   let controller: AdminController;
-
-  const mockAdminService = {
-    getPlatformStats: jest.fn(),
-    getUsers: jest.fn(),
-    getUserDetails: jest.fn(),
-    banUser: jest.fn(),
-    unbanUser: jest.fn(),
-    changeUserRole: jest.fn(),
-    bulkBanUsers: jest.fn(),
-    bulkUnbanUsers: jest.fn(),
-    bulkChangeRole: jest.fn(),
-  };
-
-  const mockAuditLogService = {
-    getAuditLogs: jest.fn(),
-    getAuditStats: jest.fn(),
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

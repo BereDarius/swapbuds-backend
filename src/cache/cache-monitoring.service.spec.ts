@@ -1,15 +1,10 @@
+import { mockCacheService } from '@/test/mocks/cache.mock';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CacheMonitoringService } from './cache-monitoring.service';
 import { CacheService } from './cache.service';
 
 describe('CacheMonitoringService', () => {
   let service: CacheMonitoringService;
-
-  const mockCacheService = {
-    get: jest.fn(),
-    set: jest.fn(),
-    del: jest.fn(),
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

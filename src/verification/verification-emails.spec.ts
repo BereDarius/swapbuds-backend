@@ -4,6 +4,11 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { mockMailService } from '@/test/mocks/mail.mock';
 import { mockNotificationsService } from '@/test/mocks/notifications.mock';
 import { mockPrismaService } from '@/test/mocks/prisma.mock';
+import {
+  mockDocumentSecurityService,
+  mockVerificationAuditService,
+  mockVerificationRateLimitService,
+} from '@/test/mocks/verification.mock';
 import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { VerificationStatus } from '@prisma/client';
@@ -14,26 +19,6 @@ import { VerificationService } from './verification.service';
 
 describe('VerificationService - Email Notifications', () => {
   let service: VerificationService;
-
-  const mockAuditService = {
-    logSubmission: jest.fn(),
-    logApproval: jest.fn(),
-    logRejection: jest.fn(),
-    logUnderageAccountSuspension: jest.fn(),
-  };
-
-  const mockDocumentSecurityService = {
-    encryptUrl: jest.fn((url) => `encrypted:${url}`),
-  };
-
-  const mockRateLimitService = {
-    checkRateLimit: jest.fn().mockResolvedValue({
-      canSubmit: true,
-      attemptsUsed: 0,
-      attemptsRemaining: 3,
-      resetDate: new Date(),
-    }),
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -53,7 +38,7 @@ describe('VerificationService - Email Notifications', () => {
         },
         {
           provide: VerificationAuditService,
-          useValue: mockAuditService,
+          useValue: mockVerificationAuditService,
         },
         {
           provide: DocumentSecurityService,
@@ -61,7 +46,7 @@ describe('VerificationService - Email Notifications', () => {
         },
         {
           provide: VerificationRateLimitService,
-          useValue: mockRateLimitService,
+          useValue: mockVerificationRateLimitService,
         },
       ],
     }).compile();
@@ -69,6 +54,14 @@ describe('VerificationService - Email Notifications', () => {
     service = module.get<VerificationService>(VerificationService);
 
     jest.clearAllMocks();
+
+    // Set default mock return values
+    mockVerificationRateLimitService.checkRateLimit.mockResolvedValue({
+      canSubmit: true,
+      attemptsUsed: 0,
+      attemptsRemaining: 3,
+      resetDate: new Date(),
+    });
   });
 
   describe('submitVerification', () => {

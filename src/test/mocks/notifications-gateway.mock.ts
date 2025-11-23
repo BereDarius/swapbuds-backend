@@ -11,6 +11,11 @@ export const mockNotificationsGateway = {
   handleConnection: jest.fn(),
   handleDisconnect: jest.fn(),
   emitToUser: jest.fn(),
+  emitMessageToUser: jest.fn(),
+  emitMessageRead: jest.fn(),
+  emitConversationRead: jest.fn(),
+  emitMessageDeleted: jest.fn(),
+  emitTyping: jest.fn(),
 };
 
 export const resetNotificationsGatewayMocks = () => {

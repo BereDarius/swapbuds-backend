@@ -1,3 +1,4 @@
+import { mockMonitoringService } from '@/test/mocks/monitoring.mock';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CacheMonitoringService } from './cache-monitoring.service';
 import { CacheController } from './cache.controller';
@@ -5,12 +6,6 @@ import { CacheController } from './cache.controller';
 describe('CacheController', () => {
   let controller: CacheController;
   let monitoringService: CacheMonitoringService;
-
-  const mockMonitoringService = {
-    getStats: jest.fn(),
-    getUptime: jest.fn(),
-    reset: jest.fn(),
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

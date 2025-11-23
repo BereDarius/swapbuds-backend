@@ -3,8 +3,9 @@
  */
 export const mockCacheService = {
   get: jest.fn().mockResolvedValue(null),
-  set: jest.fn().mockResolvedValue(undefined),
-  del: jest.fn().mockResolvedValue(undefined),
+  set: jest.fn().mockResolvedValue('OK'),
+  del: jest.fn().mockResolvedValue(1),
+  delPattern: jest.fn().mockResolvedValue(0),
   reset: jest.fn().mockResolvedValue(undefined),
   keys: jest.fn().mockResolvedValue([]),
   ttl: jest.fn().mockResolvedValue(0),
@@ -19,6 +20,8 @@ export const mockCacheService = {
   getUnreadNotificationsKey: jest.fn(
     (userId) => `users:${userId}:notifications:unread`,
   ),
+  // Key generator methods - Messages
+  getUnreadMessagesKey: jest.fn((userId) => `users:${userId}:messages:unread`),
 };
 
 /**

@@ -1,3 +1,4 @@
+import { mockMessagesService } from '@/test/mocks/messages.mock';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MessagesController } from './messages.controller';
 import { MessagesService } from './messages.service';
@@ -35,16 +36,6 @@ describe('MessagesController', () => {
       username: 'bob',
     },
     unreadCount: 0,
-  };
-
-  const mockMessagesService = {
-    sendMessage: jest.fn(),
-    getConversations: jest.fn(),
-    getMessages: jest.fn(),
-    markAsRead: jest.fn(),
-    markConversationAsRead: jest.fn(),
-    deleteMessage: jest.fn(),
-    getUnreadCount: jest.fn(),
   };
 
   beforeEach(async () => {

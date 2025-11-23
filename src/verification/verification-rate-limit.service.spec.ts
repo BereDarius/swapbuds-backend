@@ -1,16 +1,11 @@
 import { PrismaService } from '@/prisma/prisma.service';
+import { mockPrismaService } from '@/test/mocks/prisma.mock';
 import { Test, TestingModule } from '@nestjs/testing';
 import { VerificationStatus } from '@prisma/client';
 import { VerificationRateLimitService } from './verification-rate-limit.service';
 
 describe('VerificationRateLimitService', () => {
   let service: VerificationRateLimitService;
-
-  const mockPrismaService = {
-    userVerification: {
-      findMany: jest.fn(),
-    },
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

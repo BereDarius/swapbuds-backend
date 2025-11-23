@@ -2,6 +2,7 @@ import {
   mockTradeWithRelations,
   mockTrades,
 } from '@/test/fixtures/trade.fixture';
+import { mockTradesService } from '@/test/mocks/trades.mock';
 import { TradesController } from '@/trades/trades.controller';
 import { TradesService } from '@/trades/trades.service';
 import {
@@ -16,20 +17,6 @@ import { CreateTradeDto } from './dto/create-trade.dto';
 describe('TradesController', () => {
   let controller: TradesController;
   let tradesService: TradesService;
-
-  const mockTradesService = {
-    createTrade: jest.fn(),
-    getUserTrades: jest.fn(),
-    getUserTradesFiltered: jest.fn(),
-    getTradeById: jest.fn(),
-    acceptTrade: jest.fn(),
-    rejectTrade: jest.fn(),
-    cancelTrade: jest.fn(),
-    createCounterOffer: jest.fn(),
-    getTradeCounterOffers: jest.fn(),
-    acceptCounterOffer: jest.fn(),
-    rejectCounterOffer: jest.fn(),
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

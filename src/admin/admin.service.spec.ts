@@ -1,4 +1,6 @@
 import { PrismaService } from '@/prisma/prisma.service';
+import { mockAuditLogService } from '@/test/mocks/audit-log.mock';
+import { mockPrismaService } from '@/test/mocks/prisma.mock';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserRole } from '@prisma/client';
@@ -7,30 +9,6 @@ import { AuditLogService } from './audit-log.service';
 
 describe('AdminService', () => {
   let service: AdminService;
-
-  const mockPrismaService = {
-    user: {
-      count: jest.fn(),
-      findMany: jest.fn(),
-      findUnique: jest.fn(),
-      update: jest.fn(),
-      updateMany: jest.fn(),
-    },
-    item: {
-      count: jest.fn(),
-    },
-    trade: {
-      count: jest.fn(),
-    },
-    userVerification: {
-      count: jest.fn(),
-    },
-  };
-
-  const mockAuditLogService = {
-    log: jest.fn(),
-    getLogsForTarget: jest.fn(),
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

@@ -1,14 +1,10 @@
 import { CacheService } from '@/cache/cache.service';
+import { mockCacheService } from '@/test/mocks/cache.mock';
 import { Test, TestingModule } from '@nestjs/testing';
 import { RedisHealthIndicator } from './redis.health';
 
 describe('RedisHealthIndicator', () => {
   let indicator: RedisHealthIndicator;
-
-  const mockCacheService = {
-    set: jest.fn(),
-    get: jest.fn(),
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

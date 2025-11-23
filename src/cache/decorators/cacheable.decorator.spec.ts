@@ -1,4 +1,5 @@
 import { CacheService } from '@/cache/cache.service';
+import { mockCacheService } from '@/test/mocks/cache.mock';
 import { Injectable } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Cacheable, CacheInvalidate } from './cacheable.decorator';
@@ -6,12 +7,6 @@ import { Cacheable, CacheInvalidate } from './cacheable.decorator';
 describe('Cacheable Decorator', () => {
   let testService: TestService;
   let cacheService: CacheService;
-
-  const mockCacheService = {
-    get: jest.fn(),
-    set: jest.fn(),
-    del: jest.fn(),
-  };
 
   @Injectable()
   class TestService {

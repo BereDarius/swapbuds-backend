@@ -1,5 +1,6 @@
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 import { SupportGuard } from '@/auth/guards/support.guard';
+import { mockSupportChatService } from '@/test/mocks/support.mock';
 import { Test, TestingModule } from '@nestjs/testing';
 import { SupportChatStatus, SupportPriority, UserRole } from '@prisma/client';
 import {
@@ -35,17 +36,6 @@ describe('SupportChatController', () => {
     message: 'Test message',
     isSystem: false,
     createdAt: new Date(),
-  };
-
-  const mockSupportChatService = {
-    createChat: jest.fn(),
-    getChat: jest.fn(),
-    getUserChats: jest.fn(),
-    getAgentChats: jest.fn(),
-    sendMessage: jest.fn(),
-    resolveChat: jest.fn(),
-    closeChat: jest.fn(),
-    getSupportStats: jest.fn(),
   };
 
   const mockSupportChatGateway = {

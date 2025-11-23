@@ -4,6 +4,7 @@ import {
   mockDisputeWithRelations,
   mockResolvedDisputeWithRelations,
 } from '@/test/fixtures/dispute.fixture';
+import { mockPrismaService } from '@/test/mocks/prisma.mock';
 import {
   BadRequestException,
   ForbiddenException,
@@ -23,22 +24,7 @@ describe('DisputesService', () => {
         DisputesService,
         {
           provide: PrismaService,
-          useValue: {
-            dispute: {
-              create: jest.fn(),
-              findMany: jest.fn(),
-              findFirst: jest.fn(),
-              findUnique: jest.fn(),
-              update: jest.fn(),
-            },
-            trade: {
-              findUnique: jest.fn(),
-              update: jest.fn(),
-            },
-            user: {
-              findUnique: jest.fn(),
-            },
-          },
+          useValue: mockPrismaService,
         },
       ],
     }).compile();
