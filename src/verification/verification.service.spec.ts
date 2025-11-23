@@ -1,4 +1,8 @@
+import { MailService } from '@/mail/mail.service';
+import { NotificationsService } from '@/notifications/notifications.service';
 import { PrismaService } from '@/prisma/prisma.service';
+import { mockMailService } from '@/test/mocks/mail.mock';
+import { mockNotificationsService } from '@/test/mocks/notifications.mock';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -21,6 +25,7 @@ describe('VerificationService', () => {
       count: jest.fn(),
     },
     user: {
+      findUnique: jest.fn(),
       update: jest.fn(),
     },
   };
@@ -81,6 +86,14 @@ describe('VerificationService', () => {
         {
           provide: ConfigService,
           useValue: mockConfigService,
+        },
+        {
+          provide: MailService,
+          useValue: mockMailService,
+        },
+        {
+          provide: NotificationsService,
+          useValue: mockNotificationsService,
         },
       ],
     }).compile();

@@ -14,6 +14,7 @@ import { AdminModule } from './admin/admin.module';
 import { CacheModule as AppCacheModule } from './cache/cache.module';
 import { CommentsModule } from './comments/comments.module';
 import { DisputesModule } from './disputes/disputes.module';
+import { GdprModule } from './gdpr/gdpr.module';
 import { HealthModule } from './health/health.module';
 import { ItemsModule } from './items/items.module';
 import { LikesModule } from './likes/likes.module';
@@ -120,6 +121,8 @@ import { VerificationModule } from './verification/verification.module';
     ModerationModule,
 
     SupportModule,
+
+    GdprModule,
   ],
   providers: [
     {

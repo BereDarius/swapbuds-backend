@@ -12,38 +12,17 @@ import {
   mockUnreadNotifications,
 } from '@/test/fixtures/notification.fixture';
 import { mockTradeWithRelations } from '@/test/fixtures/trade.fixture';
+import { mockCacheService } from '@/test/mocks/cache.mock';
+import { mockMailService } from '@/test/mocks/mail.mock';
+import { mockNotificationsGateway } from '@/test/mocks/notifications-gateway.mock';
 import { mockPrismaService } from '@/test/mocks/prisma.mock';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { NotificationType } from '@prisma/client';
 import { NotificationsGateway } from './gateway/notifications.gateway';
 
-const mockCacheService = {
-  get: jest.fn().mockResolvedValue(null),
-  set: jest.fn(),
-  del: jest.fn(),
-  getUnreadNotificationsKey: jest.fn(
-    (userId) => `users:${userId}:notifications:unread`,
-  ),
-};
-
 describe('NotificationsService', () => {
   let service: NotificationsService;
   let prisma: PrismaService;
-
-  const mockNotificationsGateway = {
-    emitNotificationToUser: jest.fn(),
-    emitNotificationRead: jest.fn(),
-    emitAllNotificationsRead: jest.fn(),
-    emitNotificationDeleted: jest.fn(),
-  };
-
-  const mockMailService = {
-    sendTradeProposal: jest.fn(),
-    sendTradeAccepted: jest.fn(),
-    sendTradeRejected: jest.fn(),
-    sendTradeCancelled: jest.fn(),
-    sendWelcomeEmail: jest.fn(),
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

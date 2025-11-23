@@ -2,22 +2,10 @@ import {
   mockNotifications,
   mockUnreadNotifications,
 } from '@/test/fixtures/notification.fixture';
+import { mockNotificationsService } from '@/test/mocks/notifications.mock';
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotificationsController } from './notifications.controller';
 import { NotificationsService } from './notifications.service';
-
-// Mock NotificationsService
-const mockNotificationsService = {
-  createTradeNotification: jest.fn(),
-  createNotification: jest.fn(),
-  getUserNotifications: jest.fn(),
-  getUnreadCount: jest.fn(),
-  markAsRead: jest.fn(),
-  markAllAsRead: jest.fn(),
-  deleteNotification: jest.fn(),
-  getPreferences: jest.fn(),
-  updatePreferences: jest.fn(),
-};
 
 describe('NotificationsController', () => {
   let controller: NotificationsController;

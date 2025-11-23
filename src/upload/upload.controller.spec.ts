@@ -1,3 +1,4 @@
+import { mockUploadService } from '@/test/mocks/upload.mock';
 import { UploadController } from '@/upload/upload.controller';
 import { UploadService } from '@/upload/upload.service';
 import { BadRequestException } from '@nestjs/common';
@@ -6,10 +7,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 describe('UploadController', () => {
   let controller: UploadController;
   let uploadService: UploadService;
-
-  const mockUploadService = {
-    uploadMultipleImages: jest.fn(),
-  };
 
   const createMockFile = (
     mimetype: string,

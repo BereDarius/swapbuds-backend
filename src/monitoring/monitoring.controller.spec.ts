@@ -1,5 +1,6 @@
 import { AdminGuard } from '@/auth/guards/admin.guard';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { mockMonitoringService } from '@/test/mocks/monitoring.mock';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MonitoringController } from './monitoring.controller';
 import { AggregatedMetrics, MonitoringService } from './monitoring.service';
@@ -74,12 +75,6 @@ describe('MonitoringController', () => {
       { endpoint: '/api/trades/search', avgTime: 350 },
       { endpoint: '/api/items/search', avgTime: 280 },
     ],
-  };
-
-  const mockMonitoringService = {
-    getMetrics: jest.fn(),
-    getErrors: jest.fn(),
-    getPerformanceStats: jest.fn(),
   };
 
   beforeEach(async () => {

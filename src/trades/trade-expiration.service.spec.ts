@@ -1,32 +1,13 @@
 import { MailService } from '@/mail/mail.service';
 import { NotificationsService } from '@/notifications/notifications.service';
 import { PrismaService } from '@/prisma/prisma.service';
+import { mockMailService } from '@/test/mocks/mail.mock';
+import { mockNotificationsService } from '@/test/mocks/notifications.mock';
+import { mockPrismaService } from '@/test/mocks/prisma.mock';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotificationType, TradeStatus } from '@prisma/client';
 import { TradeExpirationService } from './trade-expiration.service';
-
-// Mock PrismaService
-const mockPrismaService = {
-  trade: {
-    findMany: jest.fn(),
-    update: jest.fn(),
-  },
-  user: {
-    findUnique: jest.fn(),
-  },
-};
-
-// Mock NotificationsService
-const mockNotificationsService = {
-  createNotification: jest.fn(),
-};
-
-// Mock MailService
-const mockMailService = {
-  sendTradeExpired: jest.fn(),
-  sendTradeExpiringWarning: jest.fn(),
-};
 
 // Mock ConfigService
 const mockConfigService = {

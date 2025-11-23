@@ -1,7 +1,10 @@
+import { MailService } from '@/mail/mail.service';
+import { NotificationsService } from '@/notifications/notifications.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { VerificationStatus } from '@prisma/client';
@@ -20,11 +23,15 @@ import { VerificationRateLimitService } from './verification-rate-limit.service'
  */
 @Injectable()
 export class VerificationService {
+  private readonly logger = new Logger(VerificationService.name);
+
   constructor(
     private prisma: PrismaService,
     private documentSecurity: DocumentSecurityService,
     private auditService: VerificationAuditService,
     private rateLimitService: VerificationRateLimitService,
+    private mailService: MailService,
+    private notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -85,6 +92,34 @@ export class VerificationService {
       verification.id,
       dto.documentType,
     );
+
+    // Send confirmation email and notify admins
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, username: true },
+    });
+
+    if (user) {
+      try {
+        await this.mailService.sendVerificationSubmitted(
+          user.email,
+          user.username,
+        );
+
+        // Notify admins of new verification submission
+        await this.notificationsService.notifyAdminsOfVerificationSubmission(
+          verification.id,
+          userId,
+          user.username,
+        );
+      } catch (error) {
+        // Log error but don't fail the verification submission
+        this.logger.error(
+          'Failed to send verification emails',
+          error instanceof Error ? error.stack : String(error),
+        );
+      }
+    }
 
     return verification;
   }
@@ -294,6 +329,19 @@ export class VerificationService {
         true,
       );
 
+      // Send underage suspension email
+      const user = await this.prisma.user.findUnique({
+        where: { id: verification.userId },
+        select: { email: true, username: true },
+      });
+
+      if (user) {
+        await this.mailService.sendAccountSuspendedUnderage(
+          user.email,
+          user.username,
+        );
+      }
+
       throw new BadRequestException(
         'User is under 18 years old. Account has been suspended.',
       );
@@ -327,6 +375,19 @@ export class VerificationService {
       verification.userId,
       true,
     );
+
+    // Send approval email
+    const user = await this.prisma.user.findUnique({
+      where: { id: verification.userId },
+      select: { email: true, username: true },
+    });
+
+    if (user) {
+      await this.mailService.sendVerificationApproved(
+        user.email,
+        user.username,
+      );
+    }
 
     return updated;
   }
@@ -376,6 +437,20 @@ export class VerificationService {
       dto.rejectionReason,
       false,
     );
+
+    // Send rejection email
+    const user = await this.prisma.user.findUnique({
+      where: { id: verification.userId },
+      select: { email: true, username: true },
+    });
+
+    if (user) {
+      await this.mailService.sendVerificationRejected(
+        user.email,
+        user.username,
+        dto.rejectionReason,
+      );
+    }
 
     return updated;
   }

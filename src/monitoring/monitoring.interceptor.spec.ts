@@ -1,3 +1,4 @@
+import { mockMonitoringService } from '@/test/mocks/monitoring.mock';
 import { CallHandler, ExecutionContext } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { of, throwError } from 'rxjs';
@@ -7,11 +8,6 @@ import { MonitoringService } from './monitoring.service';
 describe('MonitoringInterceptor', () => {
   let interceptor: MonitoringInterceptor;
   let monitoringService: MonitoringService;
-
-  const mockMonitoringService = {
-    recordApiCall: jest.fn(),
-    recordError: jest.fn(),
-  };
 
   const mockExecutionContext = {
     getType: jest.fn(),

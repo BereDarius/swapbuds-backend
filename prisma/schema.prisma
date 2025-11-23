@@ -53,6 +53,10 @@ model User {
   isVerified Boolean @default(false)
   isAdmin    Boolean @default(false) // Deprecated: use role instead
 
+  // GDPR - Account Deletion
+  deletionRequestedAt DateTime? // When user requested account deletion
+  scheduledDeletionAt DateTime? // When account will be permanently deleted
+
   // Relations
   items                   Item[]
   tradesProposed          Trade[]                  @relation("TradeProposer")
@@ -487,6 +491,7 @@ enum NotificationType {
   NEW_COMMENT
   NEW_LIKE
   NEW_REVIEW
+  VERIFICATION_SUBMITTED
 }
 
 model Notification {

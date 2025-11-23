@@ -6,6 +6,7 @@ import {
   forwardRef,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { NotificationType } from '@prisma/client';
@@ -19,6 +20,8 @@ import { NotificationsGateway } from './gateway/notifications.gateway';
  */
 @Injectable()
 export class NotificationsService {
+  private readonly logger = new Logger(NotificationsService.name);
+
   constructor(
     private prisma: PrismaService,
     @Inject(forwardRef(() => NotificationsGateway))
@@ -343,7 +346,10 @@ export class NotificationsService {
       }
     } catch (error) {
       // Log error but don't fail the notification creation
-      console.error('Failed to send email notification:', error);
+      this.logger.error(
+        'Failed to send email notification',
+        error instanceof Error ? error.stack : String(error),
+      );
     }
   }
 
@@ -450,6 +456,66 @@ export class NotificationsService {
         return preferences.pushNewReview;
       default:
         return true;
+    }
+  }
+
+  /**
+   * Create verification submitted notification for admins
+   * @param verificationId - Verification ID
+   * @param userId - User ID who submitted verification
+   * @param username - Username who submitted verification
+   */
+  async notifyAdminsOfVerificationSubmission(
+    verificationId: string,
+    userId: string,
+    username: string,
+  ): Promise<void> {
+    // Get all admin users
+    const admins = await this.prisma.user.findMany({
+      where: { isAdmin: true, isActive: true },
+      select: { id: true, email: true, username: true },
+    });
+
+    if (admins.length === 0) {
+      return;
+    }
+
+    // Create notification for each admin
+    const notificationPromises = admins.map((admin) =>
+      this.createNotification({
+        type: NotificationType.VERIFICATION_SUBMITTED,
+        title: 'New Verification Submission',
+        message: `${username} has submitted verification documents for review`,
+        userId: admin.id,
+        metadata: {
+          verificationId,
+          submittedByUserId: userId,
+          submittedByUsername: username,
+        },
+      }),
+    );
+
+    await Promise.all(notificationPromises);
+
+    // Optional: Send email to admins (can be configured)
+    const emailEnabled = process.env.ADMIN_EMAIL_NOTIFICATIONS === 'true';
+    if (emailEnabled) {
+      const emailPromises = admins.map((admin) =>
+        this.mailService
+          .sendAdminVerificationAlert(admin.email, admin.username, {
+            username,
+            userId,
+            verificationId,
+          })
+          .catch((error) => {
+            this.logger.error(
+              `Failed to send admin email to ${admin.email}`,
+              error instanceof Error ? error.stack : String(error),
+            );
+          }),
+      );
+
+      await Promise.allSettled(emailPromises);
     }
   }
 

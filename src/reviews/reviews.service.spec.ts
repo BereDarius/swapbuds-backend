@@ -1,5 +1,6 @@
 import { CacheService } from '@/cache/cache.service';
 import { PrismaService } from '@/prisma/prisma.service';
+import { mockCacheService } from '@/test/mocks/cache.mock';
 import { mockPrismaService } from '@/test/mocks/prisma.mock';
 import {
   BadRequestException,
@@ -9,14 +10,6 @@ import {
 import { Test, TestingModule } from '@nestjs/testing';
 import { TradeStatus } from '@prisma/client';
 import { ReviewsService } from './reviews.service';
-
-// Mock CacheService
-const mockCacheService = {
-  get: jest.fn().mockResolvedValue(null),
-  set: jest.fn().mockResolvedValue('OK'),
-  del: jest.fn().mockResolvedValue(1),
-  delPattern: jest.fn().mockResolvedValue(0),
-};
 
 const mockTrade = {
   id: 'trade-123',

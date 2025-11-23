@@ -1,5 +1,7 @@
 import { AuditLogService } from '@/admin/audit-log.service';
 import { PrismaService } from '@/prisma/prisma.service';
+import { mockAuditLogService } from '@/test/mocks/audit-log.mock';
+import { mockPrismaService } from '@/test/mocks/prisma.mock';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
@@ -12,27 +14,6 @@ import { ModerationService } from './moderation.service';
 
 describe('ModerationService', () => {
   let service: ModerationService;
-
-  const mockPrismaService = {
-    item: {
-      findUnique: jest.fn(),
-      update: jest.fn(),
-    },
-    flaggedItem: {
-      findFirst: jest.fn(),
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      count: jest.fn(),
-      groupBy: jest.fn(),
-    },
-    $transaction: jest.fn(),
-  };
-
-  const mockAuditLogService = {
-    log: jest.fn(),
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

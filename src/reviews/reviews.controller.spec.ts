@@ -1,3 +1,4 @@
+import { mockReviewsService } from '@/test/mocks/reviews.mock';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
@@ -7,16 +8,6 @@ import { ReviewsService } from './reviews.service';
 describe('ReviewsController', () => {
   let controller: ReviewsController;
   let service: ReviewsService;
-
-  const mockReviewsService = {
-    createReview: jest.fn(),
-    getUserReviews: jest.fn(),
-    getUserReviewsGiven: jest.fn(),
-    getReviewById: jest.fn(),
-    updateReview: jest.fn(),
-    deleteReview: jest.fn(),
-    getTradeReviews: jest.fn(),
-  };
 
   const mockReview = {
     id: 'review-123',

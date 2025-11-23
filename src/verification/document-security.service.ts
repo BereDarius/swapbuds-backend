@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { v2 as cloudinary } from 'cloudinary';
 import * as crypto from 'crypto';
@@ -9,6 +9,7 @@ import * as crypto from 'crypto';
  */
 @Injectable()
 export class DocumentSecurityService {
+  private readonly logger = new Logger(DocumentSecurityService.name);
   private readonly encryptionKey: string;
   private readonly algorithm = 'aes-256-gcm';
 
@@ -46,7 +47,10 @@ export class DocumentSecurityService {
       return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
     } catch (error) {
       // If encryption fails, return original URL (fallback)
-      console.error('Encryption failed:', error);
+      this.logger.error(
+        'Encryption failed',
+        error instanceof Error ? error.stack : String(error),
+      );
       return url;
     }
   }
@@ -78,7 +82,10 @@ export class DocumentSecurityService {
       return decrypted;
     } catch (error) {
       // If decryption fails, return original (might be unencrypted)
-      console.error('Decryption failed:', error);
+      this.logger.error(
+        'Decryption failed',
+        error instanceof Error ? error.stack : String(error),
+      );
       return encryptedUrl;
     }
   }
@@ -113,7 +120,10 @@ export class DocumentSecurityService {
       const match = url.match(/\/v\d+\/(.+?)(\.\w+)?$/);
       return match ? match[1] : '';
     } catch (error) {
-      console.error('Failed to extract public ID:', error);
+      this.logger.error(
+        'Failed to extract public ID',
+        error instanceof Error ? error.stack : String(error),
+      );
       return '';
     }
   }
@@ -130,7 +140,10 @@ export class DocumentSecurityService {
         resource_type: 'image',
       });
     } catch (error) {
-      console.error('Failed to delete document:', error);
+      this.logger.error(
+        'Failed to delete document',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw error;
     }
   }

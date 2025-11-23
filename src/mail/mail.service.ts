@@ -324,4 +324,191 @@ export class MailService {
       );
     }
   }
+
+  /**
+   * Send verification submitted confirmation email
+   * @param userEmail - Recipient email
+   * @param userName - Recipient name
+   */
+  async sendVerificationSubmitted(
+    userEmail: string,
+    userName: string,
+  ): Promise<void> {
+    if (!this.isEmailEnabled) {
+      this.logger.debug(
+        'Email disabled, skipping verification submitted email',
+      );
+      return;
+    }
+
+    try {
+      await this.mailerService.sendMail({
+        to: userEmail,
+        subject: '📋 Verification Submitted - SwapBuds',
+        template: './verification-submitted',
+        context: {
+          userName,
+          appUrl: this.configService.get('FRONTEND_URL'),
+        },
+      });
+
+      this.logger.log(`Verification submitted email sent to ${userEmail}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to send verification submitted email to ${userEmail}`,
+        error.stack,
+      );
+    }
+  }
+
+  /**
+   * Send verification approved notification email
+   * @param userEmail - Recipient email
+   * @param userName - Recipient name
+   */
+  async sendVerificationApproved(
+    userEmail: string,
+    userName: string,
+  ): Promise<void> {
+    if (!this.isEmailEnabled) {
+      this.logger.debug('Email disabled, skipping verification approved email');
+      return;
+    }
+
+    try {
+      await this.mailerService.sendMail({
+        to: userEmail,
+        subject: '✅ Verification Approved - SwapBuds',
+        template: './verification-approved',
+        context: {
+          userName,
+          appUrl: this.configService.get('FRONTEND_URL'),
+        },
+      });
+
+      this.logger.log(`Verification approved email sent to ${userEmail}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to send verification approved email to ${userEmail}`,
+        error.stack,
+      );
+    }
+  }
+
+  /**
+   * Send verification rejected notification email
+   * @param userEmail - Recipient email
+   * @param userName - Recipient name
+   * @param rejectionReason - Reason for rejection
+   */
+  async sendVerificationRejected(
+    userEmail: string,
+    userName: string,
+    rejectionReason: string,
+  ): Promise<void> {
+    if (!this.isEmailEnabled) {
+      this.logger.debug('Email disabled, skipping verification rejected email');
+      return;
+    }
+
+    try {
+      await this.mailerService.sendMail({
+        to: userEmail,
+        subject: '❌ Verification Rejected - SwapBuds',
+        template: './verification-rejected',
+        context: {
+          userName,
+          rejectionReason,
+          appUrl: this.configService.get('FRONTEND_URL'),
+        },
+      });
+
+      this.logger.log(`Verification rejected email sent to ${userEmail}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to send verification rejected email to ${userEmail}`,
+        error.stack,
+      );
+    }
+  }
+
+  /**
+   * Send account suspended (underage) notification email
+   * @param userEmail - Recipient email
+   * @param userName - Recipient name
+   */
+  async sendAccountSuspendedUnderage(
+    userEmail: string,
+    userName: string,
+  ): Promise<void> {
+    if (!this.isEmailEnabled) {
+      this.logger.debug(
+        'Email disabled, skipping account suspended underage email',
+      );
+      return;
+    }
+
+    try {
+      await this.mailerService.sendMail({
+        to: userEmail,
+        subject: '🚫 Account Suspended - SwapBuds',
+        template: './account-suspended-underage',
+        context: {
+          userName,
+          supportEmail: this.configService.get('SUPPORT_EMAIL'),
+        },
+      });
+
+      this.logger.log(`Account suspended underage email sent to ${userEmail}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to send account suspended underage email to ${userEmail}`,
+        error.stack,
+      );
+    }
+  }
+
+  /**
+   * Send admin alert for new verification submission
+   * @param adminEmail - Admin email
+   * @param adminName - Admin name
+   * @param verificationData - Verification details
+   */
+  async sendAdminVerificationAlert(
+    adminEmail: string,
+    adminName: string,
+    verificationData: {
+      username: string;
+      userId: string;
+      verificationId: string;
+    },
+  ): Promise<void> {
+    if (!this.isEmailEnabled) {
+      this.logger.debug(
+        'Email disabled, skipping admin verification alert email',
+      );
+      return;
+    }
+
+    try {
+      await this.mailerService.sendMail({
+        to: adminEmail,
+        subject: '🔔 New Verification Submission - SwapBuds Admin',
+        template: './admin-verification-alert',
+        context: {
+          adminName,
+          username: verificationData.username,
+          userId: verificationData.userId,
+          verificationUrl: `${this.configService.get('FRONTEND_URL')}/admin/verifications/${verificationData.verificationId}`,
+        },
+      });
+
+      this.logger.log(`Admin verification alert email sent to ${adminEmail}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to send admin verification alert email to ${adminEmail}`,
+        error.stack,
+      );
+    }
+  }
 }

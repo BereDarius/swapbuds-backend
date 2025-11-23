@@ -1,0 +1,106 @@
+<html>
+  <head>
+    <meta charset='utf-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>Verification Submitted</title>
+    <style>
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          'Helvetica Neue', Arial, sans-serif;
+        line-height: 1.6;
+        color: #333333;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f4f4f4;
+      }
+      .container {
+        background-color: #ffffff;
+        border-radius: 8px;
+        padding: 30px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        text-align: center;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #4caf50;
+      }
+      .header h1 {
+        color: #4caf50;
+        margin: 0;
+        font-size: 24px;
+      }
+      .content {
+        padding: 20px 0;
+      }
+      .content p {
+        margin: 10px 0;
+      }
+      .info-box {
+        background-color: #f0f8ff;
+        border-left: 4px solid #2196f3;
+        padding: 15px;
+        margin: 20px 0;
+      }
+      .button {
+        display: inline-block;
+        padding: 12px 30px;
+        background-color: #4caf50;
+        color: #ffffff;
+        text-decoration: none;
+        border-radius: 4px;
+        margin: 20px 0;
+      }
+      .footer {
+        text-align: center;
+        padding-top: 20px;
+        border-top: 1px solid #e0e0e0;
+        color: #666666;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      <div class='header'>
+        <h1>📋 Verification Submitted</h1>
+      </div>
+
+      <div class='content'>
+        <p>Hi {{userName}},</p>
+
+        <p>Thank you for submitting your verification documents! We've received
+          your request and it's now in our review queue.</p>
+
+        <div class='info-box'>
+          <strong>What happens next?</strong>
+          <ul>
+            <li>Our team will review your documents within 24-48 hours</li>
+            <li>We'll verify your identity and age eligibility (18+ required)</li>
+            <li>You'll receive an email notification once the review is complete</li>
+          </ul>
+        </div>
+
+        <p>You can check your verification status anytime in your account
+          settings.</p>
+
+        <center>
+          <a href='{{appUrl}}/settings/verification' class='button'>View
+            Verification Status</a>
+        </center>
+
+        <p>If you have any questions or concerns, please don't hesitate to
+          contact our support team.</p>
+
+        <p>Best regards,<br />The SwapBuds Team</p>
+      </div>
+
+      <div class='footer'>
+        <p>© 2025 SwapBuds. All rights reserved.</p>
+        <p>This is an automated email. Please do not reply directly to this
+          message.</p>
+      </div>
+    </div>
+  </body>
+</html>

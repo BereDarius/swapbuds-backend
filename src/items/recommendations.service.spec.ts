@@ -1,23 +1,11 @@
 import { PrismaService } from '@/prisma/prisma.service';
+import { mockPrismaService } from '@/test/mocks/prisma.mock';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DeliveryMethod, ItemCategory, ItemStatus } from '@prisma/client';
 import { RecommendationsService } from './recommendations.service';
 
 describe('RecommendationsService', () => {
   let service: RecommendationsService;
-
-  const mockPrismaService = {
-    userSettings: {
-      findUnique: jest.fn(),
-    },
-    item: {
-      findMany: jest.fn(),
-      findUnique: jest.fn(),
-    },
-    like: {
-      findMany: jest.fn(),
-    },
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

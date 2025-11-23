@@ -1,5 +1,6 @@
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 import { ModeratorGuard } from '@/auth/guards/moderator.guard';
+import { mockModerationService } from '@/test/mocks/moderation.mock';
 import { Test, TestingModule } from '@nestjs/testing';
 import { FlagReason, ModerationStatus } from '@prisma/client';
 import { ModerationController } from './moderation.controller';
@@ -7,15 +8,6 @@ import { ModerationService } from './moderation.service';
 
 describe('ModerationController', () => {
   let controller: ModerationController;
-
-  const mockModerationService = {
-    flagItem: jest.fn(),
-    getFlaggedItems: jest.fn(),
-    getFlaggedItem: jest.fn(),
-    approveItem: jest.fn(),
-    removeItem: jest.fn(),
-    getModerationStats: jest.fn(),
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

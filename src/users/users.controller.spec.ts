@@ -1,4 +1,5 @@
 import { mockUserWithProfile } from '@/test/fixtures/user.fixture';
+import { mockUsersService } from '@/test/mocks/users.mock';
 import { UsersController } from '@/users/users.controller';
 import { UsersService } from '@/users/users.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
@@ -8,14 +9,6 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 describe('UsersController', () => {
   let controller: UsersController;
   let usersService: UsersService;
-
-  const mockUsersService = {
-    findAllFiltered: jest.fn(),
-    getUserProfile: jest.fn(),
-    updateProfile: jest.fn(),
-    uploadAvatar: jest.fn(),
-    getUserStatistics: jest.fn(),
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

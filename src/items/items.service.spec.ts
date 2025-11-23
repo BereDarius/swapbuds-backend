@@ -1,21 +1,12 @@
 import { CacheService } from '@/cache/cache.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { mockItem, mockItemWithRelations } from '@/test/fixtures/item.fixture';
+import { mockCacheService } from '@/test/mocks/cache.mock';
 import { mockPrismaService } from '@/test/mocks/prisma.mock';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ItemCategory, ItemCondition } from '@prisma/client';
 import { ItemsService } from './items.service';
-
-const mockCacheService = {
-  get: jest.fn().mockResolvedValue(null),
-  set: jest.fn(),
-  del: jest.fn(),
-  invalidateItem: jest.fn(),
-  getItemsListKey: jest.fn((page, limit) => `items:list:${page}:${limit}:all`),
-  getItemKey: jest.fn((itemId) => `items:${itemId}`),
-  getUserItemsKey: jest.fn((userId) => `users:${userId}:items`),
-};
 
 describe('ItemsService', () => {
   let service: ItemsService;

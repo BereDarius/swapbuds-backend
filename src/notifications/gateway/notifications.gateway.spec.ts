@@ -1,3 +1,4 @@
+import { mockJwtService } from '@/test/mocks/jwt.mock';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Socket } from 'socket.io';
@@ -7,11 +8,6 @@ describe('NotificationsGateway', () => {
   let gateway: NotificationsGateway;
   let mockSocket: Partial<Socket>;
   let mockServer: any;
-
-  const mockJwtService = {
-    verify: jest.fn(),
-    sign: jest.fn(),
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

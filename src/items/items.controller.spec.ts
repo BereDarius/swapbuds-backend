@@ -6,6 +6,8 @@ import {
   mockItemWithRelations,
   mockItems,
 } from '@/test/fixtures/item.fixture';
+import { mockItemsService } from '@/test/mocks/items.mock';
+import { mockRecommendationsService } from '@/test/mocks/recommendations.mock';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ItemCategory, ItemCondition } from '@prisma/client';
@@ -15,21 +17,6 @@ import { UpdateItemDto } from './dto/update-item.dto';
 describe('ItemsController', () => {
   let controller: ItemsController;
   let itemsService: ItemsService;
-
-  const mockItemsService = {
-    create: jest.fn(),
-    findAll: jest.fn(),
-    findAllFiltered: jest.fn(),
-    findByUser: jest.fn(),
-    findOne: jest.fn(),
-    update: jest.fn(),
-    remove: jest.fn(),
-  };
-
-  const mockRecommendationsService = {
-    getRecommendations: jest.fn(),
-    getSimilarItems: jest.fn(),
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

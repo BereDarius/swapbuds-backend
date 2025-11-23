@@ -1,5 +1,5 @@
 import { CacheService } from '@/cache/cache.service';
-import { Inject } from '@nestjs/common';
+import { Inject, Logger } from '@nestjs/common';
 
 /**
  * Options for the @Cacheable decorator
@@ -54,7 +54,8 @@ export function Cacheable(options: CacheableOptions = {}) {
       const cacheService: CacheService = this.cacheService;
 
       if (!cacheService) {
-        console.warn(
+        const logger = new Logger(className);
+        logger.warn(
           `CacheService not found in ${className}. Skipping cache for ${propertyKey}`,
         );
         return originalMethod.apply(this, args);
@@ -131,13 +132,15 @@ export function CacheInvalidate(
             await cacheService.del(key);
           }
         } catch (error) {
-          console.error(
-            `Cache invalidation failed in ${className}.${propertyKey}:`,
-            error,
+          const logger = new Logger(className);
+          logger.error(
+            `Cache invalidation failed in ${className}.${propertyKey}`,
+            error instanceof Error ? error.stack : String(error),
           );
         }
       } else {
-        console.warn(
+        const logger = new Logger(className);
+        logger.warn(
           `CacheService not found in ${className}. Skipping cache invalidation for ${propertyKey}`,
         );
       }
