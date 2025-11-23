@@ -75,6 +75,9 @@ model User {
   auditLogs               AuditLog[]               @relation("AuditLogPerformedBy")
   flaggedItemsReported    FlaggedItem[]            @relation("FlagReporter")
   flaggedItemsReviewed    FlaggedItem[]            @relation("FlagReviewer")
+  supportChatsAsUser      SupportChat[]            @relation("SupportChatUser")
+  supportChatsAsAgent     SupportChat[]            @relation("SupportChatAgent")
+  supportMessages         SupportMessage[]         @relation("SupportMessageSender")
 
   @@index([email])
   @@index([username])
@@ -848,4 +851,81 @@ model RecaptchaLog {
   @@index([score])
   @@index([timestamp])
   @@map("recaptcha_logs")
+}
+
+// ============================================
+// SUPPORT CHAT MODELS
+// ============================================
+enum SupportChatStatus {
+  WAITING // In queue, waiting for agent
+  ACTIVE // Currently chatting with agent
+  RESOLVED // Issue resolved, chat ended
+  CLOSED // Chat closed without resolution
+}
+
+enum SupportPriority {
+  LOW // Normal support request
+  MEDIUM // Moderate urgency
+  HIGH // High priority (verified users, urgent issues)
+  CRITICAL // Critical issues requiring immediate attention
+}
+
+model SupportChat {
+  id String @id @default(cuid())
+
+  // User requesting support
+  userId String
+  user   User   @relation("SupportChatUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  // Assigned support agent (nullable when in queue)
+  agentId String?
+  agent   User?   @relation("SupportChatAgent", fields: [agentId], references: [id], onDelete: SetNull)
+
+  // Chat details
+  status        SupportChatStatus @default(WAITING)
+  priority      SupportPriority   @default(MEDIUM)
+  subject       String // Brief description of the issue
+  queuePosition Int?              @default(0) // Position in queue (null when active)
+
+  // Messages
+  messages SupportMessage[]
+
+  // Timestamps
+  createdAt  DateTime  @default(now())
+  startedAt  DateTime? // When agent joined
+  resolvedAt DateTime? // When chat was resolved
+  closedAt   DateTime? // When chat was closed
+  updatedAt  DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([agentId])
+  @@index([status])
+  @@index([priority])
+  @@index([queuePosition])
+  @@index([createdAt])
+  @@map("support_chats")
+}
+
+model SupportMessage {
+  id String @id @default(cuid())
+
+  // Chat this message belongs to
+  chatId String
+  chat   SupportChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  // Sender (can be user or agent)
+  senderId String
+  sender   User   @relation("SupportMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  // Message content
+  message  String
+  isSystem Boolean @default(false) // System messages (e.g., "Agent joined", "Chat closed")
+
+  // Timestamp
+  createdAt DateTime @default(now())
+
+  @@index([chatId])
+  @@index([senderId])
+  @@index([createdAt])
+  @@map("support_messages")
 }

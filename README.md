@@ -56,7 +56,8 @@ This is the production-ready backend API for SWAPBUDS, providing secure authenti
 - ✅ Smart recommendations & matching (v1.0.2)
 - ✅ ID verification & age verification + security & privacy (v1.0.3-v1.0.4)
 - ✅ Admin & moderation system with role-based access (v1.1.0)
-- ✅ Content moderation system (flag/approve/remove items) (v1.1.0)
+- ✅ Content moderation system (flag/approve/remove items) (v1.1.1)
+- ✅ Live Support Chat with priority queue & agent assignment (v1.1.2)
 
 ---
 
