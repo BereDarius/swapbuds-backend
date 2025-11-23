@@ -1,13 +1,13 @@
 # SwapBuds Backend - Launch Roadmap (16 Weeks)
 
 **Target Public Launch:** March 17, 2026
-**Current Status:** v1.1.0 Content Moderation Complete (756 tests passing, 98.44% coverage)
+**Current Status:** v1.1.2 Live Support Chat Complete (806 tests passing, 97.88% support module coverage)
 
 - ✅ v1.0.4 Complete (Security & Privacy)
 - ✅ Core admin features implemented (user management, audit logs, role-based access)
-- ✅ Content moderation system (flag/approve/remove items)
-- ✅ Comprehensive test coverage for admin, verification, and moderation modules (>88%)
-- ⏳ Live support chat system pending
+- ✅ Content moderation system (flag/approve/remove items) - v1.1.1
+- ✅ Live support chat with priority queue & agent assignment - v1.1.2
+- ✅ Comprehensive test coverage (806 tests, 97.88% support module coverage)
 
 This roadmap is aligned with the [LAUNCH_ROADMAP.md](../plans/LAUNCH_ROADMAP.md) and organized by implementation timeline.
 
@@ -799,12 +799,12 @@ Below are the full technical specifications for features listed above. These ser
 - [x] User role management (change user roles)
 - [x] Comprehensive unit tests (46 admin tests, 83 verification tests)
 - [x] Content moderation (flag/approve/remove items)
+- [x] **Live support chat with priority queue system** - v1.1.2
+- [x] Real-time support agent availability
+- [x] Support chat history and transcripts
 - [ ] Platform monitoring and health checks
 - [ ] Bulk actions for moderation tasks
-- [ ] **Live support chat with queue system**
 - [ ] Support ticket management
-- [ ] Real-time support agent availability
-- [ ] Support chat history and transcripts
 
 **Technical Implementation:**
 
@@ -828,13 +828,19 @@ Below are the full technical specifications for features listed above. These ser
 - [x] Complete unit test suite for ModerationService (20 tests, 100% coverage)
 - [x] Complete unit test suite for ModerationController (8 tests, 100% coverage)
 - [x] Integration with AuditLogService for moderation actions
+- [x] **SupportChat model (userId, agentId, status, priority, queuePosition)** - v1.1.2
+- [x] **SupportMessage model (chatId, senderId, message, isSystem, timestamp)** - v1.1.2
+- [x] **SupportQueue service with priority-based queue handling** - v1.1.2
+- [x] **WebSocket gateway for live support chat** - v1.1.2
+- [x] **Queue position tracking and notifications** - v1.1.2
+- [x] **Agent assignment algorithm (round-robin with max 3 concurrent)** - v1.1.2
+- [x] **Auto-assignment cron job (every 30 seconds)** - v1.1.2
+- [x] **Complete unit test suite for SupportQueueService (24 tests, 98.59% coverage)** - v1.1.2
+- [x] **Complete unit test suite for SupportChatService (18 tests, 94.52% coverage)** - v1.1.2
+- [x] **Complete unit test suite for SupportChatGateway (16 tests)** - v1.1.2
+- [x] **Complete unit test suite for SupportChatController (8 tests, 100% coverage)** - v1.1.2
+- [x] **Complete unit test suite for SupportCronService (3 tests, 100% coverage)** - v1.1.2
 - [ ] Moderation queue system
-- [ ] **SupportChat model (userId, agentId, status, priority, queuePosition)**
-- [ ] **SupportChatMessage model (chatId, senderId, message, timestamp)**
-- [ ] **SupportQueue service with basic queue handling**
-- [ ] **WebSocket gateway for live support chat**
-- [ ] **Queue position tracking and notifications**
-- [ ] **Agent assignment algorithm (round-robin with availability)**
 
 ### API Endpoints
 
@@ -854,19 +860,19 @@ Below are the full technical specifications for features listed above. These ser
 - `PATCH /moderation/items/flagged/:id/approve` - Approve flagged item (moderators)
 - `DELETE /moderation/items/flagged/:id` - Remove flagged item (moderators)
 - `GET /moderation/stats` - Get moderation statistics (moderators)
+- **`POST /support/chat` - Create new support chat (authenticated)** - v1.1.2
+- **`GET /support/chats` - Get user's chats (authenticated)** - v1.1.2
+- **`GET /support/chats/:id` - Get chat details (authenticated)** - v1.1.2
+- **`POST /support/chats/:id/messages` - Send message (authenticated)** - v1.1.2
+- **`PATCH /support/chats/:id/close` - Close chat (authenticated)** - v1.1.2
+- **`GET /support/agent/chats` - Get agent's assigned chats (support only)** - v1.1.2
+- **`PATCH /support/chats/:id/resolve` - Resolve chat (support only)** - v1.1.2
+- **`GET /support/stats` - Get support statistics (support only)** - v1.1.2
+- **WebSocket events: support:join, support:joinChat, support:leaveChat, support:typing** - v1.1.2
 
 **⏳ TODO:**
 
 - `PATCH /admin/users/:id/suspend` - Suspend user
-- **`POST /support/chat/start` - Start support chat session (enters queue)**
-- **`GET /support/chat/:id` - Get support chat details**
-- **`GET /support/chat/:id/messages` - Get chat messages**
-- **`POST /support/chat/:id/messages` - Send message in support chat**
-- **`PATCH /support/chat/:id/close` - Close support chat**
-- **`GET /support/queue` - Get current queue position (user)**
-- **`GET /support/agent/queue` - Get support queue (agents only)**
-- **`PATCH /support/agent/available` - Toggle agent availability**
-- **`GET /support/history` - Get user's support chat history**
 
 ### Database Schema
 
