@@ -61,7 +61,20 @@ model User {
   deletionRequestedAt DateTime? // When user requested account deletion
   scheduledDeletionAt DateTime? // When account will be permanently deleted
 
+  // Legal Compliance - Age Verification
+  dateOfBirth       DateTime? // User's date of birth for age verification
+  selfDeclaredAge18 Boolean   @default(false) // User declared they are 18+
+  ageVerifiedAt     DateTime? // When age was verified
+
+  // Legal Compliance - Consent Tracking
+  tosAcceptedAt     DateTime? // When Terms of Service were accepted
+  tosVersion        String? // Version of TOS accepted
+  privacyAcceptedAt DateTime? // When Privacy Policy was accepted
+  privacyVersion    String? // Version of Privacy Policy accepted
+  cookieConsent     Json? // Cookie consent preferences {essential, functional, analytics, marketing, timestamp}
+
   // Relations
+  legalConsents           LegalConsent[]
   items                   Item[]
   tradesProposed          Trade[]                  @relation("TradeProposer")
   tradesReceived          Trade[]                  @relation("TradeResponder")
@@ -1009,4 +1022,69 @@ model OAuthAccount {
   @@index([userId])
   @@index([provider])
   @@map("oauth_accounts")
+}
+
+// ============================================
+// LEGAL DOCUMENT TYPE ENUM
+// ============================================
+enum LegalDocumentType {
+  TERMS_OF_SERVICE
+  PRIVACY_POLICY
+  COOKIE_POLICY
+  COMMUNITY_GUIDELINES
+}
+
+// ============================================
+// LEGAL DOCUMENT MODEL (for TOS, Privacy Policy, etc.)
+// ============================================
+model LegalDocument {
+  id      String            @id @default(cuid())
+  type    LegalDocumentType
+  version String // e.g., "1.0.0", "2.1.0"
+
+  // Content in different languages
+  contentEn String @db.Text // English content (Markdown/HTML)
+  contentRo String @db.Text // Romanian content (Markdown/HTML)
+
+  // Metadata
+  title       String
+  summary     String?  @db.Text // Brief summary of changes
+  effectiveAt DateTime // When this version becomes effective
+  isActive    Boolean  @default(false) // Only one active version per type
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([type, version]) // Each type can only have one document per version
+  @@index([type, isActive])
+  @@map("legal_documents")
+}
+
+// ============================================
+// LEGAL CONSENT MODEL (tracks user acceptances)
+// ============================================
+model LegalConsent {
+  id String @id @default(cuid())
+
+  // User who accepted
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // What was accepted
+  documentType    LegalDocumentType
+  documentVersion String
+
+  // Acceptance details
+  acceptedAt DateTime @default(now())
+  ipAddress  String? // IP address at time of acceptance
+  userAgent  String? // Browser/device info at time of acceptance
+
+  // Additional metadata
+  metadata Json? // Any additional context (e.g., source: "registration", "profile_update")
+
+  @@index([userId])
+  @@index([documentType])
+  @@index([userId, documentType])
+  @@map("legal_consents")
 }

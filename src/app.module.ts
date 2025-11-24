@@ -17,6 +17,7 @@ import { DisputesModule } from './disputes/disputes.module';
 import { GdprModule } from './gdpr/gdpr.module';
 import { HealthModule } from './health/health.module';
 import { ItemsModule } from './items/items.module';
+import { LegalModule } from './legal/legal.module';
 import { LikesModule } from './likes/likes.module';
 import { MailModule } from './mail/mail.module';
 import { MessagesModule } from './messages/messages.module';
@@ -123,6 +124,8 @@ import { VerificationModule } from './verification/verification.module';
     SupportModule,
 
     GdprModule,
+
+    LegalModule,
   ],
   providers: [
     {

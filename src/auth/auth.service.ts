@@ -28,7 +28,43 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
-    const { username, email, password, recaptchaToken } = registerDto;
+    const {
+      username,
+      email,
+      password,
+      recaptchaToken,
+      dateOfBirth,
+      selfDeclaredAge18,
+      tosVersion,
+      privacyVersion,
+    } = registerDto;
+
+    // Age verification - calculate age from date of birth
+    const birthDate = new Date(dateOfBirth);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birthDate.getDate())
+    ) {
+      age--;
+    }
+
+    // Check if user is at least 18 years old
+    if (age < 18) {
+      throw new ConflictException(
+        'You must be at least 18 years old to register',
+      );
+    }
+
+    // Verify self-declaration matches
+    if (!selfDeclaredAge18) {
+      throw new ConflictException(
+        'You must confirm that you are 18 years or older',
+      );
+    }
 
     // Verify reCAPTCHA token if provided
     if (recaptchaToken) {
@@ -67,12 +103,20 @@ export class AuthService {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, this.SALT_ROUNDS);
 
-    // Create user
+    // Create user with legal compliance fields
+    const now = new Date();
     const user = await this.prisma.user.create({
       data: {
         username,
         email,
         password: hashedPassword,
+        dateOfBirth: birthDate,
+        selfDeclaredAge18: true,
+        ageVerifiedAt: now,
+        tosAcceptedAt: now,
+        tosVersion,
+        privacyAcceptedAt: now,
+        privacyVersion,
       },
       select: {
         id: true,
@@ -82,7 +126,9 @@ export class AuthService {
       },
     });
 
-    this.logger.log(`New user registered: ${user.username} (${user.email})`);
+    this.logger.log(
+      `New user registered: ${user.username} (${user.email}) - Age: ${age}`,
+    );
 
     // Generate JWT
     const accessToken = await this.generateToken(user);

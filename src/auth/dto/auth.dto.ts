@@ -1,6 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  IsBoolean,
+  IsDateString,
   IsEmail,
+  IsNotEmpty,
   IsOptional,
   IsString,
   Matches,
@@ -56,6 +59,38 @@ export class RegisterDto {
   @IsOptional()
   @IsString()
   recaptchaToken?: string;
+
+  @ApiProperty({
+    example: '1995-06-15',
+    description: 'Date of birth (YYYY-MM-DD) for age verification',
+  })
+  @IsDateString()
+  @IsNotEmpty()
+  dateOfBirth: string;
+
+  @ApiProperty({
+    example: true,
+    description: 'Self-declaration that user is 18 years or older',
+  })
+  @IsBoolean()
+  @IsNotEmpty()
+  selfDeclaredAge18: boolean;
+
+  @ApiProperty({
+    example: '1.0.0',
+    description: 'Version of Terms of Service being accepted',
+  })
+  @IsString()
+  @IsNotEmpty()
+  tosVersion: string;
+
+  @ApiProperty({
+    example: '1.0.0',
+    description: 'Version of Privacy Policy being accepted',
+  })
+  @IsString()
+  @IsNotEmpty()
+  privacyVersion: string;
 }
 
 /**

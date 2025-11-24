@@ -54,6 +54,10 @@ describe('AuthController', () => {
         username: 'newuser',
         email: 'newuser@example.com',
         password: 'SecurePass123!',
+        dateOfBirth: '1995-06-15',
+        selfDeclaredAge18: true,
+        tosVersion: '1.0.0',
+        privacyVersion: '1.0.0',
       };
 
       const expectedResult = {
@@ -82,6 +86,10 @@ describe('AuthController', () => {
         username: 'newuser',
         email: 'existing@example.com',
         password: 'SecurePass123!',
+        dateOfBirth: '1995-06-15',
+        selfDeclaredAge18: true,
+        tosVersion: '1.0.0',
+        privacyVersion: '1.0.0',
       };
 
       mockAuthService.register.mockRejectedValue(
@@ -99,6 +107,10 @@ describe('AuthController', () => {
         username: 'existinguser',
         email: 'new@example.com',
         password: 'SecurePass123!',
+        dateOfBirth: '1995-06-15',
+        selfDeclaredAge18: true,
+        tosVersion: '1.0.0',
+        privacyVersion: '1.0.0',
       };
 
       mockAuthService.register.mockRejectedValue(

@@ -71,6 +71,10 @@ describe('AuthService', () => {
       username: 'newuser',
       email: 'newuser@example.com',
       password: 'password123',
+      dateOfBirth: '1995-06-15',
+      selfDeclaredAge18: true,
+      tosVersion: '1.0.0',
+      privacyVersion: '1.0.0',
     };
 
     it('should register a new user successfully', async () => {
@@ -243,6 +247,142 @@ describe('AuthService', () => {
 
       expect(result.accessToken).toBe(token);
       // Should allow registration on network errors
+    });
+
+    // Age Verification Tests
+    it('should reject registration if user is under 18 years old', async () => {
+      // Create a date exactly 17 years ago from today
+      const seventeenYearsAgo = new Date();
+      seventeenYearsAgo.setFullYear(seventeenYearsAgo.getFullYear() - 17);
+
+      const underageDto = {
+        ...registerDto,
+        dateOfBirth: seventeenYearsAgo.toISOString().split('T')[0], // YYYY-MM-DD format
+      };
+
+      prisma.user.findFirst.mockResolvedValue(null);
+
+      await expect(service.register(underageDto)).rejects.toThrow(
+        'You must be at least 18 years old to register',
+      );
+      expect(prisma.user.create).not.toHaveBeenCalled();
+    });
+
+    it('should reject registration if selfDeclaredAge18 is false', async () => {
+      const noDeclarationDto = {
+        ...registerDto,
+        selfDeclaredAge18: false,
+      };
+
+      prisma.user.findFirst.mockResolvedValue(null);
+
+      await expect(service.register(noDeclarationDto)).rejects.toThrow(
+        'You must confirm that you are 18 years or older',
+      );
+      expect(prisma.user.create).not.toHaveBeenCalled();
+    });
+
+    it('should accept registration if user is exactly 18 years old', async () => {
+      // Create a date exactly 18 years ago from today
+      const eighteenYearsAgo = new Date();
+      eighteenYearsAgo.setFullYear(eighteenYearsAgo.getFullYear() - 18);
+
+      const exactlyEighteenDto = {
+        ...registerDto,
+        dateOfBirth: eighteenYearsAgo.toISOString().split('T')[0], // YYYY-MM-DD format
+      };
+      const hashedPassword = 'hashedPassword123';
+      const token = 'jwt-token';
+
+      prisma.user.findFirst.mockResolvedValue(null);
+      prisma.user.create.mockResolvedValue({
+        ...mockUser,
+        username: exactlyEighteenDto.username,
+        email: exactlyEighteenDto.email,
+        password: hashedPassword,
+        dateOfBirth: new Date(exactlyEighteenDto.dateOfBirth),
+        selfDeclaredAge18: true,
+        ageVerifiedAt: new Date(),
+        tosAcceptedAt: new Date(),
+        tosVersion: exactlyEighteenDto.tosVersion,
+        privacyAcceptedAt: new Date(),
+        privacyVersion: exactlyEighteenDto.privacyVersion,
+      });
+      (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
+      jwtService.sign.mockReturnValue(token);
+
+      const result = await service.register(exactlyEighteenDto);
+
+      expect(result.accessToken).toBe(token);
+      expect(prisma.user.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            dateOfBirth: expect.any(Date),
+            selfDeclaredAge18: true,
+            ageVerifiedAt: expect.any(Date),
+            tosAcceptedAt: expect.any(Date),
+            tosVersion: exactlyEighteenDto.tosVersion,
+            privacyAcceptedAt: expect.any(Date),
+            privacyVersion: exactlyEighteenDto.privacyVersion,
+          }),
+        }),
+      );
+    });
+
+    it('should accept registration if user is over 18 years old (25 years)', async () => {
+      // Create a date exactly 25 years ago from today
+      const twentyFiveYearsAgo = new Date();
+      twentyFiveYearsAgo.setFullYear(twentyFiveYearsAgo.getFullYear() - 25);
+
+      const olderUserDto = {
+        ...registerDto,
+        dateOfBirth: twentyFiveYearsAgo.toISOString().split('T')[0], // YYYY-MM-DD format
+      };
+      const hashedPassword = 'hashedPassword123';
+      const token = 'jwt-token';
+
+      prisma.user.findFirst.mockResolvedValue(null);
+      prisma.user.create.mockResolvedValue({
+        ...mockUser,
+        username: olderUserDto.username,
+        email: olderUserDto.email,
+        password: hashedPassword,
+      });
+      (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
+      jwtService.sign.mockReturnValue(token);
+
+      const result = await service.register(olderUserDto);
+
+      expect(result.accessToken).toBe(token);
+      expect(prisma.user.create).toHaveBeenCalled();
+    });
+
+    it('should store legal consent versions during registration', async () => {
+      const hashedPassword = 'hashedPassword123';
+      const token = 'jwt-token';
+
+      prisma.user.findFirst.mockResolvedValue(null);
+      prisma.user.create.mockResolvedValue({
+        ...mockUser,
+        username: registerDto.username,
+        email: registerDto.email,
+        password: hashedPassword,
+      });
+      (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
+      jwtService.sign.mockReturnValue(token);
+
+      await service.register(registerDto);
+
+      expect(prisma.user.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            tosVersion: '1.0.0',
+            privacyVersion: '1.0.0',
+            tosAcceptedAt: expect.any(Date),
+            privacyAcceptedAt: expect.any(Date),
+          }),
+        }),
+      );
     });
   });
 
