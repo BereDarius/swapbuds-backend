@@ -1,4 +1,5 @@
 import { AppModule } from '@/app.module';
+import { PrismaService } from '@/prisma/prisma.service';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -6,6 +7,7 @@ import request = require('supertest');
 
 describe('SwapBuds API (e2e)', () => {
   let app: INestApplication;
+  let prisma: PrismaService;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -13,6 +15,7 @@ describe('SwapBuds API (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    prisma = app.get(PrismaService);
 
     // Apply the same configuration as main.ts
     const configService = app.get(ConfigService);
@@ -41,6 +44,17 @@ describe('SwapBuds API (e2e)', () => {
   });
 
   afterAll(async () => {
+    // Clean up all test data before closing
+    await prisma.user.deleteMany({
+      where: {
+        OR: [
+          { email: { contains: 'test_' } },
+          { email: { endsWith: '@example.com' } },
+          { username: { contains: 'testuser_' } },
+        ],
+      },
+    });
+
     await app.close();
   });
 
