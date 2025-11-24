@@ -6,6 +6,9 @@ export const mockModerationService = {
   removeItem: jest.fn(),
   getModerationStats: jest.fn(),
   reviewFlag: jest.fn(),
+  bulkApprove: jest.fn(),
+  bulkReject: jest.fn(),
+  bulkRemove: jest.fn(),
 };
 
 export const resetModerationMocks = () => {

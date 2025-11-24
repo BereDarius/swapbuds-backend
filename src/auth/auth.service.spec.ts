@@ -445,6 +445,151 @@ describe('AuthService', () => {
       );
       expect('accessToken' in result && result.accessToken).toBe(token);
     });
+
+    it('should return MFA challenge when user has MFA enabled and no MFA code/token provided', async () => {
+      const userWithMFA = { ...mockUser, mfaEnabled: true };
+
+      prisma.user.findUnique.mockResolvedValue(userWithMFA);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      jwtService.sign.mockReturnValue('mfa-temp-token');
+
+      const result = await service.login(loginDto);
+
+      expect(result).toHaveProperty('mfaRequired', true);
+      expect(result).toHaveProperty('mfaToken', 'mfa-temp-token');
+      expect(jwtService.sign).toHaveBeenCalledWith(
+        { sub: userWithMFA.id, type: 'mfa' },
+        { expiresIn: '5m' },
+      );
+      expect(prisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it('should login successfully when user has MFA enabled and valid MFA code provided', async () => {
+      const loginDtoWithMFA = { ...loginDto, mfaCode: '123456' };
+      const userWithMFA = { ...mockUser, mfaEnabled: true };
+      const token = 'jwt-token';
+
+      prisma.user.findUnique.mockResolvedValue(userWithMFA);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      mockMFAService.verifyMFACode.mockResolvedValue(true);
+      prisma.user.update.mockResolvedValue({
+        ...userWithMFA,
+        lastLoginAt: new Date(),
+      });
+      jwtService.sign.mockReturnValue(token);
+
+      const result = await service.login(loginDtoWithMFA);
+
+      expect(mockMFAService.verifyMFACode).toHaveBeenCalledWith(
+        userWithMFA.id,
+        '123456',
+        false,
+      );
+      expect('accessToken' in result && result.accessToken).toBe(token);
+      expect('user' in result && result.user.email).toBe(userWithMFA.email);
+    });
+
+    it('should throw UnauthorizedException when user has MFA enabled and invalid MFA code provided', async () => {
+      const loginDtoWithMFA = { ...loginDto, mfaCode: 'invalid' };
+      const userWithMFA = { ...mockUser, mfaEnabled: true };
+
+      prisma.user.findUnique.mockResolvedValue(userWithMFA);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      mockMFAService.verifyMFACode.mockResolvedValue(false);
+
+      await expect(service.login(loginDtoWithMFA)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      await expect(service.login(loginDtoWithMFA)).rejects.toThrow(
+        'Invalid MFA code',
+      );
+    });
+
+    it('should login successfully when user has MFA enabled and valid MFA token provided', async () => {
+      const loginDtoWithMFAToken = { ...loginDto, mfaToken: 'valid-mfa-token' };
+      const userWithMFA = { ...mockUser, mfaEnabled: true };
+      const token = 'jwt-token';
+
+      prisma.user.findUnique.mockResolvedValue(userWithMFA);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      jwtService.verify.mockReturnValue({
+        sub: userWithMFA.id,
+        type: 'mfa',
+      });
+      prisma.user.update.mockResolvedValue({
+        ...userWithMFA,
+        lastLoginAt: new Date(),
+      });
+      jwtService.sign.mockReturnValue(token);
+
+      const result = await service.login(loginDtoWithMFAToken);
+
+      expect(jwtService.verify).toHaveBeenCalledWith('valid-mfa-token');
+      expect('accessToken' in result && result.accessToken).toBe(token);
+      expect('user' in result && result.user.email).toBe(userWithMFA.email);
+    });
+
+    it('should throw UnauthorizedException when MFA token has wrong type', async () => {
+      const loginDtoWithMFAToken = {
+        ...loginDto,
+        mfaToken: 'wrong-type-token',
+      };
+      const userWithMFA = { ...mockUser, mfaEnabled: true };
+
+      prisma.user.findUnique.mockResolvedValue(userWithMFA);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      jwtService.verify.mockReturnValue({
+        sub: userWithMFA.id,
+        type: 'access', // Wrong type
+      });
+
+      await expect(service.login(loginDtoWithMFAToken)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      await expect(service.login(loginDtoWithMFAToken)).rejects.toThrow(
+        'Invalid or expired MFA token',
+      );
+    });
+
+    it('should throw UnauthorizedException when MFA token has wrong user ID', async () => {
+      const loginDtoWithMFAToken = {
+        ...loginDto,
+        mfaToken: 'wrong-user-token',
+      };
+      const userWithMFA = { ...mockUser, mfaEnabled: true };
+
+      prisma.user.findUnique.mockResolvedValue(userWithMFA);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      jwtService.verify.mockReturnValue({
+        sub: 'different-user-id',
+        type: 'mfa',
+      });
+
+      await expect(service.login(loginDtoWithMFAToken)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      await expect(service.login(loginDtoWithMFAToken)).rejects.toThrow(
+        'Invalid or expired MFA token',
+      );
+    });
+
+    it('should throw UnauthorizedException when MFA token is expired or invalid', async () => {
+      const loginDtoWithMFAToken = { ...loginDto, mfaToken: 'expired-token' };
+      const userWithMFA = { ...mockUser, mfaEnabled: true };
+
+      prisma.user.findUnique.mockResolvedValue(userWithMFA);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      jwtService.verify.mockImplementation(() => {
+        throw new Error('Token expired');
+      });
+
+      await expect(service.login(loginDtoWithMFAToken)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      await expect(service.login(loginDtoWithMFAToken)).rejects.toThrow(
+        'Invalid or expired MFA token',
+      );
+    });
   });
 
   describe('validateUser', () => {

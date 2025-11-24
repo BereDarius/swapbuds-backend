@@ -569,6 +569,333 @@ describe('MailService', () => {
     });
   });
 
+  describe('sendVerificationSubmitted', () => {
+    it('should send verification submitted email successfully', async () => {
+      mockMailerService.sendMail.mockResolvedValue({ messageId: 'msg-123' });
+
+      await service.sendVerificationSubmitted('user@example.com', 'John Doe');
+
+      expect(mockMailerService.sendMail).toHaveBeenCalledWith({
+        to: 'user@example.com',
+        subject: '📋 Verification Submitted - SwapBuds',
+        template: './verification-submitted',
+        context: {
+          userName: 'John Doe',
+          appUrl: 'http://localhost:3000',
+        },
+      });
+    });
+
+    it('should skip sending when email is disabled', async () => {
+      const mockConfigWithoutCreds = {
+        get: jest.fn().mockReturnValue(undefined),
+      };
+
+      const module = await Test.createTestingModule({
+        providers: [
+          MailService,
+          {
+            provide: MailerService,
+            useValue: mockMailerService,
+          },
+          {
+            provide: ConfigService,
+            useValue: mockConfigWithoutCreds,
+          },
+        ],
+      }).compile();
+
+      const disabledService = module.get<MailService>(MailService);
+
+      await disabledService.sendVerificationSubmitted(
+        'user@example.com',
+        'John Doe',
+      );
+
+      expect(mockMailerService.sendMail).not.toHaveBeenCalled();
+    });
+
+    it('should handle errors gracefully', async () => {
+      mockMailerService.sendMail.mockRejectedValue(new Error('SMTP error'));
+      const errorSpy = jest.spyOn(service['logger'], 'error');
+
+      await service.sendVerificationSubmitted('user@example.com', 'John Doe');
+
+      expect(errorSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('sendVerificationApproved', () => {
+    it('should send verification approved email successfully', async () => {
+      mockMailerService.sendMail.mockResolvedValue({ messageId: 'msg-123' });
+
+      await service.sendVerificationApproved('user@example.com', 'Jane Smith');
+
+      expect(mockMailerService.sendMail).toHaveBeenCalledWith({
+        to: 'user@example.com',
+        subject: '✅ Verification Approved - SwapBuds',
+        template: './verification-approved',
+        context: {
+          userName: 'Jane Smith',
+          appUrl: 'http://localhost:3000',
+        },
+      });
+    });
+
+    it('should skip sending when email is disabled', async () => {
+      const mockConfigWithoutCreds = {
+        get: jest.fn().mockReturnValue(undefined),
+      };
+
+      const module = await Test.createTestingModule({
+        providers: [
+          MailService,
+          {
+            provide: MailerService,
+            useValue: mockMailerService,
+          },
+          {
+            provide: ConfigService,
+            useValue: mockConfigWithoutCreds,
+          },
+        ],
+      }).compile();
+
+      const disabledService = module.get<MailService>(MailService);
+
+      await disabledService.sendVerificationApproved(
+        'user@example.com',
+        'Jane Smith',
+      );
+
+      expect(mockMailerService.sendMail).not.toHaveBeenCalled();
+    });
+
+    it('should handle errors gracefully', async () => {
+      mockMailerService.sendMail.mockRejectedValue(new Error('Network error'));
+      const errorSpy = jest.spyOn(service['logger'], 'error');
+
+      await service.sendVerificationApproved('user@example.com', 'Jane Smith');
+
+      expect(errorSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('sendVerificationRejected', () => {
+    it('should send verification rejected email successfully', async () => {
+      mockMailerService.sendMail.mockResolvedValue({ messageId: 'msg-123' });
+
+      await service.sendVerificationRejected(
+        'user@example.com',
+        'Bob Johnson',
+        'Documents were not clear',
+      );
+
+      expect(mockMailerService.sendMail).toHaveBeenCalledWith({
+        to: 'user@example.com',
+        subject: '❌ Verification Rejected - SwapBuds',
+        template: './verification-rejected',
+        context: {
+          userName: 'Bob Johnson',
+          rejectionReason: 'Documents were not clear',
+          appUrl: 'http://localhost:3000',
+        },
+      });
+    });
+
+    it('should skip sending when email is disabled', async () => {
+      const mockConfigWithoutCreds = {
+        get: jest.fn().mockReturnValue(undefined),
+      };
+
+      const module = await Test.createTestingModule({
+        providers: [
+          MailService,
+          {
+            provide: MailerService,
+            useValue: mockMailerService,
+          },
+          {
+            provide: ConfigService,
+            useValue: mockConfigWithoutCreds,
+          },
+        ],
+      }).compile();
+
+      const disabledService = module.get<MailService>(MailService);
+
+      await disabledService.sendVerificationRejected(
+        'user@example.com',
+        'Bob Johnson',
+        'Reason',
+      );
+
+      expect(mockMailerService.sendMail).not.toHaveBeenCalled();
+    });
+
+    it('should handle errors gracefully', async () => {
+      mockMailerService.sendMail.mockRejectedValue(new Error('Email error'));
+      const errorSpy = jest.spyOn(service['logger'], 'error');
+
+      await service.sendVerificationRejected(
+        'user@example.com',
+        'Bob Johnson',
+        'Reason',
+      );
+
+      expect(errorSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('sendAccountSuspendedUnderage', () => {
+    it('should send account suspended underage email successfully', async () => {
+      mockMailerService.sendMail.mockResolvedValue({ messageId: 'msg-123' });
+      mockConfigService.get.mockImplementation((key: string) => {
+        const config = {
+          MAIL_USER: 'test@example.com',
+          MAIL_PASSWORD: 'testpassword',
+          FRONTEND_URL: 'http://localhost:3000',
+          SUPPORT_EMAIL: 'support@swapbuds.com',
+        };
+        return config[key];
+      });
+
+      await service.sendAccountSuspendedUnderage(
+        'minor@example.com',
+        'Young User',
+      );
+
+      expect(mockMailerService.sendMail).toHaveBeenCalledWith({
+        to: 'minor@example.com',
+        subject: '🚫 Account Suspended - SwapBuds',
+        template: './account-suspended-underage',
+        context: {
+          userName: 'Young User',
+          supportEmail: 'support@swapbuds.com',
+        },
+      });
+    });
+
+    it('should skip sending when email is disabled', async () => {
+      const mockConfigWithoutCreds = {
+        get: jest.fn().mockReturnValue(undefined),
+      };
+
+      const module = await Test.createTestingModule({
+        providers: [
+          MailService,
+          {
+            provide: MailerService,
+            useValue: mockMailerService,
+          },
+          {
+            provide: ConfigService,
+            useValue: mockConfigWithoutCreds,
+          },
+        ],
+      }).compile();
+
+      const disabledService = module.get<MailService>(MailService);
+
+      await disabledService.sendAccountSuspendedUnderage(
+        'minor@example.com',
+        'Young User',
+      );
+
+      expect(mockMailerService.sendMail).not.toHaveBeenCalled();
+    });
+
+    it('should handle errors gracefully', async () => {
+      mockMailerService.sendMail.mockRejectedValue(new Error('Failed to send'));
+      const errorSpy = jest.spyOn(service['logger'], 'error');
+
+      await service.sendAccountSuspendedUnderage(
+        'minor@example.com',
+        'Young User',
+      );
+
+      expect(errorSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('sendAdminVerificationAlert', () => {
+    it('should send admin verification alert email successfully', async () => {
+      mockMailerService.sendMail.mockResolvedValue({ messageId: 'msg-123' });
+
+      const verificationData = {
+        username: 'newuser',
+        userId: 'user-123',
+        verificationId: 'verify-456',
+      };
+
+      await service.sendAdminVerificationAlert(
+        'admin@swapbuds.com',
+        'Admin Name',
+        verificationData,
+      );
+
+      expect(mockMailerService.sendMail).toHaveBeenCalledWith({
+        to: 'admin@swapbuds.com',
+        subject: '🔔 New Verification Submission - SwapBuds Admin',
+        template: './admin-verification-alert',
+        context: {
+          adminName: 'Admin Name',
+          username: 'newuser',
+          userId: 'user-123',
+          verificationUrl:
+            'http://localhost:3000/admin/verifications/verify-456',
+        },
+      });
+    });
+
+    it('should skip sending when email is disabled', async () => {
+      const mockConfigWithoutCreds = {
+        get: jest.fn().mockReturnValue(undefined),
+      };
+
+      const module = await Test.createTestingModule({
+        providers: [
+          MailService,
+          {
+            provide: MailerService,
+            useValue: mockMailerService,
+          },
+          {
+            provide: ConfigService,
+            useValue: mockConfigWithoutCreds,
+          },
+        ],
+      }).compile();
+
+      const disabledService = module.get<MailService>(MailService);
+
+      await disabledService.sendAdminVerificationAlert(
+        'admin@swapbuds.com',
+        'Admin',
+        {
+          username: 'user',
+          userId: '1',
+          verificationId: '2',
+        },
+      );
+
+      expect(mockMailerService.sendMail).not.toHaveBeenCalled();
+    });
+
+    it('should handle errors gracefully', async () => {
+      mockMailerService.sendMail.mockRejectedValue(new Error('Send failed'));
+      const errorSpy = jest.spyOn(service['logger'], 'error');
+
+      await service.sendAdminVerificationAlert('admin@swapbuds.com', 'Admin', {
+        username: 'user',
+        userId: '1',
+        verificationId: '2',
+      });
+
+      expect(errorSpy).toHaveBeenCalled();
+    });
+  });
+
   describe('error handling', () => {
     it('should not throw errors when email fails', async () => {
       mockMailerService.sendMail.mockRejectedValue(

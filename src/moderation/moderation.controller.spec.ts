@@ -232,4 +232,108 @@ describe('ModerationController', () => {
       expect(mockModerationService.getModerationStats).toHaveBeenCalled();
     });
   });
+
+  describe('bulkApprove', () => {
+    it('should bulk approve flagged items', async () => {
+      const dto = {
+        flaggedItemIds: ['flag-1', 'flag-2', 'flag-3'],
+        notes: 'Approved after review',
+      };
+      const req = {
+        user: { userId: 'moderator-1' },
+        ip: '127.0.0.1',
+      };
+
+      const mockResult = {
+        approved: 3,
+        failed: 0,
+        results: [
+          { id: 'flag-1', status: 'approved' },
+          { id: 'flag-2', status: 'approved' },
+          { id: 'flag-3', status: 'approved' },
+        ],
+      };
+
+      mockModerationService.bulkApprove.mockResolvedValue(mockResult);
+
+      const result = await controller.bulkApprove(dto, req as any);
+
+      expect(result).toEqual(mockResult);
+      expect(mockModerationService.bulkApprove).toHaveBeenCalledWith(
+        dto.flaggedItemIds,
+        req.user.userId,
+        dto.notes,
+        req.ip,
+      );
+    });
+  });
+
+  describe('bulkReject', () => {
+    it('should bulk reject flagged items', async () => {
+      const dto = {
+        flaggedItemIds: ['flag-1', 'flag-2'],
+        reason: 'Not a valid flag',
+      };
+      const req = {
+        user: { userId: 'moderator-1' },
+        ip: '127.0.0.1',
+      };
+
+      const mockResult = {
+        rejected: 2,
+        failed: 0,
+        results: [
+          { id: 'flag-1', status: 'rejected' },
+          { id: 'flag-2', status: 'rejected' },
+        ],
+      };
+
+      mockModerationService.bulkReject.mockResolvedValue(mockResult);
+
+      const result = await controller.bulkReject(dto, req as any);
+
+      expect(result).toEqual(mockResult);
+      expect(mockModerationService.bulkReject).toHaveBeenCalledWith(
+        dto.flaggedItemIds,
+        req.user.userId,
+        dto.reason,
+        req.ip,
+      );
+    });
+  });
+
+  describe('bulkRemove', () => {
+    it('should bulk remove flagged items', async () => {
+      const dto = {
+        flaggedItemIds: ['flag-1', 'flag-2', 'flag-3'],
+        reason: 'Confirmed violations',
+      };
+      const req = {
+        user: { userId: 'moderator-1' },
+        ip: '127.0.0.1',
+      };
+
+      const mockResult = {
+        removed: 3,
+        failed: 0,
+        results: [
+          { id: 'flag-1', status: 'removed' },
+          { id: 'flag-2', status: 'removed' },
+          { id: 'flag-3', status: 'removed' },
+        ],
+      };
+
+      mockModerationService.bulkRemove.mockResolvedValue(mockResult);
+
+      const result = await controller.bulkRemove(dto, req as any);
+
+      expect(result).toEqual(mockResult);
+      expect(mockModerationService.bulkRemove).toHaveBeenCalledWith(
+        dto.flaggedItemIds,
+        req.user.userId,
+        dto.reason,
+        req.ip,
+      );
+    });
+  });
 });

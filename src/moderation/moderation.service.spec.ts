@@ -519,4 +519,293 @@ describe('ModerationService', () => {
       expect(result.recentFlags).toEqual([]);
     });
   });
+
+  describe('bulkApprove', () => {
+    it('should bulk approve flagged items successfully', async () => {
+      const flaggedItemIds = ['flag-1', 'flag-2', 'flag-3'];
+      const moderatorId = 'mod-1';
+      const notes = 'All reviewed and approved';
+
+      const mockFlaggedItems = [
+        {
+          id: 'flag-1',
+          itemId: 'item-1',
+          status: ModerationStatus.PENDING,
+          reason: FlagReason.SPAM,
+          item: { id: 'item-1', title: 'Item 1' },
+        },
+        {
+          id: 'flag-2',
+          itemId: 'item-2',
+          status: ModerationStatus.PENDING,
+          reason: FlagReason.SCAM,
+          item: { id: 'item-2', title: 'Item 2' },
+        },
+        {
+          id: 'flag-3',
+          itemId: 'item-3',
+          status: ModerationStatus.PENDING,
+          reason: FlagReason.SPAM,
+          item: { id: 'item-3', title: 'Item 3' },
+        },
+      ];
+
+      mockPrismaService.flaggedItem.findMany.mockResolvedValue(
+        mockFlaggedItems,
+      );
+      mockPrismaService.flaggedItem.updateMany.mockResolvedValue({ count: 3 });
+
+      const result = await service.bulkApprove(
+        flaggedItemIds,
+        moderatorId,
+        notes,
+        '127.0.0.1',
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.approvedCount).toBe(3);
+      expect(mockPrismaService.flaggedItem.findMany).toHaveBeenCalledWith({
+        where: { id: { in: flaggedItemIds } },
+        include: { item: true },
+      });
+      expect(mockPrismaService.flaggedItem.updateMany).toHaveBeenCalledWith({
+        where: { id: { in: flaggedItemIds } },
+        data: {
+          status: ModerationStatus.APPROVED,
+          reviewedById: moderatorId,
+          reviewedAt: expect.any(Date),
+          reviewNotes: notes,
+        },
+      });
+      expect(mockAuditLogService.log).toHaveBeenCalledTimes(3);
+    });
+
+    it('should throw NotFoundException if some flagged items not found', async () => {
+      const flaggedItemIds = ['flag-1', 'flag-2', 'flag-3'];
+      const moderatorId = 'mod-1';
+
+      mockPrismaService.flaggedItem.findMany.mockResolvedValue([
+        {
+          id: 'flag-1',
+          itemId: 'item-1',
+          status: ModerationStatus.PENDING,
+        },
+      ]);
+
+      await expect(
+        service.bulkApprove(flaggedItemIds, moderatorId, 'notes'),
+      ).rejects.toThrow(NotFoundException);
+      await expect(
+        service.bulkApprove(flaggedItemIds, moderatorId, 'notes'),
+      ).rejects.toThrow('One or more flagged items not found');
+    });
+
+    it('should throw BadRequestException if items are not pending', async () => {
+      const flaggedItemIds = ['flag-1', 'flag-2'];
+      const moderatorId = 'mod-1';
+
+      mockPrismaService.flaggedItem.findMany.mockResolvedValue([
+        {
+          id: 'flag-1',
+          itemId: 'item-1',
+          status: ModerationStatus.APPROVED,
+          item: {},
+        },
+        {
+          id: 'flag-2',
+          itemId: 'item-2',
+          status: ModerationStatus.PENDING,
+          item: {},
+        },
+      ]);
+
+      await expect(
+        service.bulkApprove(flaggedItemIds, moderatorId, 'notes'),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.bulkApprove(flaggedItemIds, moderatorId, 'notes'),
+      ).rejects.toThrow('Cannot approve items that are not pending');
+    });
+  });
+
+  describe('bulkReject', () => {
+    it('should bulk reject flagged items successfully', async () => {
+      const flaggedItemIds = ['flag-1', 'flag-2'];
+      const moderatorId = 'mod-1';
+      const reason = 'Not a valid violation';
+
+      const mockFlaggedItems = [
+        {
+          id: 'flag-1',
+          itemId: 'item-1',
+          status: ModerationStatus.PENDING,
+          reason: FlagReason.SPAM,
+          item: { id: 'item-1' },
+        },
+        {
+          id: 'flag-2',
+          itemId: 'item-2',
+          status: ModerationStatus.PENDING,
+          reason: FlagReason.INAPPROPRIATE,
+          item: { id: 'item-2' },
+        },
+      ];
+
+      mockPrismaService.flaggedItem.findMany.mockResolvedValue(
+        mockFlaggedItems,
+      );
+      mockPrismaService.flaggedItem.updateMany.mockResolvedValue({ count: 2 });
+
+      const result = await service.bulkReject(
+        flaggedItemIds,
+        moderatorId,
+        reason,
+        '127.0.0.1',
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.rejectedCount).toBe(2);
+      expect(mockPrismaService.flaggedItem.updateMany).toHaveBeenCalledWith({
+        where: { id: { in: flaggedItemIds } },
+        data: {
+          status: ModerationStatus.APPROVED,
+          reviewedById: moderatorId,
+          reviewedAt: expect.any(Date),
+          reviewNotes: `Rejected: ${reason}`,
+        },
+      });
+      expect(mockAuditLogService.log).toHaveBeenCalledTimes(2);
+    });
+
+    it('should throw NotFoundException if some flagged items not found', async () => {
+      const flaggedItemIds = ['flag-1', 'flag-2'];
+      const moderatorId = 'mod-1';
+
+      mockPrismaService.flaggedItem.findMany.mockResolvedValue([]);
+
+      await expect(
+        service.bulkReject(flaggedItemIds, moderatorId, 'reason'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw BadRequestException if items are not pending', async () => {
+      const flaggedItemIds = ['flag-1'];
+      const moderatorId = 'mod-1';
+
+      mockPrismaService.flaggedItem.findMany.mockResolvedValue([
+        {
+          id: 'flag-1',
+          itemId: 'item-1',
+          status: ModerationStatus.REMOVED,
+          item: {},
+        },
+      ]);
+
+      await expect(
+        service.bulkReject(flaggedItemIds, moderatorId, 'reason'),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.bulkReject(flaggedItemIds, moderatorId, 'reason'),
+      ).rejects.toThrow('Cannot reject items that are not pending');
+    });
+  });
+
+  describe('bulkRemove', () => {
+    it('should bulk remove flagged items successfully', async () => {
+      const flaggedItemIds = ['flag-1', 'flag-2'];
+      const moderatorId = 'mod-1';
+      const reason = 'Confirmed violations';
+
+      const mockFlaggedItems = [
+        {
+          id: 'flag-1',
+          itemId: 'item-1',
+          status: ModerationStatus.PENDING,
+          reason: FlagReason.SCAM,
+          item: { id: 'item-1' },
+        },
+        {
+          id: 'flag-2',
+          itemId: 'item-2',
+          status: ModerationStatus.PENDING,
+          reason: FlagReason.PROHIBITED,
+          item: { id: 'item-2' },
+        },
+      ];
+
+      mockPrismaService.flaggedItem.findMany.mockResolvedValue(
+        mockFlaggedItems,
+      );
+      mockPrismaService.item.updateMany.mockResolvedValue({ count: 2 });
+      mockPrismaService.flaggedItem.updateMany.mockResolvedValue({ count: 2 });
+
+      const result = await service.bulkRemove(
+        flaggedItemIds,
+        moderatorId,
+        reason,
+        '127.0.0.1',
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.removedCount).toBe(2);
+      expect(mockPrismaService.item.updateMany).toHaveBeenCalledWith({
+        where: { id: { in: ['item-1', 'item-2'] } },
+        data: { status: ItemStatus.REMOVED },
+      });
+      expect(mockPrismaService.flaggedItem.updateMany).toHaveBeenCalledWith({
+        where: { id: { in: flaggedItemIds } },
+        data: {
+          status: ModerationStatus.REMOVED,
+          reviewedById: moderatorId,
+          reviewedAt: expect.any(Date),
+          reviewNotes: reason,
+        },
+      });
+      expect(mockAuditLogService.log).toHaveBeenCalledTimes(2);
+    });
+
+    it('should throw NotFoundException if some flagged items not found', async () => {
+      const flaggedItemIds = ['flag-1', 'flag-2', 'flag-3'];
+      const moderatorId = 'mod-1';
+
+      mockPrismaService.flaggedItem.findMany.mockResolvedValue([
+        {
+          id: 'flag-1',
+          itemId: 'item-1',
+          status: ModerationStatus.PENDING,
+        },
+      ]);
+
+      await expect(
+        service.bulkRemove(flaggedItemIds, moderatorId, 'reason'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw BadRequestException if items are not pending', async () => {
+      const flaggedItemIds = ['flag-1', 'flag-2'];
+      const moderatorId = 'mod-1';
+
+      mockPrismaService.flaggedItem.findMany.mockResolvedValue([
+        {
+          id: 'flag-1',
+          itemId: 'item-1',
+          status: ModerationStatus.PENDING,
+          item: {},
+        },
+        {
+          id: 'flag-2',
+          itemId: 'item-2',
+          status: ModerationStatus.APPROVED,
+          item: {},
+        },
+      ]);
+
+      await expect(
+        service.bulkRemove(flaggedItemIds, moderatorId, 'reason'),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.bulkRemove(flaggedItemIds, moderatorId, 'reason'),
+      ).rejects.toThrow('Cannot remove items that are not pending');
+    });
+  });
 });
