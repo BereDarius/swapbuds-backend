@@ -54,4 +54,34 @@ export default () => ({
       'https://www.google.com/recaptcha/api/siteverify', // Google verification endpoint
     minScore: parseFloat(process.env.RECAPTCHA_MIN_SCORE) || 0.5, // Minimum acceptable score (0.0-1.0)
   },
+
+  // OAuth provider settings
+  oauth: {
+    // Google OAuth
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackUrl:
+        process.env.GOOGLE_CALLBACK_URL ||
+        'http://localhost:3001/api/auth/google/callback',
+    },
+    // Facebook OAuth
+    facebook: {
+      appId: process.env.FACEBOOK_APP_ID,
+      appSecret: process.env.FACEBOOK_APP_SECRET,
+      callbackUrl:
+        process.env.FACEBOOK_CALLBACK_URL ||
+        'http://localhost:3001/api/auth/facebook/callback',
+    },
+    // Apple OAuth
+    apple: {
+      clientId: process.env.APPLE_CLIENT_ID, // Service ID from Apple
+      teamId: process.env.APPLE_TEAM_ID, // 10-character Team ID
+      keyId: process.env.APPLE_KEY_ID, // 10-character Key ID
+      privateKey: process.env.APPLE_PRIVATE_KEY, // Private key content or path
+      callbackUrl:
+        process.env.APPLE_CALLBACK_URL ||
+        'http://localhost:3001/api/auth/apple/callback',
+    },
+  },
 });

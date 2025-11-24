@@ -1,3 +1,4 @@
+import { MFAService } from '@/auth/mfa.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { RecaptchaService } from '@/recaptcha/recaptcha.service';
 import { mockUser } from '@/test/fixtures/user.fixture';
@@ -20,6 +21,15 @@ describe('AuthService', () => {
   let jwtService: typeof mockJwtService;
   let recaptchaService: jest.Mocked<RecaptchaService>;
 
+  const mockMFAService = {
+    setupMFA: jest.fn(),
+    verifyAndEnableMFA: jest.fn(),
+    verifyMFACode: jest.fn(),
+    disableMFA: jest.fn(),
+    regenerateBackupCodes: jest.fn(),
+    isMFAEnabled: jest.fn().mockResolvedValue(false),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -39,6 +49,10 @@ describe('AuthService', () => {
         {
           provide: RecaptchaService,
           useValue: mockRecaptchaService,
+        },
+        {
+          provide: MFAService,
+          useValue: mockMFAService,
         },
       ],
     }).compile();
@@ -259,8 +273,8 @@ describe('AuthService', () => {
         mockUser.password,
       );
       expect(prisma.user.update).toHaveBeenCalled();
-      expect(result.accessToken).toBe(token);
-      expect(result.user.email).toBe(mockUser.email);
+      expect('accessToken' in result && result.accessToken).toBe(token);
+      expect('user' in result && result.user.email).toBe(mockUser.email);
     });
 
     it('should throw UnauthorizedException if user not found', async () => {
@@ -327,8 +341,8 @@ describe('AuthService', () => {
         'valid-token',
         'login',
       );
-      expect(result.accessToken).toBe(token);
-      expect(result.user.email).toBe(mockUser.email);
+      expect('accessToken' in result && result.accessToken).toBe(token);
+      expect('user' in result && result.user.email).toBe(mockUser.email);
     });
 
     it('should login successfully even with low reCAPTCHA score (graceful handling)', async () => {
@@ -355,7 +369,7 @@ describe('AuthService', () => {
       const result = await service.login(loginDtoWithToken);
 
       expect(recaptchaService.verifyToken).toHaveBeenCalled();
-      expect(result.accessToken).toBe(token);
+      expect('accessToken' in result && result.accessToken).toBe(token);
       // Should still allow login despite low score (graceful handling)
     });
 
@@ -373,7 +387,7 @@ describe('AuthService', () => {
       const result = await service.login(loginDto);
 
       expect(recaptchaService.verifyToken).not.toHaveBeenCalled();
-      expect(result.accessToken).toBe(token);
+      expect('accessToken' in result && result.accessToken).toBe(token);
     });
 
     it('should login successfully when reCAPTCHA verification fails due to network error', async () => {
@@ -399,7 +413,7 @@ describe('AuthService', () => {
 
       const result = await service.login(loginDtoWithToken);
 
-      expect(result.accessToken).toBe(token);
+      expect('accessToken' in result && result.accessToken).toBe(token);
       // Should allow login on network errors
     });
 
@@ -429,7 +443,7 @@ describe('AuthService', () => {
         'high-score-token',
         'login',
       );
-      expect(result.accessToken).toBe(token);
+      expect('accessToken' in result && result.accessToken).toBe(token);
     });
   });
 

@@ -1,4 +1,6 @@
 import { AuthResponseDto, LoginDto, RegisterDto } from '@/auth/dto/auth.dto';
+import { MFARequiredResponseDto } from '@/auth/dto/mfa.dto';
+import { MFAService } from '@/auth/mfa.service';
 import { JwtPayload } from '@/auth/strategies/jwt.strategy';
 import { PrismaService } from '@/prisma/prisma.service';
 import { RecaptchaService } from '@/recaptcha/recaptcha.service';
@@ -22,6 +24,7 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
     private recaptchaService: RecaptchaService,
+    private mfaService: MFAService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
@@ -90,8 +93,10 @@ export class AuthService {
     };
   }
 
-  async login(loginDto: LoginDto): Promise<AuthResponseDto> {
-    const { email, password, recaptchaToken } = loginDto;
+  async login(
+    loginDto: LoginDto,
+  ): Promise<AuthResponseDto | MFARequiredResponseDto> {
+    const { email, password, recaptchaToken, mfaCode, mfaToken } = loginDto;
 
     // Verify reCAPTCHA token if provided
     if (recaptchaToken) {
@@ -131,6 +136,43 @@ export class AuthService {
 
     if (!user.isActive) {
       throw new UnauthorizedException('Account is deactivated');
+    }
+
+    // Check if MFA is enabled
+    if (user.mfaEnabled) {
+      // If MFA code is provided, verify it
+      if (mfaCode) {
+        const isMFAValid = await this.mfaService.verifyMFACode(
+          user.id,
+          mfaCode,
+          false,
+        );
+        if (!isMFAValid) {
+          throw new UnauthorizedException('Invalid MFA code');
+        }
+      } else if (mfaToken) {
+        // Verify MFA token validity (temporary token from initial login)
+        try {
+          const decoded = this.jwtService.verify(mfaToken);
+          if (decoded.type !== 'mfa' || decoded.sub !== user.id) {
+            throw new UnauthorizedException('Invalid MFA token');
+          }
+        } catch {
+          throw new UnauthorizedException('Invalid or expired MFA token');
+        }
+      } else {
+        // MFA is required but not provided, return MFA challenge
+        const mfaTempToken = this.jwtService.sign(
+          { sub: user.id, type: 'mfa' },
+          { expiresIn: '5m' },
+        );
+
+        return {
+          mfaRequired: true,
+          mfaToken: mfaTempToken,
+          message: 'Please enter your 6-digit authentication code',
+        };
+      }
     }
 
     // Update last login

@@ -53,6 +53,10 @@ model User {
   isVerified Boolean @default(false)
   isAdmin    Boolean @default(false) // Deprecated: use role instead
 
+  // Multi-Factor Authentication
+  mfaEnabled Boolean    @default(false)
+  mfaSecret  MFASecret?
+
   // GDPR - Account Deletion
   deletionRequestedAt DateTime? // When user requested account deletion
   scheduledDeletionAt DateTime? // When account will be permanently deleted
@@ -82,6 +86,7 @@ model User {
   supportChatsAsUser      SupportChat[]            @relation("SupportChatUser")
   supportChatsAsAgent     SupportChat[]            @relation("SupportChatAgent")
   supportMessages         SupportMessage[]         @relation("SupportMessageSender")
+  oauthAccounts           OAuthAccount[]
 
   @@index([email])
   @@index([username])
@@ -933,4 +938,75 @@ model SupportMessage {
   @@index([senderId])
   @@index([createdAt])
   @@map("support_messages")
+}
+
+// ============================================
+// MFA (Multi-Factor Authentication) MODEL
+// ============================================
+model MFASecret {
+  id String @id @default(cuid())
+
+  // User this MFA secret belongs to
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // TOTP Secret (encrypted)
+  secret String
+
+  // Backup codes (encrypted, comma-separated)
+  backupCodes String?
+
+  // Recovery information
+  recoveryEmail String?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("mfa_secrets")
+}
+
+// ============================================
+// OAuth PROVIDER ENUM
+// ============================================
+enum OAuthProvider {
+  GOOGLE
+  FACEBOOK
+  APPLE
+}
+
+// ============================================
+// OAuth ACCOUNT MODEL (for Social Login & Account Linking)
+// ============================================
+model OAuthAccount {
+  id String @id @default(cuid())
+
+  // User this OAuth account is linked to
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Provider information
+  provider   OAuthProvider
+  providerId String // The user's ID from the OAuth provider
+
+  // Provider profile data
+  email        String?
+  name         String?
+  picture      String?
+  accessToken  String? // Encrypted
+  refreshToken String? // Encrypted
+  tokenExpiry  DateTime?
+
+  // Metadata
+  profileData Json? // Store additional provider-specific data
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([provider, providerId]) // One account per provider per provider user
+  @@index([userId])
+  @@index([provider])
+  @@map("oauth_accounts")
 }

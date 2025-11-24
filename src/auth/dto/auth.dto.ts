@@ -80,6 +80,24 @@ export class LoginDto {
   @IsOptional()
   @IsString()
   recaptchaToken?: string;
+
+  @ApiProperty({
+    example: '123456',
+    required: false,
+    description: 'MFA code if user has MFA enabled',
+  })
+  @IsOptional()
+  @IsString()
+  mfaCode?: string;
+
+  @ApiProperty({
+    example: 'tmp_abc123',
+    required: false,
+    description: 'MFA token from initial login response',
+  })
+  @IsOptional()
+  @IsString()
+  mfaToken?: string;
 }
 
 /**
