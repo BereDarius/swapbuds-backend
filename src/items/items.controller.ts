@@ -54,7 +54,7 @@ export class ItemsController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async create(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
     @Body() createItemDto: CreateItemDto,
   ): Promise<ItemResponseDto> {
     return this.itemsService.create(userId, createItemDto);
@@ -228,7 +228,7 @@ export class ItemsController {
   @ApiResponse({ status: 404, description: 'Item not found' })
   async update(
     @Param('id') id: string,
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
     @Body() updateItemDto: UpdateItemDto,
   ): Promise<ItemResponseDto> {
     return this.itemsService.update(id, userId, updateItemDto);
@@ -248,7 +248,7 @@ export class ItemsController {
   @ApiResponse({ status: 404, description: 'Item not found' })
   async remove(
     @Param('id') id: string,
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
   ): Promise<void> {
     return this.itemsService.remove(id, userId);
   }
@@ -277,7 +277,7 @@ export class ItemsController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getRecommendations(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
     @Query('limit') limit?: string,
   ) {
     const limitNum = limit ? parseInt(limit, 10) : 10;

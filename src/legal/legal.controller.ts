@@ -180,9 +180,9 @@ export class LegalController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async acceptLegalDocument(
     @Body(ValidationPipe) acceptDto: AcceptLegalDocumentDto,
-    @Req() req: Request & { user: { sub: string } },
+    @Req() req: Request & { user: { id: string } },
   ) {
-    const userId = req.user.sub;
+    const userId = req.user.id;
     const ipAddress = req.ip;
     const userAgent = req.headers['user-agent'];
 
@@ -214,10 +214,10 @@ export class LegalController {
   @ApiResponse({ status: 200, description: 'Consent history returned' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getUserConsents(
-    @Req() req: Request & { user: { sub: string } },
+    @Req() req: Request & { user: { id: string } },
     @Query('type') type?: LegalDocumentType,
   ) {
-    const userId = req.user.sub;
+    const userId = req.user.id;
     return this.legalService.getUserConsents(userId, type);
   }
 
@@ -234,9 +234,9 @@ export class LegalController {
   @ApiResponse({ status: 200, description: 'Acceptance status returned' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async checkAcceptanceRequired(
-    @Req() req: Request & { user: { sub: string } },
+    @Req() req: Request & { user: { id: string } },
   ) {
-    const userId = req.user.sub;
+    const userId = req.user.id;
     return this.legalService.checkLegalAcceptanceRequired(userId);
   }
 
@@ -254,9 +254,9 @@ export class LegalController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async updateCookieConsent(
     @Body(ValidationPipe) consentDto: CookieConsentDto,
-    @Req() req: Request & { user: { sub: string } },
+    @Req() req: Request & { user: { id: string } },
   ) {
-    const userId = req.user.sub;
+    const userId = req.user.id;
     return this.legalService.updateCookieConsent(userId, consentDto);
   }
 
@@ -272,8 +272,8 @@ export class LegalController {
   })
   @ApiResponse({ status: 200, description: 'Cookie consent returned' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getCookieConsent(@Req() req: Request & { user: { sub: string } }) {
-    const userId = req.user.sub;
+  async getCookieConsent(@Req() req: Request & { user: { id: string } }) {
+    const userId = req.user.id;
     return this.legalService.getCookieConsent(userId);
   }
 }

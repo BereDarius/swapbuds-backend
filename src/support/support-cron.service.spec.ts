@@ -1,7 +1,7 @@
+import { SupportQueueService } from '@/support/support-queue.service';
 import { mockSupportQueueService } from '@/test/mocks/support.mock';
 import { Test, TestingModule } from '@nestjs/testing';
 import { SupportCronService } from './support-cron.service';
-import { SupportQueueService } from './support-queue.service';
 
 describe('SupportCronService', () => {
   let service: SupportCronService;

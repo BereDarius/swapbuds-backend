@@ -21,7 +21,7 @@ import {
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DeliveryMethod, ItemStatus, TradeStatus } from '@prisma/client';
-import { TradeExpirationService } from './trade-expiration.service';
+import { TradeExpirationService } from './trades-expiration.service';
 import { TradesService } from './trades.service';
 
 describe('TradesService', () => {

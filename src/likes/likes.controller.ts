@@ -43,7 +43,7 @@ export class LikesController {
     description: 'Item already liked',
   })
   async likeItem(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
     @Param('itemId') itemId: string,
   ) {
     await this.likesService.likeItem(userId, itemId);
@@ -66,7 +66,7 @@ export class LikesController {
     description: 'Like not found',
   })
   async unlikeItem(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
     @Param('itemId') itemId: string,
   ) {
     await this.likesService.unlikeItem(userId, itemId);
@@ -112,7 +112,7 @@ export class LikesController {
     },
   })
   async checkUserLiked(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
     @Param('itemId') itemId: string,
   ) {
     const liked = await this.likesService.hasUserLikedItem(userId, itemId);

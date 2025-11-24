@@ -508,6 +508,8 @@ describe('ItemsService', () => {
               id: true,
               username: true,
               avatarUrl: true,
+              reputationScore: true,
+              isVerified: true,
             },
           },
           images: true,

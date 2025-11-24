@@ -29,7 +29,7 @@ export class MessagesController {
    */
   @Post()
   async sendMessage(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
     @Body() dto: SendMessageDto,
   ): Promise<MessageResponseDto> {
     return this.messagesService.sendMessage(userId, dto);
@@ -40,7 +40,7 @@ export class MessagesController {
    */
   @Get('conversations')
   async getConversations(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
   ): Promise<ConversationResponseDto[]> {
     return this.messagesService.getConversations(userId);
   }
@@ -50,7 +50,7 @@ export class MessagesController {
    */
   @Get('conversations/:conversationId')
   async getMessages(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
     @Param('conversationId') conversationId: string,
     @Query() dto: GetMessagesDto,
   ): Promise<{ messages: MessageResponseDto[]; total: number }> {
@@ -62,7 +62,7 @@ export class MessagesController {
    */
   @Patch(':id/read')
   async markAsRead(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
     @Param('id') messageId: string,
   ): Promise<MessageResponseDto> {
     return this.messagesService.markAsRead(userId, messageId);
@@ -73,7 +73,7 @@ export class MessagesController {
    */
   @Patch('conversations/:conversationId/read')
   async markConversationAsRead(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
     @Param('conversationId') conversationId: string,
   ): Promise<{ count: number }> {
     return this.messagesService.markConversationAsRead(userId, conversationId);
@@ -84,7 +84,7 @@ export class MessagesController {
    */
   @Delete(':id')
   async deleteMessage(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
     @Param('id') messageId: string,
   ): Promise<{ message: string }> {
     await this.messagesService.deleteMessage(userId, messageId);
@@ -96,7 +96,7 @@ export class MessagesController {
    */
   @Get('unread/count')
   async getUnreadCount(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
   ): Promise<{ count: number }> {
     const count = await this.messagesService.getUnreadCount(userId);
     return { count };

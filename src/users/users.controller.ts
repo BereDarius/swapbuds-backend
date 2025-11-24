@@ -72,13 +72,13 @@ export class UsersController {
   }
 
   /**
-   * Get user profile by ID (public)
-   * @param id - User ID
+   * Get user profile by ID or username (public)
+   * @param id - User ID or username
    * @returns Public user profile
    */
   @Get(':id')
   @Public()
-  @ApiOperation({ summary: 'Get user profile by ID' })
+  @ApiOperation({ summary: 'Get user profile by ID or username' })
   @ApiResponse({
     status: 200,
     description: 'User profile retrieved successfully',
@@ -106,7 +106,7 @@ export class UsersController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'User not found' })
   async updateProfile(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
     @Body() updateProfileDto: UpdateProfileDto,
   ): Promise<UserProfileDto> {
     return this.usersService.updateProfile(userId, updateProfileDto);
@@ -142,7 +142,7 @@ export class UsersController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @UseInterceptors(FileInterceptor('file'))
   async uploadAvatar(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
     @UploadedFile() file: Express.Multer.File,
   ): Promise<UserProfileDto> {
     if (!file) {
@@ -213,7 +213,7 @@ export class UsersController {
     status: 404,
     description: 'User not found',
   })
-  async getUserSettings(@CurrentUser('userId') userId: string) {
+  async getUserSettings(@CurrentUser('id') userId: string) {
     return this.usersService.getUserSettings(userId);
   }
 
@@ -240,7 +240,7 @@ export class UsersController {
     description: 'User not found',
   })
   async updateUserSettings(
-    @CurrentUser('userId') userId: string,
+    @CurrentUser('id') userId: string,
     @Body() updateSettingsDto: UpdateSettingsDto,
   ) {
     return this.usersService.updateUserSettings(userId, updateSettingsDto);
@@ -266,7 +266,7 @@ export class UsersController {
     status: 404,
     description: 'User not found',
   })
-  async resetUserSettings(@CurrentUser('userId') userId: string) {
+  async resetUserSettings(@CurrentUser('id') userId: string) {
     return this.usersService.resetUserSettings(userId);
   }
 }

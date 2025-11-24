@@ -1,9 +1,7 @@
 import { CacheService } from '@/cache/cache.service';
-import { NotificationsGateway } from '@/notifications/gateway/notifications.gateway';
 import { NotificationsService } from '@/notifications/notifications.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { mockCacheService } from '@/test/mocks/cache.mock';
-import { mockNotificationsGateway } from '@/test/mocks/notifications-gateway.mock';
 import { mockNotificationsService } from '@/test/mocks/notifications.mock';
 import { mockPrismaService } from '@/test/mocks/prisma.mock';
 import {
@@ -12,7 +10,16 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { MessagesGateway } from './messages.gateway';
 import { MessagesService } from './messages.service';
+
+const mockMessagesGateway = {
+  emitMessageToUser: jest.fn(),
+  emitMessageRead: jest.fn(),
+  emitConversationRead: jest.fn(),
+  emitMessageDeleted: jest.fn(),
+  isUserOnline: jest.fn(),
+};
 
 describe('MessagesService', () => {
   let service: MessagesService;
@@ -67,8 +74,8 @@ describe('MessagesService', () => {
           useValue: mockPrismaService,
         },
         {
-          provide: NotificationsGateway,
-          useValue: mockNotificationsGateway,
+          provide: MessagesGateway,
+          useValue: mockMessagesGateway,
         },
         {
           provide: NotificationsService,
@@ -126,7 +133,7 @@ describe('MessagesService', () => {
         where: { id: 'user-2' },
       });
       expect(mockPrismaService.message.create).toHaveBeenCalled();
-      expect(mockNotificationsGateway.emitMessageToUser).toHaveBeenCalledWith(
+      expect(mockMessagesGateway.emitMessageToUser).toHaveBeenCalledWith(
         'user-2',
         expect.any(Object),
       );
@@ -325,7 +332,7 @@ describe('MessagesService', () => {
           },
         }),
       );
-      expect(mockNotificationsGateway.emitMessageRead).toHaveBeenCalledWith(
+      expect(mockMessagesGateway.emitMessageRead).toHaveBeenCalledWith(
         'user-1',
         'msg-123',
         'conv-123',
@@ -380,9 +387,11 @@ describe('MessagesService', () => {
           readAt: expect.any(Date),
         },
       });
-      expect(
-        mockNotificationsGateway.emitConversationRead,
-      ).toHaveBeenCalledWith('user-1', 'conv-123', 3);
+      expect(mockMessagesGateway.emitConversationRead).toHaveBeenCalledWith(
+        'user-1',
+        'conv-123',
+        3,
+      );
     });
 
     it('should throw NotFoundException if conversation does not exist', async () => {
@@ -418,7 +427,7 @@ describe('MessagesService', () => {
         where: { id: 'msg-123' },
         data: { isDeleted: true },
       });
-      expect(mockNotificationsGateway.emitMessageDeleted).toHaveBeenCalledWith(
+      expect(mockMessagesGateway.emitMessageDeleted).toHaveBeenCalledWith(
         'user-2',
         'msg-123',
         'conv-123',

@@ -62,7 +62,7 @@ export class TradesController {
   @ApiResponse({ status: 403, description: 'Forbidden - not your item' })
   @ApiResponse({ status: 404, description: 'Item not found' })
   async createTrade(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
     @Body() createTradeDto: CreateTradeDto,
   ): Promise<TradeResponseDto> {
     return this.tradesService.createTrade(userId, createTradeDto);
@@ -92,7 +92,7 @@ export class TradesController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getMyTrades(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
     @Query() filters: TradeFilterDto,
   ) {
     // If no filters provided, use simple method
@@ -129,7 +129,7 @@ export class TradesController {
   @ApiResponse({ status: 404, description: 'Trade not found' })
   async getTradeById(
     @Param('id') tradeId: string,
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
   ): Promise<TradeResponseDto> {
     return this.tradesService.getTradeById(tradeId, userId);
   }
@@ -152,7 +152,7 @@ export class TradesController {
   @ApiResponse({ status: 404, description: 'Trade not found' })
   async acceptTrade(
     @Param('id') tradeId: string,
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
   ): Promise<TradeResponseDto> {
     return this.tradesService.acceptTrade(tradeId, userId);
   }
@@ -175,7 +175,7 @@ export class TradesController {
   @ApiResponse({ status: 404, description: 'Trade not found' })
   async rejectTrade(
     @Param('id') tradeId: string,
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
   ): Promise<TradeResponseDto> {
     return this.tradesService.rejectTrade(tradeId, userId);
   }
@@ -198,7 +198,7 @@ export class TradesController {
   @ApiResponse({ status: 404, description: 'Trade not found' })
   async cancelTrade(
     @Param('id') tradeId: string,
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
   ): Promise<TradeResponseDto> {
     return this.tradesService.cancelTrade(tradeId, userId);
   }
@@ -220,7 +220,7 @@ export class TradesController {
   @ApiResponse({ status: 404, description: 'Trade or item not found' })
   async createCounterOffer(
     @Param('id') tradeId: string,
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
     @Body() createDto: CreateCounterOfferDto,
   ): Promise<CounterOfferResponseDto> {
     return this.tradesService.createCounterOffer(userId, tradeId, createDto);
@@ -242,7 +242,7 @@ export class TradesController {
   @ApiResponse({ status: 404, description: 'Trade not found' })
   async getTradeCounterOffers(
     @Param('id') tradeId: string,
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
   ): Promise<CounterOfferResponseDto[]> {
     return this.tradesService.getTradeCounterOffers(tradeId, userId);
   }
@@ -271,7 +271,7 @@ export class TradesController {
   @ApiResponse({ status: 404, description: 'Counter-offer not found' })
   async acceptCounterOffer(
     @Param('id') counterOfferId: string,
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
   ): Promise<CounterOfferResponseDto> {
     return this.tradesService.acceptCounterOffer(userId, counterOfferId);
   }
@@ -300,7 +300,7 @@ export class TradesController {
   @ApiResponse({ status: 404, description: 'Counter-offer not found' })
   async rejectCounterOffer(
     @Param('id') counterOfferId: string,
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
   ): Promise<CounterOfferResponseDto> {
     return this.tradesService.rejectCounterOffer(userId, counterOfferId);
   }

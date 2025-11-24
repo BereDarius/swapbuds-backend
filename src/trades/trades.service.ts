@@ -15,7 +15,7 @@ import { CreateCounterOfferDto } from './dto/create-counter-offer.dto';
 import { CreateTradeDto } from './dto/create-trade.dto';
 import { TradeFilterDto } from './dto/trade-filter.dto';
 import { TradeResponseDto } from './dto/trade-response.dto';
-import { TradeExpirationService } from './trade-expiration.service';
+import { TradeExpirationService } from './trades-expiration.service';
 
 /**
  * Service handling trade business logic

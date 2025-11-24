@@ -33,20 +33,30 @@ export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
 /**
  * @CurrentUser() Parameter Decorator
  *
- * Extracts the authenticated user from the request object.
+ * Extracts the authenticated user (or a specific property) from the request object.
  * The user is attached to the request by the JWT strategy after validation.
+ *
+ * @param data - Optional property name to extract (e.g., 'id', 'email')
  *
  * @example
  * ```typescript
  * @Get('profile')
  * getProfile(@CurrentUser() user: User) {
- *   return user; // Returns the authenticated user object
+ *   return user; // Returns the full authenticated user object
+ * }
+ *
+ * @Post('item')
+ * createItem(@CurrentUser('id') userId: string) {
+ *   // Returns just the user ID string
  * }
  * ```
  */
 export const CurrentUser = createParamDecorator(
-  (data: unknown, ctx: ExecutionContext) => {
+  (data: string | undefined, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest();
-    return request.user; // User object added by JWT strategy
+    const user = request.user; // User object added by JWT strategy
+
+    // If a specific property is requested, return that property
+    return data ? user?.[data] : user;
   },
 );

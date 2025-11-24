@@ -118,11 +118,14 @@ export class UsersService {
    */
   @Cacheable({
     ttl: 600000, // 10 minutes
-    keyGenerator: (userId: string) => `users:${userId}`,
+    keyGenerator: (identifier: string) => `users:${identifier}`,
   })
-  async getUserProfile(userId: string): Promise<UserProfileDto> {
+  async getUserProfile(identifier: string): Promise<UserProfileDto> {
+    // Check if identifier is a CUID (starts with 'c' and is 25 chars) or username
+    const isId = identifier.startsWith('c') && identifier.length === 25;
+
     const user = await this.prisma.user.findUnique({
-      where: { id: userId },
+      where: isId ? { id: identifier } : { username: identifier },
       include: {
         _count: {
           select: {
@@ -136,7 +139,7 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException(`User with ID ${userId} not found`);
+      throw new NotFoundException(`User with ID ${identifier} not found`);
     }
 
     return {
@@ -328,7 +331,6 @@ export class UsersService {
       where: {
         responderId: userId,
         status: { in: [TradeStatus.ACCEPTED, TradeStatus.REJECTED] },
-        updatedAt: { not: null },
       },
       select: {
         createdAt: true,

@@ -113,7 +113,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: 'User not found' })
   async banUser(
     @Param('id') userId: string,
-    @CurrentUser('sub') adminId: string,
+    @CurrentUser('id') adminId: string,
     @Body() dto: BanUserDto,
   ) {
     return this.adminService.banUser(userId, adminId, dto.reason);
@@ -131,7 +131,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: 'User not found' })
   async unbanUser(
     @Param('id') userId: string,
-    @CurrentUser('sub') adminId: string,
+    @CurrentUser('id') adminId: string,
     @Body() dto: UnbanUserDto,
   ) {
     return this.adminService.unbanUser(userId, adminId, dto.reason);
@@ -149,7 +149,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: 'User not found' })
   async changeUserRole(
     @Param('id') userId: string,
-    @CurrentUser('sub') adminId: string,
+    @CurrentUser('id') adminId: string,
     @Body() dto: ChangeUserRoleDto,
   ) {
     return this.adminService.changeUserRole(

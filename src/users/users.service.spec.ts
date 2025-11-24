@@ -157,7 +157,7 @@ describe('UsersService', () => {
   });
 
   describe('getUserProfile', () => {
-    const userId = 'user-1';
+    const userId = 'clxy1234567890abcdefghijk'; // CUID format
 
     it('should return cached profile when cache hit', async () => {
       const cachedProfile = {
@@ -184,6 +184,7 @@ describe('UsersService', () => {
       mockCacheService.get.mockResolvedValue(null); // Cache miss
       const userWithCounts = {
         ...mockUserWithProfile,
+        id: userId, // Use the CUID from the test
         _count: {
           items: 5,
           tradesProposed: 3,

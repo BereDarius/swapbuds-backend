@@ -1,5 +1,4 @@
 import { Cacheable, CacheInvalidate } from '@/cache/cache.module';
-import { NotificationsGateway } from '@/notifications/gateway/notifications.gateway';
 import { NotificationsService } from '@/notifications/notifications.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import {
@@ -12,12 +11,13 @@ import { ConversationResponseDto } from './dto/conversation-response.dto';
 import { GetMessagesDto } from './dto/get-messages.dto';
 import { MessageResponseDto } from './dto/message-response.dto';
 import { SendMessageDto } from './dto/send-message.dto';
+import { MessagesGateway } from './messages.gateway';
 
 @Injectable()
 export class MessagesService {
   constructor(
     private prisma: PrismaService,
-    private notificationsGateway: NotificationsGateway,
+    private messagesGateway: MessagesGateway,
     private notificationsService: NotificationsService,
   ) {}
 
@@ -83,11 +83,8 @@ export class MessagesService {
 
     const formattedMessage = this.formatMessageResponse(message);
 
-    // Emit real-time message to recipient
-    this.notificationsGateway.emitMessageToUser(
-      dto.recipientId,
-      formattedMessage,
-    );
+    // Emit real-time message to recipient via WebSocket
+    this.messagesGateway.emitMessageToUser(dto.recipientId, formattedMessage);
 
     // Create notification for recipient (respects their preferences)
     await this.notificationsService.createNotification({
@@ -303,8 +300,8 @@ export class MessagesService {
 
     const formattedMessage = this.formatMessageResponse(updatedMessage);
 
-    // Emit real-time read status to sender
-    this.notificationsGateway.emitMessageRead(
+    // Emit real-time read status to sender via WebSocket
+    this.messagesGateway.emitMessageRead(
       message.senderId,
       messageId,
       message.conversationId,
@@ -348,12 +345,12 @@ export class MessagesService {
       },
     });
 
-    // Emit real-time read status to other user
+    // Emit real-time read status to other user via WebSocket
     const otherUserId =
       conversation.user1Id === userId
         ? conversation.user2Id
         : conversation.user1Id;
-    this.notificationsGateway.emitConversationRead(
+    this.messagesGateway.emitConversationRead(
       otherUserId,
       conversationId,
       result.count,
@@ -386,12 +383,12 @@ export class MessagesService {
       data: { isDeleted: true },
     });
 
-    // Emit deletion to other user
+    // Emit deletion to other user via WebSocket
     const otherUserId =
       message.conversation.user1Id === userId
         ? message.conversation.user2Id
         : message.conversation.user1Id;
-    this.notificationsGateway.emitMessageDeleted(
+    this.messagesGateway.emitMessageDeleted(
       otherUserId,
       messageId,
       message.conversationId,

@@ -56,7 +56,7 @@ export class VerificationController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async submitVerification(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
     @Body() dto: SubmitVerificationDto,
   ) {
     return this.verificationService.submitVerification(userId, dto);
@@ -77,7 +77,7 @@ export class VerificationController {
     type: VerificationResponseDto,
   })
   @ApiResponse({ status: 404, description: 'No verification request found' })
-  async getMyVerification(@CurrentUser('sub') userId: string) {
+  async getMyVerification(@CurrentUser('id') userId: string) {
     return this.verificationService.getVerificationStatus(userId);
   }
 
@@ -95,7 +95,7 @@ export class VerificationController {
     status: 400,
     description: 'Can only cancel pending requests',
   })
-  async cancelMyVerification(@CurrentUser('sub') userId: string) {
+  async cancelMyVerification(@CurrentUser('id') userId: string) {
     return this.verificationService.cancelVerification(userId);
   }
 
@@ -184,7 +184,7 @@ export class VerificationController {
   })
   async getDocumentUrl(
     @Param('id') id: string,
-    @CurrentUser('sub') adminId: string,
+    @CurrentUser('id') adminId: string,
   ) {
     return this.verificationService.getDocumentSignedUrl(id, adminId);
   }
@@ -208,7 +208,7 @@ export class VerificationController {
   @ApiResponse({ status: 404, description: 'Verification not found' })
   async approveVerification(
     @Param('id') id: string,
-    @CurrentUser('sub') adminId: string,
+    @CurrentUser('id') adminId: string,
     @Body() dto: ReviewVerificationDto,
   ) {
     return this.verificationService.approveVerification(id, adminId, dto);
@@ -232,7 +232,7 @@ export class VerificationController {
   @ApiResponse({ status: 404, description: 'Verification not found' })
   async rejectVerification(
     @Param('id') id: string,
-    @CurrentUser('sub') adminId: string,
+    @CurrentUser('id') adminId: string,
     @Body() dto: ReviewVerificationDto,
   ) {
     return this.verificationService.rejectVerification(id, adminId, dto);

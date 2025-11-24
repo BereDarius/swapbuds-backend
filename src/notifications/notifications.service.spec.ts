@@ -18,7 +18,7 @@ import { mockNotificationsGateway } from '@/test/mocks/notifications-gateway.moc
 import { mockPrismaService } from '@/test/mocks/prisma.mock';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { NotificationType } from '@prisma/client';
-import { NotificationsGateway } from './gateway/notifications.gateway';
+import { NotificationsGateway } from './notifications.gateway';
 
 describe('NotificationsService', () => {
   let service: NotificationsService;

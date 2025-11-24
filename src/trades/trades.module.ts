@@ -2,7 +2,7 @@ import { MailModule } from '@/mail/mail.module';
 import { NotificationsModule } from '@/notifications/notifications.module';
 import { PrismaModule } from '@/prisma/prisma.module';
 import { Module } from '@nestjs/common';
-import { TradeExpirationService } from './trade-expiration.service';
+import { TradeExpirationService } from './trades-expiration.service';
 import { TradesController } from './trades.controller';
 import { TradesService } from './trades.service';
 

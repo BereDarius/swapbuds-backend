@@ -7,7 +7,7 @@ import { mockPrismaService } from '@/test/mocks/prisma.mock';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotificationType, TradeStatus } from '@prisma/client';
-import { TradeExpirationService } from './trade-expiration.service';
+import { TradeExpirationService } from './trades-expiration.service';
 
 // Mock ConfigService
 const mockConfigService = {

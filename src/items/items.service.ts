@@ -45,7 +45,7 @@ export class ItemsService {
               images: {
                 create: images.map((url, index) => ({
                   url,
-                  publicId: `item-${Date.now()}-${index}`, // Temporary, will be replaced with Cloudinary publicId
+                  publicId: this.extractPublicIdFromUrl(url),
                   order: index,
                 })),
               },
@@ -58,6 +58,8 @@ export class ItemsService {
             id: true,
             username: true,
             avatarUrl: true,
+            reputationScore: true,
+            isVerified: true,
           },
         },
         images: true,
@@ -208,6 +210,8 @@ export class ItemsService {
             id: true,
             username: true,
             avatarUrl: true,
+            reputationScore: true,
+            isVerified: true,
           },
         },
         images: true,
@@ -282,6 +286,8 @@ export class ItemsService {
             id: true,
             username: true,
             avatarUrl: true,
+            reputationScore: true,
+            isVerified: true,
           },
         },
         images: true,
@@ -343,7 +349,7 @@ export class ItemsService {
                 deleteMany: {},
                 create: images.map((url, index) => ({
                   url,
-                  publicId: `item-${Date.now()}-${index}`,
+                  publicId: this.extractPublicIdFromUrl(url),
                   order: index,
                 })),
               },
@@ -356,6 +362,8 @@ export class ItemsService {
             id: true,
             username: true,
             avatarUrl: true,
+            reputationScore: true,
+            isVerified: true,
           },
         },
         images: true,
@@ -397,6 +405,27 @@ export class ItemsService {
   }
 
   /**
+   * Extract Cloudinary publicId from URL
+   * Cloudinary URL format: https://res.cloudinary.com/{cloud}/{type}/{transform}/{version}/{publicId}.{ext}
+   * @param url - Cloudinary URL
+   * @returns Extracted publicId or fallback
+   */
+  private extractPublicIdFromUrl(url: string): string {
+    try {
+      // Extract everything after upload/ and before the file extension
+      const match = url.match(/\/upload\/(?:v\d+\/)?(.+)\.[^.]+$/);
+      if (match && match[1]) {
+        return match[1];
+      }
+      // Fallback to timestamp-based ID
+      return `item-${Date.now()}`;
+    } catch (error) {
+      // Fallback if URL parsing fails
+      return `item-${Date.now()}`;
+    }
+  }
+
+  /**
    * Maps Prisma item to response DTO
    * @param item - Prisma item with relations
    * @returns Formatted item response
@@ -408,12 +437,22 @@ export class ItemsService {
       description: item.description,
       category: item.category,
       condition: item.condition,
+      status: item.status,
       images: item.images?.map((img: any) => img.url) || [],
       owner: {
         id: item.user.id,
         username: item.user.username,
         avatarUrl: item.user.avatarUrl,
+        reputationScore: item.user.reputationScore || 0,
+        isVerified: item.user.isVerified || false,
       },
+      deliveryMethods: item.deliveryMethods || [],
+      deliveryScope: item.deliveryScope,
+      estimatedValue: item.estimatedValue
+        ? Number(item.estimatedValue)
+        : undefined,
+      currency: item.currency || 'EUR',
+      viewCount: item.viewCount || 0,
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
       likesCount: item._count.likes,

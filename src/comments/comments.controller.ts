@@ -52,7 +52,7 @@ export class CommentsController {
     description: 'Item not found',
   })
   async createComment(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
     @Param('itemId') itemId: string,
     @Body() createCommentDto: CreateCommentDto,
   ): Promise<CommentDto> {
@@ -100,7 +100,7 @@ export class CommentsController {
     description: 'Forbidden - not comment owner',
   })
   async updateComment(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
     @Param('commentId') commentId: string,
     @Body() updateCommentDto: UpdateCommentDto,
   ): Promise<CommentDto> {
@@ -131,7 +131,7 @@ export class CommentsController {
     description: 'Forbidden - not comment owner',
   })
   async deleteComment(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
     @Param('commentId') commentId: string,
   ): Promise<void> {
     await this.commentsService.deleteComment(commentId, userId);

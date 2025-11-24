@@ -1,5 +1,11 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { ItemCategory, ItemCondition } from '@prisma/client';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  DeliveryMethod,
+  DeliveryScope,
+  ItemCategory,
+  ItemCondition,
+  ItemStatus,
+} from '@prisma/client';
 
 /**
  * User info embedded in item response
@@ -13,6 +19,12 @@ export class ItemUserDto {
 
   @ApiProperty({ required: false })
   avatarUrl?: string;
+
+  @ApiProperty()
+  reputationScore: number;
+
+  @ApiProperty()
+  isVerified: boolean;
 }
 
 /**
@@ -35,11 +47,29 @@ export class ItemResponseDto {
   @ApiProperty({ enum: ItemCondition })
   condition: ItemCondition;
 
+  @ApiProperty({ enum: ItemStatus })
+  status: ItemStatus;
+
   @ApiProperty({ type: [String] })
   images: string[];
 
   @ApiProperty({ type: ItemUserDto })
   owner: ItemUserDto;
+
+  @ApiProperty({ enum: DeliveryMethod, isArray: true })
+  deliveryMethods: DeliveryMethod[];
+
+  @ApiProperty({ enum: DeliveryScope })
+  deliveryScope: DeliveryScope;
+
+  @ApiPropertyOptional()
+  estimatedValue?: number;
+
+  @ApiProperty()
+  currency: string;
+
+  @ApiProperty()
+  viewCount: number;
 
   @ApiProperty()
   createdAt: Date;

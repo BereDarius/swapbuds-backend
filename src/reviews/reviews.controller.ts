@@ -30,7 +30,7 @@ export class ReviewsController {
    */
   @Post('trades/:tradeId')
   async createReview(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
     @Param('tradeId') tradeId: string,
     @Body() createReviewDto: CreateReviewDto,
   ): Promise<ReviewResponseDto> {
@@ -54,7 +54,7 @@ export class ReviewsController {
    */
   @Get('me/given')
   async getMyReviewsGiven(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
   ): Promise<ReviewResponseDto[]> {
     return this.reviewsService.getUserReviewsGiven(userId);
   }
@@ -65,7 +65,7 @@ export class ReviewsController {
    */
   @Get('me')
   async getMyReviews(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
   ): Promise<ReviewResponseDto[]> {
     return this.reviewsService.getUserReviews(userId);
   }
@@ -85,7 +85,7 @@ export class ReviewsController {
    */
   @Put(':id')
   async updateReview(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
     @Param('id') id: string,
     @Body() updateReviewDto: UpdateReviewDto,
   ): Promise<ReviewResponseDto> {
@@ -99,7 +99,7 @@ export class ReviewsController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteReview(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
     @Param('id') id: string,
   ): Promise<void> {
     return this.reviewsService.deleteReview(userId, id);

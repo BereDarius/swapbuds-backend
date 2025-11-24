@@ -36,7 +36,7 @@ describe('LegalController', () => {
   };
 
   const mockRequest = {
-    user: { sub: 'user-1' },
+    user: { id: 'user-1' },
     ip: '127.0.0.1',
     headers: { 'user-agent': 'Mozilla/5.0' },
   } as any;

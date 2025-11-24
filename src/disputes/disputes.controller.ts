@@ -54,7 +54,7 @@ export class DisputesController {
   @ApiResponse({ status: 403, description: 'Not authorized for this trade' })
   @ApiResponse({ status: 404, description: 'Trade not found' })
   async createDispute(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
     @Body() createDisputeDto: CreateDisputeDto,
   ): Promise<DisputeResponseDto> {
     return this.disputesService.createDispute(userId, createDisputeDto);
@@ -76,7 +76,7 @@ export class DisputesController {
     type: [DisputeResponseDto],
   })
   async getUserDisputes(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
   ): Promise<DisputeResponseDto[]> {
     return this.disputesService.getUserDisputes(userId);
   }
@@ -101,7 +101,7 @@ export class DisputesController {
   @ApiResponse({ status: 404, description: 'Dispute not found' })
   async getDispute(
     @Param('id') disputeId: string,
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('id') userId: string,
   ): Promise<DisputeResponseDto> {
     return this.disputesService.getDispute(disputeId, userId);
   }
@@ -157,7 +157,7 @@ export class DisputesController {
   @ApiResponse({ status: 404, description: 'Dispute not found' })
   async assignDispute(
     @Param('id') disputeId: string,
-    @CurrentUser('sub') adminId: string,
+    @CurrentUser('id') adminId: string,
   ): Promise<DisputeResponseDto> {
     return this.disputesService.assignDispute(disputeId, adminId);
   }
