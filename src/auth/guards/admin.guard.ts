@@ -9,7 +9,7 @@ import { UserRole } from '@prisma/client';
 
 /**
  * Guard to check if user is an admin
- * Checks both legacy isAdmin field and new role field
+ * Checks role field
  */
 @Injectable()
 export class AdminGuard implements CanActivate {
@@ -17,7 +17,7 @@ export class AdminGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-    const userId = request.user?.sub;
+    const userId = request.user?.id;
 
     if (!userId) {
       throw new ForbiddenException('User not authenticated');
@@ -25,11 +25,11 @@ export class AdminGuard implements CanActivate {
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { isAdmin: true, role: true },
+      select: { role: true },
     });
 
-    // Check both legacy isAdmin and new role system
-    if (!user?.isAdmin && user?.role !== UserRole.ADMIN) {
+    // Check role system
+    if (user?.role !== UserRole.ADMIN) {
       throw new ForbiddenException('Admin access required');
     }
 

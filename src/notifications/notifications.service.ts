@@ -9,7 +9,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { NotificationType } from '@prisma/client';
+import { NotificationType, UserRole } from '@prisma/client';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { NotificationResponseDto } from './dto/notification-response.dto';
 import { NotificationsGateway } from './notifications.gateway';
@@ -472,7 +472,7 @@ export class NotificationsService {
   ): Promise<void> {
     // Get all admin users
     const admins = await this.prisma.user.findMany({
-      where: { isAdmin: true, isActive: true },
+      where: { role: UserRole.ADMIN, isActive: true },
       select: { id: true, email: true, username: true },
     });
 

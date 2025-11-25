@@ -170,7 +170,6 @@ export class AdminService {
         role: true,
         isActive: true,
         isVerified: true,
-        isAdmin: true,
         reputationScore: true,
         bio: true,
         location: true,
@@ -291,8 +290,6 @@ export class AdminService {
       where: { id: userId },
       data: {
         role: newRole,
-        // Update legacy isAdmin field for backward compatibility
-        isAdmin: newRole === UserRole.ADMIN,
       },
     });
 
@@ -471,7 +468,6 @@ export class AdminService {
       },
       data: {
         role: newRole,
-        isAdmin: newRole === UserRole.ADMIN,
       },
     });
 

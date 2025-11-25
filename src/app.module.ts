@@ -31,6 +31,7 @@ import { TradesModule } from './trades/trades.module';
 import { UploadModule } from './upload/upload.module';
 import { UsersModule } from './users/users.module';
 import { VerificationModule } from './verification/verification.module';
+import { WaitlistModule } from './waitlist/waitlist.module';
 
 @Module({
   imports: [
@@ -126,6 +127,8 @@ import { VerificationModule } from './verification/verification.module';
     GdprModule,
 
     LegalModule,
+
+    WaitlistModule,
   ],
   providers: [
     {

@@ -25,14 +25,12 @@ export class ModeratorGuard implements CanActivate {
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { isAdmin: true, role: true },
+      select: { role: true },
     });
 
     // Allow both moderators and admins
     const hasAccess =
-      user?.isAdmin ||
-      user?.role === UserRole.ADMIN ||
-      user?.role === UserRole.MODERATOR;
+      user?.role === UserRole.ADMIN || user?.role === UserRole.MODERATOR;
 
     if (!hasAccess) {
       throw new ForbiddenException('Moderator access required');

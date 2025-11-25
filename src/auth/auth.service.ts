@@ -123,6 +123,7 @@ export class AuthService {
         email: true,
         username: true,
         avatarUrl: true,
+        role: true,
       },
     });
 
@@ -239,6 +240,7 @@ export class AuthService {
         email: user.email,
         username: user.username,
         avatarUrl: user.avatarUrl,
+        role: user.role,
       },
     };
   }

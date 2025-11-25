@@ -25,12 +25,11 @@ export class SupportGuard implements CanActivate {
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { isAdmin: true, role: true },
+      select: { role: true },
     });
 
     // Allow support, moderators, and admins
     const hasAccess =
-      user?.isAdmin ||
       user?.role === UserRole.ADMIN ||
       user?.role === UserRole.MODERATOR ||
       user?.role === UserRole.SUPPORT;

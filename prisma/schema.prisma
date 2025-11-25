@@ -51,7 +51,6 @@ model User {
   // Status
   isActive   Boolean @default(true)
   isVerified Boolean @default(false)
-  isAdmin    Boolean @default(false) // Deprecated: use role instead
 
   // Multi-Factor Authentication
   mfaEnabled Boolean    @default(false)
@@ -1087,4 +1086,30 @@ model LegalConsent {
   @@index([documentType])
   @@index([userId, documentType])
   @@map("legal_consents")
+}
+
+// ============================================
+// WAITLIST MODEL
+// ============================================
+model Waitlist {
+  id    String @id @default(cuid())
+  email String @unique
+
+  // Marketing preferences
+  notified     Boolean @default(false) // Whether we've sent launch notification
+  source       String? // Where they signed up from (e.g., "landing_page", "social_media")
+  referralCode String? // Optional referral tracking
+
+  // Metadata
+  userAgent String? // Browser/device info
+  ipAddress String? // IP at signup
+
+  // Timestamps
+  createdAt  DateTime  @default(now())
+  notifiedAt DateTime? // When launch email was sent
+
+  @@index([email])
+  @@index([createdAt])
+  @@index([notified])
+  @@map("waitlist")
 }

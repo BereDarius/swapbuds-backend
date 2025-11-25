@@ -151,5 +151,6 @@ export class AuthResponseDto {
     email: string; // User's email address
     username: string; // User's username
     avatarUrl?: string; // Optional profile picture URL
+    role?: string; // User's role (USER, ADMIN, MODERATOR, SUPPORT)
   };
 }
