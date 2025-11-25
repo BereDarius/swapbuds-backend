@@ -60,6 +60,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         email: true,
         username: true,
         avatarUrl: true,
+        role: true, // User role for authorization checks
         isActive: true, // Check if account is still active
       },
     });

@@ -65,11 +65,11 @@ export class SupportChatController {
     },
     @Request() req,
   ) {
-    const chat = await this.supportChatService.createChat(req.user.userId, dto);
+    const chat = await this.supportChatService.createChat(req.user.id, dto);
 
     // Notify via WebSocket
     this.supportChatGateway.emitQueuePositionUpdate(
-      req.user.userId,
+      req.user.id,
       chat.id,
       chat.queuePosition,
     );
@@ -91,7 +91,7 @@ export class SupportChatController {
     @Query('includeResolved') includeResolved?: string,
   ) {
     return this.supportChatService.getUserChats(
-      req.user.userId,
+      req.user.id,
       includeResolved === 'true',
     );
   }
@@ -107,11 +107,7 @@ export class SupportChatController {
   @ApiResponse({ status: 404, description: 'Chat not found' })
   @ApiResponse({ status: 403, description: 'Access denied' })
   async getChat(@Param('id') chatId: string, @Request() req) {
-    return this.supportChatService.getChat(
-      chatId,
-      req.user.userId,
-      req.user.role,
-    );
+    return this.supportChatService.getChat(chatId, req.user.id, req.user.role);
   }
 
   /**
@@ -141,7 +137,7 @@ export class SupportChatController {
   ) {
     const message = await this.supportChatService.sendMessage(
       chatId,
-      req.user.userId,
+      req.user.id,
       dto,
       req.user.role,
     );
@@ -166,7 +162,7 @@ export class SupportChatController {
   async closeChat(@Param('id') chatId: string, @Request() req) {
     const chat = await this.supportChatService.closeChat(
       chatId,
-      req.user.userId,
+      req.user.id,
       req.user.role,
     );
 
@@ -185,7 +181,7 @@ export class SupportChatController {
   @ApiOperation({ summary: "Get agent's assigned chats" })
   @ApiResponse({ status: 200, description: 'Returns agent chats' })
   async getAgentChats(@Request() req) {
-    return this.supportChatService.getAgentChats(req.user.userId);
+    return this.supportChatService.getAgentChats(req.user.id);
   }
 
   /**
@@ -214,7 +210,7 @@ export class SupportChatController {
   ) {
     const chat = await this.supportChatService.resolveChat(
       chatId,
-      req.user.userId,
+      req.user.id,
       dto,
     );
 
