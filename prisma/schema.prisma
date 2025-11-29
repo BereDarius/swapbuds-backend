@@ -85,6 +85,7 @@ model User {
   reviewsGiven            Review[]                 @relation("ReviewAuthor")
   reviewsReceived         Review[]                 @relation("ReviewTarget")
   messages                Message[]
+  messagesDeleted         Message[]                @relation("MessageDeletions")
   conversationsAsUser1    Conversation[]           @relation("ConversationUser1")
   conversationsAsUser2    Conversation[]           @relation("ConversationUser2")
   notifications           Notification[]
@@ -92,6 +93,8 @@ model User {
   settings                UserSettings?
   likes                   Like[]
   comments                Comment[]
+  commentsDeleted         Comment[]                @relation("CommentDeletions")
+  commentLikes            CommentLike[]
   counterOffers           CounterOffer[]
   disputesReported        Dispute[]                @relation("DisputeReporter")
   disputesAgainst         Dispute[]                @relation("DisputeReportedUser")
@@ -100,6 +103,8 @@ model User {
   auditLogs               AuditLog[]               @relation("AuditLogPerformedBy")
   flaggedItemsReported    FlaggedItem[]            @relation("FlagReporter")
   flaggedItemsReviewed    FlaggedItem[]            @relation("FlagReviewer")
+  flaggedCommentsReported FlaggedComment[]         @relation("CommentFlagReporter")
+  flaggedCommentsReviewed FlaggedComment[]         @relation("CommentFlagReviewer")
   supportChatsAsUser      SupportChat[]            @relation("SupportChatUser")
   supportChatsAsAgent     SupportChat[]            @relation("SupportChatAgent")
   supportMessages         SupportMessage[]         @relation("SupportMessageSender")
@@ -415,8 +420,17 @@ model Message {
   isRead Boolean   @default(false)
   readAt DateTime?
 
+  // Edit tracking
+  isEdited Boolean          @default(false)
+  editedAt DateTime?
+  versions MessageVersion[] // Version history for moderation
+
   // Soft delete
-  isDeleted Boolean @default(false)
+  isDeleted     Boolean   @default(false)
+  deletedAt     DateTime?
+  deletedBy     String? // User ID who deleted (original user or moderator)
+  deletedByUser User?     @relation("MessageDeletions", fields: [deletedBy], references: [id], onDelete: SetNull)
+  deleteReason  String? // For moderator deletions
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -426,7 +440,24 @@ model Message {
   @@index([senderId])
   @@index([createdAt])
   @@index([isRead])
+  @@index([isDeleted])
   @@map("messages")
+}
+
+// ============================================
+// MESSAGE VERSION MODEL (Edit History)
+// ============================================
+model MessageVersion {
+  id        String   @id @default(cuid())
+  messageId String
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  content   String // Previous content
+  editedBy  String // User ID who made the edit
+  createdAt DateTime @default(now())
+
+  @@index([messageId])
+  @@index([createdAt])
+  @@map("message_versions")
 }
 
 // ============================================
@@ -491,13 +522,72 @@ model Comment {
   itemId String
   item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
+  // Reply/threading support
+  parentId String?
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  Comment[] @relation("CommentReplies")
+
+  // Edit tracking
+  isEdited Boolean          @default(false)
+  editedAt DateTime?
+  versions CommentVersion[] // Version history for moderation
+
+  // Soft delete
+  isDeleted     Boolean   @default(false)
+  deletedAt     DateTime?
+  deletedBy     String? // User ID who deleted (original user or moderator)
+  deletedByUser User?     @relation("CommentDeletions", fields: [deletedBy], references: [id], onDelete: SetNull)
+  deleteReason  String? // For moderator deletions
+
+  // Relations
+  likes CommentLike[]
+  flags FlaggedComment[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([itemId])
   @@index([userId])
+  @@index([parentId])
   @@index([createdAt])
+  @@index([isDeleted])
   @@map("comments")
+}
+
+// ============================================
+// COMMENT VERSION MODEL (Edit History)
+// ============================================
+model CommentVersion {
+  id        String   @id @default(cuid())
+  commentId String
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  content   String // Previous content
+  editedBy  String // User ID who made the edit
+  createdAt DateTime @default(now())
+
+  @@index([commentId])
+  @@index([createdAt])
+  @@map("comment_versions")
+}
+
+// ============================================
+// COMMENT LIKE MODEL
+// ============================================
+model CommentLike {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  commentId String
+  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, commentId]) // One like per user per comment
+  @@index([commentId])
+  @@index([userId])
+  @@map("comment_likes")
 }
 
 // ============================================
@@ -736,7 +826,9 @@ model UserVerification {
   documentType DocumentType // Type of ID document submitted
 
   // Document storage
-  documentUrl String // Encrypted storage URL (Cloudinary with restricted access)
+  documentUrlFront String // Front of ID document (encrypted Cloudinary URL)
+  documentUrlBack  String? // Back of ID document (optional, encrypted Cloudinary URL)
+  selfieUrl        String // Live selfie photo for identity verification (encrypted Cloudinary URL)
 
   // Age verification
   dateOfBirth DateTime? // Extracted from document (manual or OCR)
@@ -861,6 +953,45 @@ model FlaggedItem {
   @@index([reason])
   @@index([createdAt])
   @@map("flagged_items")
+}
+
+// ============================================
+// FLAGGED COMMENT MODEL
+// ============================================
+model FlaggedComment {
+  id String @id @default(cuid())
+
+  // Comment being flagged
+  commentId String
+  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  // Who flagged it
+  reportedById String
+  reportedBy   User   @relation("CommentFlagReporter", fields: [reportedById], references: [id], onDelete: Cascade)
+
+  // Flag details
+  reason      FlagReason
+  description String? // Additional details from reporter
+
+  // Moderation status
+  status ModerationStatus @default(PENDING)
+
+  // Review information
+  reviewedById String? // Admin/Moderator who reviewed
+  reviewedBy   User?     @relation("CommentFlagReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt   DateTime? // When it was reviewed
+  reviewNotes  String? // Admin notes on the decision
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([commentId])
+  @@index([reportedById])
+  @@index([status])
+  @@index([reason])
+  @@index([createdAt])
+  @@map("flagged_comments")
 }
 
 // ============================================

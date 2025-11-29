@@ -73,15 +73,23 @@ export class VerificationService {
       });
     }
 
-    // Encrypt document URL before storing
-    const encryptedUrl = this.documentSecurity.encryptUrl(dto.documentUrl);
+    // Encrypt document URLs before storing
+    const encryptedUrlFront = this.documentSecurity.encryptUrl(
+      dto.documentUrlFront,
+    );
+    const encryptedUrlBack = dto.documentUrlBack
+      ? this.documentSecurity.encryptUrl(dto.documentUrlBack)
+      : undefined;
+    const encryptedSelfieUrl = this.documentSecurity.encryptUrl(dto.selfieUrl);
 
     // Create new verification request
     const verification = await this.prisma.userVerification.create({
       data: {
         userId,
         documentType: dto.documentType,
-        documentUrl: encryptedUrl,
+        documentUrlFront: encryptedUrlFront,
+        documentUrlBack: encryptedUrlBack,
+        selfieUrl: encryptedSelfieUrl,
         status: VerificationStatus.PENDING,
       },
     });
@@ -214,8 +222,18 @@ export class VerificationService {
       }),
     ]);
 
+    // Decrypt document URLs for admin viewing
+    const verificationsWithDecryptedUrls = verifications.map((v) => ({
+      ...v,
+      documentUrlFront: this.documentSecurity.decryptUrl(v.documentUrlFront),
+      documentUrlBack: v.documentUrlBack
+        ? this.documentSecurity.decryptUrl(v.documentUrlBack)
+        : null,
+      selfieUrl: this.documentSecurity.decryptUrl(v.selfieUrl),
+    }));
+
     return {
-      verifications,
+      verifications: verificationsWithDecryptedUrls,
       total,
       page,
       limit,
@@ -246,7 +264,17 @@ export class VerificationService {
       throw new NotFoundException('Verification not found');
     }
 
-    return verification;
+    // Decrypt document URLs for admin viewing
+    return {
+      ...verification,
+      documentUrlFront: this.documentSecurity.decryptUrl(
+        verification.documentUrlFront,
+      ),
+      documentUrlBack: verification.documentUrlBack
+        ? this.documentSecurity.decryptUrl(verification.documentUrlBack)
+        : null,
+      selfieUrl: this.documentSecurity.decryptUrl(verification.selfieUrl),
+    };
   }
 
   /**
@@ -456,6 +484,24 @@ export class VerificationService {
   }
 
   /**
+   * Update internal notes for a verification
+   */
+  async updateNotes(verificationId: string, notes: string) {
+    const verification = await this.prisma.userVerification.findUnique({
+      where: { id: verificationId },
+    });
+
+    if (!verification) {
+      throw new NotFoundException('Verification not found');
+    }
+
+    return this.prisma.userVerification.update({
+      where: { id: verificationId },
+      data: { notes },
+    });
+  }
+
+  /**
    * Get verification statistics (admin dashboard)
    */
   async getVerificationStats() {
@@ -499,12 +545,13 @@ export class VerificationService {
   }
 
   /**
-   * Admin: Get signed URL for viewing document
-   * URL expires after 5 minutes for security
+   * Admin: Get signed URLs for viewing documents (front and back)
+   * URLs expire after 5 minutes for security
    */
   async getDocumentSignedUrl(
     verificationId: string,
     adminId: string,
+    side: 'front' | 'back' = 'front',
   ): Promise<{ signedUrl: string; expiresIn: number }> {
     const verification = await this.prisma.userVerification.findUnique({
       where: { id: verificationId },
@@ -514,14 +561,19 @@ export class VerificationService {
       throw new NotFoundException('Verification not found');
     }
 
-    if (!verification.documentUrl) {
-      throw new NotFoundException('Document not found or already deleted');
+    const documentUrl =
+      side === 'front'
+        ? verification.documentUrlFront
+        : verification.documentUrlBack;
+
+    if (!documentUrl) {
+      throw new NotFoundException(
+        `Document ${side} not found or already deleted`,
+      );
     }
 
     // Decrypt document URL
-    const decryptedUrl = this.documentSecurity.decryptUrl(
-      verification.documentUrl,
-    );
+    const decryptedUrl = this.documentSecurity.decryptUrl(documentUrl);
 
     // Extract public ID
     const publicId = this.documentSecurity.extractPublicId(decryptedUrl);

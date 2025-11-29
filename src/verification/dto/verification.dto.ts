@@ -1,6 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { DocumentType } from '@prisma/client';
-import { IsDateString, IsEnum, IsNotEmpty, IsString } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 /**
  * DTO for submitting ID verification request
@@ -16,12 +22,29 @@ export class SubmitVerificationDto {
   documentType: DocumentType;
 
   @ApiProperty({
-    description: 'URL of the uploaded ID document (from Cloudinary)',
-    example: 'https://res.cloudinary.com/.../id-document.jpg',
+    description: 'URL of the front of the ID document (from Cloudinary)',
+    example: 'https://res.cloudinary.com/.../id-document-front.jpg',
   })
   @IsString()
   @IsNotEmpty()
-  documentUrl: string;
+  documentUrlFront: string;
+
+  @ApiProperty({
+    description:
+      'URL of the back of the ID document (optional, from Cloudinary)',
+    example: 'https://res.cloudinary.com/.../id-document-back.jpg',
+    required: false,
+  })
+  @IsString()
+  documentUrlBack?: string;
+
+  @ApiProperty({
+    description: 'URL of live selfie photo for identity verification',
+    example: 'https://res.cloudinary.com/.../selfie.jpg',
+  })
+  @IsString()
+  @IsNotEmpty()
+  selfieUrl: string;
 }
 
 /**
@@ -32,6 +55,7 @@ export class ReviewVerificationDto {
     description: 'Date of birth extracted from the ID document',
     example: '1995-05-15',
   })
+  @IsOptional()
   @IsDateString()
   dateOfBirth?: string;
 
@@ -39,6 +63,7 @@ export class ReviewVerificationDto {
     description: 'Reason for rejection (required if rejecting)',
     example: 'Document is blurry and unreadable',
   })
+  @IsOptional()
   @IsString()
   rejectionReason?: string;
 
@@ -46,6 +71,7 @@ export class ReviewVerificationDto {
     description: 'Internal notes for reviewers',
     example: 'Document appears to be altered',
   })
+  @IsOptional()
   @IsString()
   notes?: string;
 }

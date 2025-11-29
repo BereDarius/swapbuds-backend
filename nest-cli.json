@@ -5,7 +5,11 @@
   "compilerOptions": {
     "deleteOutDir": true,
     "assets": [
-      ".env*"
+      ".env*",
+      {
+        "include": "mail/templates/**/*.hbs",
+        "outDir": "dist/src"
+      }
     ],
     "watchAssets": true
   }

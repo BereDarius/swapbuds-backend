@@ -42,14 +42,14 @@ describe('AdminGuard', () => {
 
   it('should allow access for admin user', async () => {
     const mockUser = {
-      sub: 'admin-1',
+      id: 'admin-1',
       username: 'admin',
       email: 'admin@example.com',
     };
 
     jest
       .spyOn(prisma.user, 'findUnique')
-      .mockResolvedValue({ isAdmin: true } as any);
+      .mockResolvedValue({ role: 'ADMIN' } as any);
 
     const context = createMockExecutionContext(mockUser);
     const result = await guard.canActivate(context);
@@ -59,14 +59,14 @@ describe('AdminGuard', () => {
 
   it('should deny access for non-admin user', async () => {
     const mockUser = {
-      sub: 'user-1',
+      id: 'user-1',
       username: 'user',
       email: 'user@example.com',
     };
 
     jest
       .spyOn(prisma.user, 'findUnique')
-      .mockResolvedValue({ isAdmin: false } as any);
+      .mockResolvedValue({ role: 'USER' } as any);
 
     const context = createMockExecutionContext(mockUser);
 
@@ -85,7 +85,7 @@ describe('AdminGuard', () => {
 
   it('should deny access when user is not found', async () => {
     const mockUser = {
-      sub: 'user-1',
+      id: 'user-1',
       username: 'user',
       email: 'user@example.com',
     };

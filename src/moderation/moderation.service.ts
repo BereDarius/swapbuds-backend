@@ -721,4 +721,280 @@ export class ModerationService {
       itemIds,
     };
   }
+
+  /**
+   * Flag a comment for moderation
+   */
+  async flagComment(
+    commentId: string,
+    userId: string,
+    dto: FlagItemDto,
+    ipAddress?: string,
+  ) {
+    // Check if comment exists and is not already deleted
+    const comment = await this.prisma.comment.findUnique({
+      where: { id: commentId },
+      select: { id: true, isDeleted: true, userId: true, content: true },
+    });
+
+    if (!comment) {
+      throw new NotFoundException(`Comment with ID ${commentId} not found`);
+    }
+
+    if (comment.isDeleted) {
+      throw new BadRequestException('Cannot flag a deleted comment');
+    }
+
+    // Check if user is trying to flag their own comment
+    if (comment.userId === userId) {
+      throw new BadRequestException('You cannot flag your own comment');
+    }
+
+    // Check if user has already flagged this comment with the same reason
+    const existingFlag = await this.prisma.flaggedComment.findFirst({
+      where: {
+        commentId,
+        reportedById: userId,
+        reason: dto.reason,
+        status: ModerationStatus.PENDING,
+      },
+    });
+
+    if (existingFlag) {
+      throw new BadRequestException(
+        'You have already flagged this comment with this reason',
+      );
+    }
+
+    // Create the flag
+    const flag = await this.prisma.flaggedComment.create({
+      data: {
+        commentId,
+        reportedById: userId,
+        reason: dto.reason,
+        description: dto.description,
+        status: ModerationStatus.PENDING,
+      },
+      include: {
+        comment: {
+          select: {
+            id: true,
+            content: true,
+            isDeleted: true,
+          },
+        },
+        reportedBy: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    // Create audit log
+    await this.auditLogService.log({
+      performedById: userId,
+      action: AuditAction.OTHER,
+      description: `Comment flagged for ${dto.reason}`,
+      targetType: 'Comment',
+      targetId: commentId,
+      metadata: {
+        reason: dto.reason,
+        description: dto.description,
+      },
+      ipAddress,
+    });
+
+    return flag;
+  }
+
+  /**
+   * Get all flagged comments with pagination and filters
+   */
+  async getFlaggedComments(query: GetFlaggedItemsQuery) {
+    const { page = 1, limit = 20, status, reason } = query;
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (status) {
+      where.status = status;
+    }
+    if (reason) {
+      where.reason = reason;
+    }
+
+    const [comments, total] = await Promise.all([
+      this.prisma.flaggedComment.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          comment: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  username: true,
+                  email: true,
+                },
+              },
+              item: {
+                select: {
+                  id: true,
+                  title: true,
+                },
+              },
+            },
+          },
+          reportedBy: {
+            select: {
+              id: true,
+              username: true,
+              email: true,
+            },
+          },
+          reviewedBy: {
+            select: {
+              id: true,
+              username: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.flaggedComment.count({ where }),
+    ]);
+
+    return {
+      comments,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  /**
+   * Approve a flagged comment (dismiss the flag)
+   */
+  async approveFlaggedComment(
+    flagId: string,
+    moderatorId: string,
+    dto: ApproveFlagDto,
+    ipAddress?: string,
+  ) {
+    const flag = await this.prisma.flaggedComment.findUnique({
+      where: { id: flagId },
+      include: {
+        comment: true,
+      },
+    });
+
+    if (!flag) {
+      throw new NotFoundException(
+        `Flagged comment with ID ${flagId} not found`,
+      );
+    }
+
+    if (flag.status !== ModerationStatus.PENDING) {
+      throw new BadRequestException(
+        `Flag is already ${flag.status.toLowerCase()}`,
+      );
+    }
+
+    await this.prisma.flaggedComment.update({
+      where: { id: flagId },
+      data: {
+        status: ModerationStatus.APPROVED,
+        reviewedById: moderatorId,
+        reviewedAt: new Date(),
+        reviewNotes: dto.notes,
+      },
+    });
+
+    // Create audit log
+    await this.auditLogService.log({
+      performedById: moderatorId,
+      action: AuditAction.OTHER,
+      description: `Flagged comment approved (Flag ID: ${flagId})`,
+      targetType: 'Comment',
+      targetId: flag.commentId,
+      metadata: {
+        flagId,
+        reason: flag.reason,
+        reviewNotes: dto.notes,
+      },
+      ipAddress,
+    });
+  }
+
+  /**
+   * Remove a flagged comment (soft delete)
+   */
+  async removeFlaggedComment(
+    flagId: string,
+    moderatorId: string,
+    dto: RemoveItemDto,
+    ipAddress?: string,
+  ) {
+    const flag = await this.prisma.flaggedComment.findUnique({
+      where: { id: flagId },
+      include: {
+        comment: true,
+      },
+    });
+
+    if (!flag) {
+      throw new NotFoundException(
+        `Flagged comment with ID ${flagId} not found`,
+      );
+    }
+
+    if (flag.status !== ModerationStatus.PENDING) {
+      throw new BadRequestException(
+        `Flag is already ${flag.status.toLowerCase()}`,
+      );
+    }
+
+    // Soft delete the comment
+    await this.prisma.comment.update({
+      where: { id: flag.commentId },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedBy: moderatorId,
+        deleteReason: dto.reason,
+      },
+    });
+
+    // Update flag status
+    await this.prisma.flaggedComment.update({
+      where: { id: flagId },
+      data: {
+        status: ModerationStatus.REMOVED,
+        reviewedById: moderatorId,
+        reviewedAt: new Date(),
+        reviewNotes: dto.reason,
+      },
+    });
+
+    // Create audit log
+    await this.auditLogService.log({
+      performedById: moderatorId,
+      action: AuditAction.OTHER,
+      description: `Flagged comment removed (Flag ID: ${flagId}): ${dto.reason}`,
+      targetType: 'Comment',
+      targetId: flag.commentId,
+      metadata: {
+        flagId,
+        reason: flag.reason,
+        removalReason: dto.reason,
+      },
+      ipAddress,
+    });
+
+    // TODO: Optionally notify comment author if dto.notifyUser is true
+  }
 }

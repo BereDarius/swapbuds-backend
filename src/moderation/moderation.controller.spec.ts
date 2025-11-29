@@ -336,4 +336,238 @@ describe('ModerationController', () => {
       );
     });
   });
+
+  describe('flagComment', () => {
+    it('should flag a comment', async () => {
+      const commentId = 'comment-1';
+      const dto = {
+        reason: FlagReason.SPAM,
+        description: 'This is spam',
+      };
+      const req = {
+        user: { userId: 'user-1' },
+        ip: '127.0.0.1',
+      };
+
+      const mockResult = {
+        id: 'flag-1',
+        commentId,
+        reportedById: req.user.userId,
+        reason: dto.reason,
+        description: dto.description,
+      };
+
+      mockModerationService.flagComment.mockResolvedValue(mockResult);
+
+      const result = await controller.flagComment(commentId, dto, req as any);
+
+      expect(result).toEqual(mockResult);
+      expect(mockModerationService.flagComment).toHaveBeenCalledWith(
+        commentId,
+        req.user.userId,
+        dto,
+        req.ip,
+      );
+    });
+
+    it('should flag a comment without description', async () => {
+      const commentId = 'comment-1';
+      const dto = {
+        reason: FlagReason.INAPPROPRIATE,
+      };
+      const req = {
+        user: { userId: 'user-1' },
+        ip: '127.0.0.1',
+      };
+
+      const mockResult = {
+        id: 'flag-1',
+        commentId,
+        reportedById: req.user.userId,
+        reason: dto.reason,
+      };
+
+      mockModerationService.flagComment.mockResolvedValue(mockResult);
+
+      const result = await controller.flagComment(commentId, dto, req as any);
+
+      expect(result).toEqual(mockResult);
+      expect(mockModerationService.flagComment).toHaveBeenCalledWith(
+        commentId,
+        req.user.userId,
+        dto,
+        req.ip,
+      );
+    });
+  });
+
+  describe('getFlaggedComments', () => {
+    it('should return paginated flagged comments', async () => {
+      const mockResult = {
+        comments: [
+          {
+            id: 'flag-1',
+            commentId: 'comment-1',
+            reason: FlagReason.SPAM,
+          },
+        ],
+        pagination: {
+          page: 1,
+          limit: 20,
+          total: 1,
+          totalPages: 1,
+        },
+      };
+
+      mockModerationService.getFlaggedComments.mockResolvedValue(mockResult);
+
+      const result = await controller.getFlaggedComments();
+
+      expect(result).toEqual(mockResult);
+      expect(mockModerationService.getFlaggedComments).toHaveBeenCalledWith({
+        page: 1,
+        limit: 20,
+        status: undefined,
+        reason: undefined,
+      });
+    });
+
+    it('should accept query parameters for flagged comments', async () => {
+      const mockResult = {
+        comments: [],
+        pagination: {
+          page: 2,
+          limit: 10,
+          total: 0,
+          totalPages: 0,
+        },
+      };
+
+      mockModerationService.getFlaggedComments.mockResolvedValue(mockResult);
+
+      await controller.getFlaggedComments(
+        '2',
+        '10',
+        ModerationStatus.PENDING,
+        FlagReason.SPAM,
+      );
+
+      expect(mockModerationService.getFlaggedComments).toHaveBeenCalledWith({
+        page: 2,
+        limit: 10,
+        status: ModerationStatus.PENDING,
+        reason: FlagReason.SPAM,
+      });
+    });
+  });
+
+  describe('approveFlaggedComment', () => {
+    it('should approve a flagged comment', async () => {
+      const flagId = 'flag-1';
+      const dto = { notes: 'False alarm' };
+      const req = {
+        user: { userId: 'moderator-1' },
+        ip: '127.0.0.1',
+      };
+
+      mockModerationService.approveFlaggedComment.mockResolvedValue(undefined);
+
+      const result = await controller.approveFlaggedComment(
+        flagId,
+        dto,
+        req as any,
+      );
+
+      expect(result).toEqual({ message: 'Comment approved successfully' });
+      expect(mockModerationService.approveFlaggedComment).toHaveBeenCalledWith(
+        flagId,
+        req.user.userId,
+        dto,
+        req.ip,
+      );
+    });
+
+    it('should approve a flagged comment without notes', async () => {
+      const flagId = 'flag-1';
+      const dto = {};
+      const req = {
+        user: { userId: 'moderator-1' },
+        ip: '127.0.0.1',
+      };
+
+      mockModerationService.approveFlaggedComment.mockResolvedValue(undefined);
+
+      const result = await controller.approveFlaggedComment(
+        flagId,
+        dto,
+        req as any,
+      );
+
+      expect(result).toEqual({ message: 'Comment approved successfully' });
+      expect(mockModerationService.approveFlaggedComment).toHaveBeenCalledWith(
+        flagId,
+        req.user.userId,
+        dto,
+        req.ip,
+      );
+    });
+  });
+
+  describe('removeFlaggedComment', () => {
+    it('should remove a flagged comment', async () => {
+      const flagId = 'flag-1';
+      const dto = {
+        reason: 'Confirmed violation',
+        notifyUser: true,
+      };
+      const req = {
+        user: { userId: 'moderator-1' },
+        ip: '127.0.0.1',
+      };
+
+      mockModerationService.removeFlaggedComment.mockResolvedValue(undefined);
+
+      const result = await controller.removeFlaggedComment(
+        flagId,
+        dto,
+        req as any,
+      );
+
+      expect(result).toEqual({ message: 'Comment removed successfully' });
+      expect(mockModerationService.removeFlaggedComment).toHaveBeenCalledWith(
+        flagId,
+        req.user.userId,
+        dto,
+        req.ip,
+      );
+    });
+
+    it('should remove a flagged comment without notification', async () => {
+      const flagId = 'flag-1';
+      const dto = {
+        reason: 'Confirmed violation',
+        notifyUser: false,
+      };
+      const req = {
+        user: { userId: 'moderator-1' },
+        ip: '127.0.0.1',
+      };
+
+      mockModerationService.removeFlaggedComment.mockResolvedValue(undefined);
+
+      const result = await controller.removeFlaggedComment(
+        flagId,
+        dto,
+        req as any,
+      );
+
+      expect(result).toEqual({ message: 'Comment removed successfully' });
+      expect(mockModerationService.removeFlaggedComment).toHaveBeenCalledWith(
+        flagId,
+        req.user.userId,
+        dto,
+        req.ip,
+      );
+    });
+  });
 });

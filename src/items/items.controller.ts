@@ -1,5 +1,10 @@
-import { CurrentUser, Public } from '@/auth/decorators/auth.decorators';
+import {
+  CurrentUser,
+  Public,
+  RequireVerified,
+} from '@/auth/decorators/auth.decorators';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { VerifiedGuard } from '@/auth/guards/verified.guard';
 import {
   Body,
   Controller,
@@ -42,9 +47,11 @@ export class ItemsController {
 
   /**
    * Create a new item
-   * Requires authentication
+   * Requires authentication and verification
    */
   @Post()
+  @UseGuards(VerifiedGuard)
+  @RequireVerified()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new item' })
   @ApiResponse({
@@ -53,6 +60,7 @@ export class ItemsController {
     type: ItemResponseDto,
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Verification required' })
   async create(
     @CurrentUser('id') userId: string,
     @Body() createItemDto: CreateItemDto,

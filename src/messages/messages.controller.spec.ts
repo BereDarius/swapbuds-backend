@@ -1,4 +1,6 @@
+import { PrismaService } from '@/prisma/prisma.service';
 import { mockMessagesService } from '@/test/mocks/messages.mock';
+import { mockPrismaService } from '@/test/mocks/prisma.mock';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MessagesController } from './messages.controller';
 import { MessagesService } from './messages.service';
@@ -45,6 +47,10 @@ describe('MessagesController', () => {
         {
           provide: MessagesService,
           useValue: mockMessagesService,
+        },
+        {
+          provide: PrismaService,
+          useValue: mockPrismaService,
         },
       ],
     }).compile();

@@ -1,7 +1,9 @@
 import { LikesController } from '@/likes/likes.controller';
 import { LikesService } from '@/likes/likes.service';
+import { PrismaService } from '@/prisma/prisma.service';
 import { mockLikes } from '@/test/fixtures/like.fixture';
 import { mockLikesService } from '@/test/mocks/likes.mock';
+import { mockPrismaService } from '@/test/mocks/prisma.mock';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 
@@ -16,6 +18,10 @@ describe('LikesController', () => {
         {
           provide: LikesService,
           useValue: mockLikesService,
+        },
+        {
+          provide: PrismaService,
+          useValue: mockPrismaService,
         },
       ],
     }).compile();
@@ -35,11 +41,14 @@ describe('LikesController', () => {
       const userId = 'user-123';
       const itemId = 'item-456';
 
-      mockLikesService.likeItem.mockResolvedValue(undefined);
+      mockLikesService.likeItem.mockResolvedValue({ count: 1 });
 
       const result = await controller.likeItem(userId, itemId);
 
-      expect(result).toEqual({ message: 'Item liked successfully' });
+      expect(result).toEqual({
+        message: 'Item liked successfully',
+        likesCount: 1,
+      });
       expect(likesService.likeItem).toHaveBeenCalledWith(userId, itemId);
       expect(likesService.likeItem).toHaveBeenCalledTimes(1);
     });
@@ -78,11 +87,11 @@ describe('LikesController', () => {
       const userId = 'user-123';
       const itemId = 'item-456';
 
-      mockLikesService.unlikeItem.mockResolvedValue(undefined);
+      mockLikesService.unlikeItem.mockResolvedValue({ count: 0 });
 
       const result = await controller.unlikeItem(userId, itemId);
 
-      expect(result).toBeUndefined();
+      expect(result).toEqual({ likesCount: 0 });
       expect(likesService.unlikeItem).toHaveBeenCalledWith(userId, itemId);
       expect(likesService.unlikeItem).toHaveBeenCalledTimes(1);
     });

@@ -86,7 +86,8 @@ describe('VerificationService - Email Notifications', () => {
 
       await service.submitVerification(userId, {
         documentType: 'ID_CARD' as any,
-        documentUrl: 'https://example.com/doc.jpg',
+        documentUrlFront: 'https://example.com/doc.jpg',
+        selfieUrl: 'https://example.com/selfie.jpg',
       });
 
       expect(mockMailService.sendVerificationSubmitted).toHaveBeenCalledWith(
@@ -116,7 +117,8 @@ describe('VerificationService - Email Notifications', () => {
 
       await service.submitVerification(userId, {
         documentType: 'ID_CARD' as any,
-        documentUrl: 'https://example.com/doc.jpg',
+        documentUrlFront: 'https://example.com/doc.jpg',
+        selfieUrl: 'https://example.com/selfie.jpg',
       });
 
       expect(
@@ -149,7 +151,8 @@ describe('VerificationService - Email Notifications', () => {
       await expect(
         service.submitVerification(userId, {
           documentType: 'ID_CARD' as any,
-          documentUrl: 'https://example.com/doc.jpg',
+          documentUrlFront: 'https://example.com/doc.jpg',
+          selfieUrl: 'https://example.com/selfie.jpg',
         }),
       ).resolves.not.toThrow();
     });

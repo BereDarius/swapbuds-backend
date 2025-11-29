@@ -38,7 +38,9 @@ describe('VerificationController', () => {
       const userId = 'user-1';
       const dto = {
         documentType: 'DRIVERS_LICENSE' as const,
-        documentUrl: 'https://cloudinary.com/doc.jpg',
+        documentUrlFront: 'https://cloudinary.com/document-front.jpg',
+        documentUrlBack: 'https://cloudinary.com/document-back.jpg',
+        selfieUrl: 'https://cloudinary.com/selfie.jpg',
       };
       const mockResponse = {
         id: 'verif-1',
@@ -196,6 +198,7 @@ describe('VerificationController', () => {
       expect(mockVerificationService.getDocumentSignedUrl).toHaveBeenCalledWith(
         'verif-1',
         adminId,
+        'front',
       );
     });
   });

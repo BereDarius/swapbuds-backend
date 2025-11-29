@@ -11,6 +11,10 @@ export const mockCommentsService = {
   updateComment: jest.fn(),
   deleteComment: jest.fn(),
   getCommentsCount: jest.fn(),
+  likeComment: jest.fn(),
+  unlikeComment: jest.fn(),
+  hasLikedComment: jest.fn(),
+  getCommentVersions: jest.fn(),
 };
 
 export function resetCommentsServiceMocks() {

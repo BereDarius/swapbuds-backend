@@ -1,5 +1,9 @@
-import { CurrentUser } from '@/auth/decorators/auth.decorators';
+import {
+  CurrentUser,
+  RequireVerified,
+} from '@/auth/decorators/auth.decorators';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { VerifiedGuard } from '@/auth/guards/verified.guard';
 import {
   Body,
   Controller,
@@ -27,8 +31,11 @@ export class ReviewsController {
   /**
    * Create a review for a completed trade
    * POST /reviews/trades/:tradeId
+   * Requires verification for reputation system integrity
    */
   @Post('trades/:tradeId')
+  @UseGuards(VerifiedGuard)
+  @RequireVerified()
   async createReview(
     @CurrentUser('id') userId: string,
     @Param('tradeId') tradeId: string,

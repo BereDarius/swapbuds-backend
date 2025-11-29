@@ -72,6 +72,13 @@ describe('DocumentSecurityService', () => {
       const encrypted = service.encryptUrl('');
       expect(encrypted).toBeDefined();
     });
+
+    it('should skip encryption for base64 data URLs', () => {
+      const dataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANS';
+      const result = service.encryptUrl(dataUrl);
+
+      expect(result).toBe(dataUrl);
+    });
   });
 
   describe('decryptUrl', () => {
@@ -95,6 +102,21 @@ describe('DocumentSecurityService', () => {
       const result = service.decryptUrl(malformed);
 
       expect(result).toBe(malformed);
+    });
+
+    it('should skip decryption for base64 data URLs', () => {
+      const dataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANS';
+      const result = service.decryptUrl(dataUrl);
+
+      expect(result).toBe(dataUrl);
+    });
+
+    it('should return original on decryption error', () => {
+      const encrypted = 'aaaa:bbbb:cccc'; // Valid format but invalid content
+      const result = service.decryptUrl(encrypted);
+
+      // Should return original string when decryption fails
+      expect(result).toBe(encrypted);
     });
   });
 
@@ -155,6 +177,23 @@ describe('DocumentSecurityService', () => {
       const publicId = service.extractPublicId(url);
 
       expect(publicId).toBe('');
+    });
+
+    it('should handle extraction errors gracefully', () => {
+      const invalidUrl = null;
+
+      const publicId = service.extractPublicId(invalidUrl as any);
+
+      expect(publicId).toBe('');
+    });
+
+    it('should extract public ID without file extension', () => {
+      const url =
+        'https://res.cloudinary.com/demo/image/upload/v1234567890/documents/test-doc';
+
+      const publicId = service.extractPublicId(url);
+
+      expect(publicId).toBe('documents/test-doc');
     });
   });
 

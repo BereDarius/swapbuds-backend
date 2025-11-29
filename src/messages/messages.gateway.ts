@@ -203,6 +203,19 @@ export class MessagesGateway
   /**
    * Emit message deletion
    */
+  /**
+   * Emit message update to a user
+   */
+  emitMessageUpdated(userId: string, message: any) {
+    this.server.to(`user:${userId}`).emit('messageUpdated', message);
+    this.logger.log(
+      `Emitted message updated to user:${userId}, messageId:${message.id}`,
+    );
+  }
+
+  /**
+   * Emit message deletion to a user
+   */
   emitMessageDeleted(
     userId: string,
     messageId: string,

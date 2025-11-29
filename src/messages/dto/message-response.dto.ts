@@ -6,6 +6,12 @@ export class MessageResponseDto {
   conversationId: string;
   isRead: boolean;
   readAt: Date | null;
+  isDeleted: boolean;
+  isEdited: boolean;
+  editedAt: Date | null;
+  deletedAt: Date | null;
+  deletedBy: string | null;
+  deleteReason: string | null;
   createdAt: Date;
   updatedAt: Date;
 

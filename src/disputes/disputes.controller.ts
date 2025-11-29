@@ -1,6 +1,10 @@
-import { CurrentUser } from '@/auth/decorators/auth.decorators';
+import {
+  CurrentUser,
+  RequireVerified,
+} from '@/auth/decorators/auth.decorators';
 import { AdminGuard } from '@/auth/guards/admin.guard';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { VerifiedGuard } from '@/auth/guards/verified.guard';
 import {
   Body,
   Controller,
@@ -39,8 +43,11 @@ export class DisputesController {
    * @param userId - Authenticated user ID
    * @param createDisputeDto - Dispute details
    * @returns Created dispute
+   * Requires verification for trust and accountability
    */
   @Post()
+  @UseGuards(VerifiedGuard)
+  @RequireVerified()
   @ApiOperation({
     summary: 'Create a new dispute',
     description: 'File a dispute against another user for a specific trade',
@@ -51,7 +58,10 @@ export class DisputesController {
     type: DisputeResponseDto,
   })
   @ApiResponse({ status: 400, description: 'Invalid dispute data' })
-  @ApiResponse({ status: 403, description: 'Not authorized for this trade' })
+  @ApiResponse({
+    status: 403,
+    description: 'Not authorized for this trade or verification required',
+  })
   @ApiResponse({ status: 404, description: 'Trade not found' })
   async createDispute(
     @CurrentUser('id') userId: string,

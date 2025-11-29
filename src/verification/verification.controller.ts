@@ -166,7 +166,14 @@ export class VerificationController {
   @ApiOperation({
     summary: '[Admin] Get signed document URL',
     description:
-      'Get a temporary signed URL to view the verification document. URL expires in 5 minutes.',
+      'Get a temporary signed URL to view the verification document (front or back). URL expires in 5 minutes.',
+  })
+  @ApiQuery({
+    name: 'side',
+    required: false,
+    type: String,
+    enum: ['front', 'back'],
+    example: 'front',
   })
   @ApiResponse({
     status: 200,
@@ -185,8 +192,13 @@ export class VerificationController {
   async getDocumentUrl(
     @Param('id') id: string,
     @CurrentUser('id') adminId: string,
+    @Query('side') side?: 'front' | 'back',
   ) {
-    return this.verificationService.getDocumentSignedUrl(id, adminId);
+    return this.verificationService.getDocumentSignedUrl(
+      id,
+      adminId,
+      side || 'front',
+    );
   }
 
   /**
@@ -236,5 +248,21 @@ export class VerificationController {
     @Body() dto: ReviewVerificationDto,
   ) {
     return this.verificationService.rejectVerification(id, adminId, dto);
+  }
+
+  /**
+   * Admin: Update internal notes
+   */
+  @Patch('admin/:id/notes')
+  @UseGuards(AdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: '[Admin] Update internal notes',
+    description: 'Update internal notes for a verification request',
+  })
+  @ApiResponse({ status: 200, description: 'Notes updated successfully' })
+  @ApiResponse({ status: 404, description: 'Verification not found' })
+  async updateNotes(@Param('id') id: string, @Body() body: { notes: string }) {
+    return this.verificationService.updateNotes(id, body.notes);
   }
 }

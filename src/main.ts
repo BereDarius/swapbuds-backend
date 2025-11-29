@@ -44,11 +44,16 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule, {
     logger,
+    bodyParser: true,
   });
 
   const configService = app.get(ConfigService);
   const port = configService.get('port');
   const nodeEnv = configService.get('nodeEnv');
+
+  // Increase body size limit for file uploads (base64 encoded images)
+  app.use(require('express').json({ limit: '10mb' }));
+  app.use(require('express').urlencoded({ limit: '10mb', extended: true }));
 
   // Global prefix
   app.setGlobalPrefix('api');

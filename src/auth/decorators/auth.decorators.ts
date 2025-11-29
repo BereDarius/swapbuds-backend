@@ -60,3 +60,41 @@ export const CurrentUser = createParamDecorator(
     return data ? user?.[data] : user;
   },
 );
+
+/** Metadata key for identifying routes that require verification */
+export const REQUIRE_VERIFIED_KEY = 'requireVerified';
+
+/**
+ * @RequireVerified() Decorator
+ *
+ * Marks a route as requiring identity verification.
+ * Works with VerifiedGuard to enforce verification requirement.
+ * Use @SkipVerification() to explicitly bypass verification check.
+ *
+ * @example
+ * ```typescript
+ * @RequireVerified()
+ * @Post('trade/propose')
+ * proposeTrade() {
+ *   return 'This route requires verified users';
+ * }
+ * ```
+ */
+export const RequireVerified = () => SetMetadata(REQUIRE_VERIFIED_KEY, true);
+
+/**
+ * @SkipVerification() Decorator
+ *
+ * Marks a route as not requiring identity verification.
+ * Useful for explicitly bypassing verification check when VerifiedGuard is applied at controller level.
+ *
+ * @example
+ * ```typescript
+ * @SkipVerification()
+ * @Get('public-data')
+ * getPublicData() {
+ *   return 'This route does not require verification';
+ * }
+ * ```
+ */
+export const SkipVerification = () => SetMetadata(REQUIRE_VERIFIED_KEY, false);

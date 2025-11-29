@@ -1,10 +1,12 @@
 import { AdminGuard } from '@/auth/guards/admin.guard';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { PrismaService } from '@/prisma/prisma.service';
 import {
   mockDisputeWithRelations,
   mockResolvedDisputeWithRelations,
 } from '@/test/fixtures/dispute.fixture';
 import { mockDisputesService } from '@/test/mocks/disputes.mock';
+import { mockPrismaService } from '@/test/mocks/prisma.mock';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DisputeReason, DisputeStatus } from '@prisma/client';
 import { DisputesController } from './disputes.controller';
@@ -20,6 +22,10 @@ describe('DisputesController', () => {
         {
           provide: DisputesService,
           useValue: mockDisputesService,
+        },
+        {
+          provide: PrismaService,
+          useValue: mockPrismaService,
         },
       ],
     })

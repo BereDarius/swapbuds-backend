@@ -40,9 +40,11 @@ export class VerificationCleanupService {
         reviewedAt: {
           lte: cutoffDate,
         },
-        documentUrl: {
-          not: null,
-        },
+        OR: [
+          { documentUrlFront: { not: null } },
+          { documentUrlBack: { not: null } },
+          { selfieUrl: { not: null } },
+        ],
       },
     });
 
@@ -85,9 +87,11 @@ export class VerificationCleanupService {
         reviewedAt: {
           lte: cutoffDate,
         },
-        documentUrl: {
-          not: null,
-        },
+        OR: [
+          { documentUrlFront: { not: null } },
+          { documentUrlBack: { not: null } },
+          { selfieUrl: { not: null } },
+        ],
       },
     });
 
@@ -114,23 +118,43 @@ export class VerificationCleanupService {
   }
 
   /**
-   * Delete a verification document
+   * Delete verification documents (front, back, and selfie)
    */
   private async deleteVerificationDocument(
     verification: any,
     reason: 'AUTO_DELETION_APPROVED' | 'AUTO_DELETION_REJECTED' | 'MANUAL',
   ): Promise<void> {
-    // Decrypt URL to get actual Cloudinary URL
-    const decryptedUrl = this.documentSecurity.decryptUrl(
-      verification.documentUrl,
-    );
+    // Delete front document
+    if (verification.documentUrlFront) {
+      const decryptedUrl = this.documentSecurity.decryptUrl(
+        verification.documentUrlFront,
+      );
+      const publicId = this.documentSecurity.extractPublicId(decryptedUrl);
+      if (publicId && this.documentSecurity.isCloudinaryUrl(decryptedUrl)) {
+        await this.documentSecurity.deleteDocument(publicId);
+      }
+    }
 
-    // Extract public ID
-    const publicId = this.documentSecurity.extractPublicId(decryptedUrl);
+    // Delete back document (if exists)
+    if (verification.documentUrlBack) {
+      const decryptedUrl = this.documentSecurity.decryptUrl(
+        verification.documentUrlBack,
+      );
+      const publicId = this.documentSecurity.extractPublicId(decryptedUrl);
+      if (publicId && this.documentSecurity.isCloudinaryUrl(decryptedUrl)) {
+        await this.documentSecurity.deleteDocument(publicId);
+      }
+    }
 
-    // Delete from Cloudinary
-    if (publicId && this.documentSecurity.isCloudinaryUrl(decryptedUrl)) {
-      await this.documentSecurity.deleteDocument(publicId);
+    // Delete selfie photo
+    if (verification.selfieUrl) {
+      const decryptedUrl = this.documentSecurity.decryptUrl(
+        verification.selfieUrl,
+      );
+      const publicId = this.documentSecurity.extractPublicId(decryptedUrl);
+      if (publicId && this.documentSecurity.isCloudinaryUrl(decryptedUrl)) {
+        await this.documentSecurity.deleteDocument(publicId);
+      }
     }
 
     // Calculate days after review
@@ -141,14 +165,16 @@ export class VerificationCleanupService {
         )
       : 0;
 
-    // Update database - set documentUrl to null (soft delete reference)
+    // Update database - set all document URLs to null (soft delete references)
     await this.prisma.userVerification.update({
       where: { id: verification.id },
       data: {
-        documentUrl: null,
+        documentUrlFront: null,
+        documentUrlBack: null,
+        selfieUrl: null,
         notes: verification.notes
-          ? `${verification.notes}\n\nDocument deleted: ${reason} (${daysAfterReview} days after review)`
-          : `Document deleted: ${reason} (${daysAfterReview} days after review)`,
+          ? `${verification.notes}\n\nDocuments deleted: ${reason} (${daysAfterReview} days after review)`
+          : `Documents deleted: ${reason} (${daysAfterReview} days after review)`,
       },
     });
 
@@ -168,8 +194,13 @@ export class VerificationCleanupService {
       where: { id: verificationId },
     });
 
-    if (!verification || !verification.documentUrl) {
-      throw new Error('Verification not found or document already deleted');
+    if (
+      !verification ||
+      (!verification.documentUrlFront &&
+        !verification.documentUrlBack &&
+        !verification.selfieUrl)
+    ) {
+      throw new Error('Verification not found or documents already deleted');
     }
 
     await this.deleteVerificationDocument(verification, 'MANUAL');
@@ -205,7 +236,11 @@ export class VerificationCleanupService {
       where: {
         status: VerificationStatus.APPROVED,
         reviewedAt: { lte: approvedCutoff },
-        documentUrl: { not: null },
+        OR: [
+          { documentUrlFront: { not: null } },
+          { documentUrlBack: { not: null } },
+          { selfieUrl: { not: null } },
+        ],
       },
     });
 
@@ -215,7 +250,11 @@ export class VerificationCleanupService {
           in: [VerificationStatus.REJECTED, VerificationStatus.UNDERAGE],
         },
         reviewedAt: { lte: rejectedCutoff },
-        documentUrl: { not: null },
+        OR: [
+          { documentUrlFront: { not: null } },
+          { documentUrlBack: { not: null } },
+          { selfieUrl: { not: null } },
+        ],
       },
     });
 

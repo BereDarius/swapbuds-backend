@@ -52,7 +52,9 @@ describe('VerificationCleanupService', () => {
           userId: 'user-1',
           status: VerificationStatus.APPROVED,
           reviewedAt: oldDate,
-          documentUrl: 'encrypted-url-1',
+          documentUrlFront: 'encrypted-url-1',
+          documentUrlBack: null,
+          selfieUrl: null,
           notes: null,
         },
         {
@@ -60,7 +62,9 @@ describe('VerificationCleanupService', () => {
           userId: 'user-2',
           status: VerificationStatus.APPROVED,
           reviewedAt: oldDate,
-          documentUrl: 'encrypted-url-2',
+          documentUrlFront: 'encrypted-url-2',
+          documentUrlBack: null,
+          selfieUrl: null,
           notes: 'Some notes',
         },
       ];
@@ -92,7 +96,11 @@ describe('VerificationCleanupService', () => {
             reviewedAt: expect.objectContaining({
               lte: expect.any(Date),
             }),
-            documentUrl: { not: null },
+            OR: expect.arrayContaining([
+              { documentUrlFront: { not: null } },
+              { documentUrlBack: { not: null } },
+              { selfieUrl: { not: null } },
+            ]),
           }),
         }),
       );
@@ -114,7 +122,9 @@ describe('VerificationCleanupService', () => {
           userId: 'user-1',
           status: VerificationStatus.APPROVED,
           reviewedAt: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000),
-          documentUrl: 'encrypted-url-1',
+          documentUrlFront: 'encrypted-url-1',
+          documentUrlBack: null,
+          selfieUrl: null,
           notes: null,
         },
         {
@@ -122,7 +132,9 @@ describe('VerificationCleanupService', () => {
           userId: 'user-2',
           status: VerificationStatus.APPROVED,
           reviewedAt: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000),
-          documentUrl: 'encrypted-url-2',
+          documentUrlFront: 'encrypted-url-2',
+          documentUrlBack: null,
+          selfieUrl: null,
           notes: null,
         },
       ];
@@ -175,7 +187,9 @@ describe('VerificationCleanupService', () => {
           userId: 'user-1',
           status: VerificationStatus.REJECTED,
           reviewedAt: oldDate,
-          documentUrl: 'encrypted-url-1',
+          documentUrlFront: 'encrypted-url-1',
+          documentUrlBack: null,
+          selfieUrl: null,
           notes: null,
         },
         {
@@ -183,7 +197,9 @@ describe('VerificationCleanupService', () => {
           userId: 'user-2',
           status: VerificationStatus.UNDERAGE,
           reviewedAt: oldDate,
-          documentUrl: 'encrypted-url-2',
+          documentUrlFront: 'encrypted-url-2',
+          documentUrlBack: null,
+          selfieUrl: null,
           notes: null,
         },
       ];
@@ -238,7 +254,9 @@ describe('VerificationCleanupService', () => {
       const mockVerification = {
         id: 'verif-1',
         userId: 'user-1',
-        documentUrl: 'encrypted-url',
+        documentUrlFront: 'encrypted-url',
+        documentUrlBack: null,
+        selfieUrl: null,
         reviewedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
         notes: null,
       };
@@ -279,17 +297,19 @@ describe('VerificationCleanupService', () => {
 
       await expect(
         service.deleteDocumentManually('nonexistent'),
-      ).rejects.toThrow('Verification not found or document already deleted');
+      ).rejects.toThrow('Verification not found or documents already deleted');
     });
 
     it('should throw error if document already deleted', async () => {
       mockPrismaService.userVerification.findUnique.mockResolvedValue({
         id: 'verif-1',
-        documentUrl: null,
+        documentUrlFront: null,
+        documentUrlBack: null,
+        selfieUrl: null,
       });
 
       await expect(service.deleteDocumentManually('verif-1')).rejects.toThrow(
-        'Verification not found or document already deleted',
+        'Verification not found or documents already deleted',
       );
     });
   });
@@ -345,6 +365,186 @@ describe('VerificationCleanupService', () => {
       expect(stats.pendingApprovedDeletion).toBe(0);
       expect(stats.pendingRejectedDeletion).toBe(0);
       expect(stats.totalPendingDeletion).toBe(0);
+    });
+  });
+
+  describe('deleteVerificationDocument', () => {
+    it('should delete front, back, and selfie documents', async () => {
+      const mockVerification = {
+        id: 'verif-1',
+        documentUrlFront: 'encrypted-front',
+        documentUrlBack: 'encrypted-back',
+        selfieUrl: 'encrypted-selfie',
+        reviewedAt: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000),
+        notes: null,
+      };
+
+      mockDocumentSecurityService.decryptUrl.mockImplementation(
+        (url) => `decrypted-${url}`,
+      );
+      mockDocumentSecurityService.extractPublicId.mockReturnValue(
+        'documents/test',
+      );
+      mockDocumentSecurityService.isCloudinaryUrl.mockReturnValue(true);
+      mockDocumentSecurityService.deleteDocument.mockResolvedValue({
+        result: 'ok',
+      });
+      mockPrismaService.userVerification.update.mockResolvedValue({});
+      mockVerificationAuditService.logDocumentDeletion.mockResolvedValue(
+        undefined,
+      );
+
+      await (service as any).deleteVerificationDocument(
+        mockVerification,
+        'MANUAL',
+      );
+
+      expect(mockDocumentSecurityService.deleteDocument).toHaveBeenCalledTimes(
+        3,
+      );
+      expect(mockPrismaService.userVerification.update).toHaveBeenCalledWith({
+        where: { id: 'verif-1' },
+        data: expect.objectContaining({
+          documentUrlFront: null,
+          documentUrlBack: null,
+          selfieUrl: null,
+          notes: expect.stringContaining('Documents deleted: MANUAL'),
+        }),
+      });
+    });
+
+    it('should handle documents without back or selfie', async () => {
+      const mockVerification = {
+        id: 'verif-1',
+        documentUrlFront: 'encrypted-front',
+        documentUrlBack: null,
+        selfieUrl: null,
+        reviewedAt: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000),
+        notes: null,
+      };
+
+      mockDocumentSecurityService.decryptUrl.mockReturnValue('decrypted-url');
+      mockDocumentSecurityService.extractPublicId.mockReturnValue(
+        'documents/test',
+      );
+      mockDocumentSecurityService.isCloudinaryUrl.mockReturnValue(true);
+      mockDocumentSecurityService.deleteDocument.mockResolvedValue({
+        result: 'ok',
+      });
+      mockPrismaService.userVerification.update.mockResolvedValue({});
+      mockVerificationAuditService.logDocumentDeletion.mockResolvedValue(
+        undefined,
+      );
+
+      await (service as any).deleteVerificationDocument(
+        mockVerification,
+        'MANUAL',
+      );
+
+      expect(mockDocumentSecurityService.deleteDocument).toHaveBeenCalledTimes(
+        1,
+      );
+    });
+
+    it('should append to existing notes', async () => {
+      const mockVerification = {
+        id: 'verif-1',
+        documentUrlFront: 'encrypted-front',
+        documentUrlBack: null,
+        selfieUrl: null,
+        reviewedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+        notes: 'Previous notes',
+      };
+
+      mockDocumentSecurityService.decryptUrl.mockReturnValue('decrypted-url');
+      mockDocumentSecurityService.extractPublicId.mockReturnValue(
+        'documents/test',
+      );
+      mockDocumentSecurityService.isCloudinaryUrl.mockReturnValue(true);
+      mockDocumentSecurityService.deleteDocument.mockResolvedValue({
+        result: 'ok',
+      });
+      mockPrismaService.userVerification.update.mockResolvedValue({});
+      mockVerificationAuditService.logDocumentDeletion.mockResolvedValue(
+        undefined,
+      );
+
+      await (service as any).deleteVerificationDocument(
+        mockVerification,
+        'MANUAL',
+      );
+
+      expect(mockPrismaService.userVerification.update).toHaveBeenCalledWith({
+        where: { id: 'verif-1' },
+        data: expect.objectContaining({
+          notes: expect.stringContaining('Previous notes'),
+        }),
+      });
+    });
+
+    it('should skip non-Cloudinary URLs', async () => {
+      const mockVerification = {
+        id: 'verif-1',
+        documentUrlFront: 'data:image/png;base64,abc',
+        documentUrlBack: null,
+        selfieUrl: null,
+        reviewedAt: new Date(),
+        notes: null,
+      };
+
+      mockDocumentSecurityService.decryptUrl.mockReturnValue(
+        'data:image/png;base64,abc',
+      );
+      mockDocumentSecurityService.extractPublicId.mockReturnValue('');
+      mockDocumentSecurityService.isCloudinaryUrl.mockReturnValue(false);
+      mockPrismaService.userVerification.update.mockResolvedValue({});
+      mockVerificationAuditService.logDocumentDeletion.mockResolvedValue(
+        undefined,
+      );
+
+      await (service as any).deleteVerificationDocument(
+        mockVerification,
+        'MANUAL',
+      );
+
+      expect(mockDocumentSecurityService.deleteDocument).not.toHaveBeenCalled();
+      expect(mockPrismaService.userVerification.update).toHaveBeenCalled();
+    });
+
+    it('should handle verification without reviewedAt', async () => {
+      const mockVerification = {
+        id: 'verif-1',
+        documentUrlFront: 'encrypted-front',
+        documentUrlBack: null,
+        selfieUrl: null,
+        reviewedAt: null,
+        notes: null,
+      };
+
+      mockDocumentSecurityService.decryptUrl.mockReturnValue('decrypted-url');
+      mockDocumentSecurityService.extractPublicId.mockReturnValue(
+        'documents/test',
+      );
+      mockDocumentSecurityService.isCloudinaryUrl.mockReturnValue(true);
+      mockDocumentSecurityService.deleteDocument.mockResolvedValue({
+        result: 'ok',
+      });
+      mockPrismaService.userVerification.update.mockResolvedValue({});
+      mockVerificationAuditService.logDocumentDeletion.mockResolvedValue(
+        undefined,
+      );
+
+      await (service as any).deleteVerificationDocument(
+        mockVerification,
+        'MANUAL',
+      );
+
+      expect(mockPrismaService.userVerification.update).toHaveBeenCalledWith({
+        where: { id: 'verif-1' },
+        data: expect.objectContaining({
+          notes: expect.stringContaining('(0 days after review)'),
+        }),
+      });
     });
   });
 });

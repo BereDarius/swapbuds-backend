@@ -1,5 +1,9 @@
-import { CurrentUser } from '@/auth/decorators/auth.decorators';
+import {
+  CurrentUser,
+  RequireVerified,
+} from '@/auth/decorators/auth.decorators';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { VerifiedGuard } from '@/auth/guards/verified.guard';
 import {
   Controller,
   Delete,
@@ -25,8 +29,11 @@ export class LikesController {
 
   /**
    * Like an item
+   * Requires verification to prevent spam
    */
   @Post(':itemId/like')
+  @UseGuards(VerifiedGuard)
+  @RequireVerified()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Like an item' })
   @ApiParam({ name: 'itemId', description: 'Item ID' })
@@ -42,24 +49,34 @@ export class LikesController {
     status: 409,
     description: 'Item already liked',
   })
+  @ApiResponse({
+    status: 403,
+    description: 'Verification required',
+  })
   async likeItem(
     @CurrentUser('id') userId: string,
     @Param('itemId') itemId: string,
   ) {
-    await this.likesService.likeItem(userId, itemId);
-    return { message: 'Item liked successfully' };
+    const { count } = await this.likesService.likeItem(userId, itemId);
+    return { message: 'Item liked successfully', likesCount: count };
   }
 
   /**
    * Unlike an item
    */
   @Delete(':itemId/like')
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Unlike an item' })
   @ApiParam({ name: 'itemId', description: 'Item ID' })
   @ApiResponse({
-    status: 204,
+    status: 200,
     description: 'Item unliked successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        likesCount: { type: 'number', example: 5 },
+      },
+    },
   })
   @ApiResponse({
     status: 404,
@@ -69,7 +86,8 @@ export class LikesController {
     @CurrentUser('id') userId: string,
     @Param('itemId') itemId: string,
   ) {
-    await this.likesService.unlikeItem(userId, itemId);
+    const { count } = await this.likesService.unlikeItem(userId, itemId);
+    return { likesCount: count };
   }
 
   /**

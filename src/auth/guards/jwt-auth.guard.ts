@@ -33,8 +33,8 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
    * Determine if route can be accessed
    *
    * Checks if route is marked as public using @Public() decorator.
-   * If public, allows access without authentication.
-   * Otherwise, validates JWT token using parent AuthGuard.
+   * If public, validates JWT if present but allows access without it.
+   * Otherwise, requires valid JWT token using parent AuthGuard.
    *
    * @param context - Execution context containing request info
    * @returns true if access allowed, false otherwise
@@ -46,12 +46,28 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       context.getClass(), // Check class decorator
     ]);
 
-    // Allow access to public routes without authentication
+    // For public routes, try to validate JWT if present, but don't require it
     if (isPublic) {
-      return true;
+      return this.handlePublicRoute(context);
     }
 
-    // For protected routes, validate JWT token
+    // For protected routes, require valid JWT token
     return super.canActivate(context);
+  }
+
+  /**
+   * Handle public routes with optional authentication
+   *
+   * Attempts to validate JWT if present in the request.
+   * If validation fails or no token present, allows access anyway.
+   * This populates request.user for authenticated users on public routes.
+   */
+  private async handlePublicRoute(context: ExecutionContext): Promise<boolean> {
+    try {
+      await super.canActivate(context);
+    } catch (error) {
+      // JWT validation failed or no token present - that's okay for public routes
+    }
+    return true;
   }
 }

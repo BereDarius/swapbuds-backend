@@ -34,6 +34,12 @@ export class DocumentSecurityService {
    */
   encryptUrl(url: string): string {
     try {
+      // Skip encryption for base64 data URLs (temporary for testing)
+      // In production, these should be uploaded to Cloudinary first
+      if (url.startsWith('data:')) {
+        return url;
+      }
+
       const iv = crypto.randomBytes(16);
       const key = Buffer.from(this.encryptionKey, 'hex');
       const cipher = crypto.createCipheriv(this.algorithm, key, iv);
@@ -62,6 +68,11 @@ export class DocumentSecurityService {
    */
   decryptUrl(encryptedUrl: string): string {
     try {
+      // Skip decryption for base64 data URLs (already unencrypted)
+      if (encryptedUrl.startsWith('data:')) {
+        return encryptedUrl;
+      }
+
       const parts = encryptedUrl.split(':');
       if (parts.length !== 3) {
         // Not encrypted format, return as is

@@ -9,6 +9,10 @@ export const mockModerationService = {
   bulkApprove: jest.fn(),
   bulkReject: jest.fn(),
   bulkRemove: jest.fn(),
+  flagComment: jest.fn(),
+  getFlaggedComments: jest.fn(),
+  approveFlaggedComment: jest.fn(),
+  removeFlaggedComment: jest.fn(),
 };
 
 export const resetModerationMocks = () => {

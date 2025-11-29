@@ -1,5 +1,9 @@
-import { CurrentUser } from '@/auth/decorators/auth.decorators';
+import {
+  CurrentUser,
+  RequireVerified,
+} from '@/auth/decorators/auth.decorators';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { VerifiedGuard } from '@/auth/guards/verified.guard';
 import {
   Body,
   Controller,
@@ -43,6 +47,8 @@ export class TradesController {
    * The selected delivery method must be supported by all items in the trade
    */
   @Post()
+  @UseGuards(VerifiedGuard)
+  @RequireVerified()
   @ApiOperation({
     summary: 'Create a trade proposal',
     description:
@@ -136,8 +142,11 @@ export class TradesController {
 
   /**
    * Accept a trade proposal
+   * Requires verification
    */
   @Patch(':id/accept')
+  @UseGuards(VerifiedGuard)
+  @RequireVerified()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Accept a trade proposal' })
   @ApiParam({ name: 'id', description: 'Trade ID' })
@@ -148,7 +157,10 @@ export class TradesController {
   })
   @ApiResponse({ status: 400, description: 'Bad request - trade not pending' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - not the responder' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - not the responder or verification required',
+  })
   @ApiResponse({ status: 404, description: 'Trade not found' })
   async acceptTrade(
     @Param('id') tradeId: string,
@@ -159,8 +171,11 @@ export class TradesController {
 
   /**
    * Reject a trade proposal
+   * Requires verification
    */
   @Patch(':id/reject')
+  @UseGuards(VerifiedGuard)
+  @RequireVerified()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reject a trade proposal' })
   @ApiParam({ name: 'id', description: 'Trade ID' })
@@ -171,7 +186,10 @@ export class TradesController {
   })
   @ApiResponse({ status: 400, description: 'Bad request - trade not pending' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - not the responder' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - not the responder or verification required',
+  })
   @ApiResponse({ status: 404, description: 'Trade not found' })
   async rejectTrade(
     @Param('id') tradeId: string,
@@ -182,8 +200,11 @@ export class TradesController {
 
   /**
    * Cancel a trade proposal
+   * Requires verification
    */
   @Patch(':id/cancel')
+  @UseGuards(VerifiedGuard)
+  @RequireVerified()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Cancel a trade proposal' })
   @ApiParam({ name: 'id', description: 'Trade ID' })
@@ -194,7 +215,10 @@ export class TradesController {
   })
   @ApiResponse({ status: 400, description: 'Bad request - trade not pending' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - not the proposer' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - not the proposer or verification required',
+  })
   @ApiResponse({ status: 404, description: 'Trade not found' })
   async cancelTrade(
     @Param('id') tradeId: string,
@@ -205,8 +229,11 @@ export class TradesController {
 
   /**
    * Create a counter-offer for a trade
+   * Requires verification
    */
   @Post(':id/counter-offers')
+  @UseGuards(VerifiedGuard)
+  @RequireVerified()
   @ApiOperation({ summary: 'Create a counter-offer for a trade' })
   @ApiParam({ name: 'id', description: 'Trade ID' })
   @ApiResponse({
@@ -216,7 +243,10 @@ export class TradesController {
   })
   @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - not part of trade' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - not part of trade or verification required',
+  })
   @ApiResponse({ status: 404, description: 'Trade or item not found' })
   async createCounterOffer(
     @Param('id') tradeId: string,
@@ -249,8 +279,11 @@ export class TradesController {
 
   /**
    * Accept a counter-offer
+   * Requires verification
    */
   @Patch('counter-offers/:id/accept')
+  @UseGuards(VerifiedGuard)
+  @RequireVerified()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Accept a counter-offer' })
   @ApiParam({ name: 'id', description: 'Counter-offer ID' })
@@ -266,7 +299,8 @@ export class TradesController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - not authorized to accept',
+    description:
+      'Forbidden - not authorized to accept or verification required',
   })
   @ApiResponse({ status: 404, description: 'Counter-offer not found' })
   async acceptCounterOffer(
@@ -278,8 +312,11 @@ export class TradesController {
 
   /**
    * Reject a counter-offer
+   * Requires verification
    */
   @Patch('counter-offers/:id/reject')
+  @UseGuards(VerifiedGuard)
+  @RequireVerified()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reject a counter-offer' })
   @ApiParam({ name: 'id', description: 'Counter-offer ID' })
@@ -295,7 +332,8 @@ export class TradesController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({
     status: 403,
-    description: 'Forbidden - not authorized to reject',
+    description:
+      'Forbidden - not authorized to reject or verification required',
   })
   @ApiResponse({ status: 404, description: 'Counter-offer not found' })
   async rejectCounterOffer(

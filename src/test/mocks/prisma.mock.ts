@@ -42,6 +42,21 @@ export const mockPrismaService = {
     delete: jest.fn(),
     count: jest.fn(),
   },
+  commentVersion: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    delete: jest.fn(),
+    deleteMany: jest.fn(),
+  },
+  commentLike: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    delete: jest.fn(),
+    deleteMany: jest.fn(),
+    count: jest.fn(),
+  },
   trade: {
     findUnique: jest.fn(),
     findFirst: jest.fn(),
@@ -83,6 +98,13 @@ export const mockPrismaService = {
     updateMany: jest.fn(),
     delete: jest.fn(),
     count: jest.fn(),
+  },
+  messageVersion: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    delete: jest.fn(),
+    deleteMany: jest.fn(),
   },
   review: {
     findUnique: jest.fn(),
@@ -178,6 +200,16 @@ export const mockPrismaService = {
     groupBy: jest.fn(),
   },
   flaggedItem: {
+    findFirst: jest.fn(),
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    updateMany: jest.fn(),
+    count: jest.fn(),
+    groupBy: jest.fn(),
+  },
+  flaggedComment: {
     findFirst: jest.fn(),
     findUnique: jest.fn(),
     findMany: jest.fn(),

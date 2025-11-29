@@ -1,10 +1,12 @@
 import { CommentsController } from '@/comments/comments.controller';
 import { CommentsService } from '@/comments/comments.service';
+import { PrismaService } from '@/prisma/prisma.service';
 import {
   mockComments,
   mockCommentWithUser,
 } from '@/test/fixtures/comment.fixture';
 import { mockCommentsService } from '@/test/mocks/comments.mock';
+import { mockPrismaService } from '@/test/mocks/prisma.mock';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CreateCommentDto } from './dto/create-comment.dto';
@@ -21,6 +23,10 @@ describe('CommentsController', () => {
         {
           provide: CommentsService,
           useValue: mockCommentsService,
+        },
+        {
+          provide: PrismaService,
+          useValue: mockPrismaService,
         },
       ],
     }).compile();
@@ -88,10 +94,13 @@ describe('CommentsController', () => {
 
       mockCommentsService.getItemComments.mockResolvedValue(mockComments);
 
-      const result = await controller.getItemComments(itemId);
+      const result = await controller.getItemComments(itemId, undefined);
 
       expect(result).toEqual(mockComments);
-      expect(commentsService.getItemComments).toHaveBeenCalledWith(itemId);
+      expect(commentsService.getItemComments).toHaveBeenCalledWith(
+        itemId,
+        undefined,
+      );
       expect(commentsService.getItemComments).toHaveBeenCalledTimes(1);
     });
 
@@ -100,10 +109,13 @@ describe('CommentsController', () => {
 
       mockCommentsService.getItemComments.mockResolvedValue([]);
 
-      const result = await controller.getItemComments(itemId);
+      const result = await controller.getItemComments(itemId, undefined);
 
       expect(result).toEqual([]);
-      expect(commentsService.getItemComments).toHaveBeenCalledWith(itemId);
+      expect(commentsService.getItemComments).toHaveBeenCalledWith(
+        itemId,
+        undefined,
+      );
     });
   });
 
@@ -255,6 +267,160 @@ describe('CommentsController', () => {
 
       expect(result).toEqual({ count: 0 });
       expect(commentsService.getCommentsCount).toHaveBeenCalledWith(itemId);
+    });
+  });
+
+  describe('likeComment', () => {
+    it('should like a comment successfully', async () => {
+      const userId = 'user-123';
+      const commentId = 'comment-789';
+
+      mockCommentsService.likeComment.mockResolvedValue({
+        count: 5,
+        hasLiked: true,
+      });
+
+      const result = await controller.likeComment(userId, commentId);
+
+      expect(result).toEqual({
+        message: 'Comment liked successfully',
+        likesCount: 5,
+        hasLiked: true,
+      });
+      expect(commentsService.likeComment).toHaveBeenCalledWith(
+        userId,
+        commentId,
+      );
+    });
+
+    it('should throw NotFoundException when comment not found', async () => {
+      const userId = 'user-123';
+      const commentId = 'non-existent';
+
+      mockCommentsService.likeComment.mockRejectedValue(
+        new NotFoundException('Comment not found'),
+      );
+
+      await expect(controller.likeComment(userId, commentId)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('unlikeComment', () => {
+    it('should unlike a comment successfully', async () => {
+      const userId = 'user-123';
+      const commentId = 'comment-789';
+
+      mockCommentsService.unlikeComment.mockResolvedValue({
+        count: 4,
+        hasLiked: false,
+      });
+
+      const result = await controller.unlikeComment(userId, commentId);
+
+      expect(result).toEqual({
+        likesCount: 4,
+        hasLiked: false,
+      });
+      expect(commentsService.unlikeComment).toHaveBeenCalledWith(
+        userId,
+        commentId,
+      );
+    });
+
+    it('should throw NotFoundException when comment not found', async () => {
+      const userId = 'user-123';
+      const commentId = 'non-existent';
+
+      mockCommentsService.unlikeComment.mockRejectedValue(
+        new NotFoundException('Comment not found'),
+      );
+
+      await expect(controller.unlikeComment(userId, commentId)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('hasLikedComment', () => {
+    it('should return liked status for user', async () => {
+      const userId = 'user-123';
+      const commentId = 'comment-789';
+
+      mockCommentsService.hasLikedComment.mockResolvedValue({
+        hasLiked: true,
+      });
+
+      const result = await controller.hasLikedComment(userId, commentId);
+
+      expect(result).toEqual({ hasLiked: true });
+      expect(commentsService.hasLikedComment).toHaveBeenCalledWith(
+        userId,
+        commentId,
+      );
+    });
+
+    it('should return false when user has not liked comment', async () => {
+      const userId = 'user-123';
+      const commentId = 'comment-789';
+
+      mockCommentsService.hasLikedComment.mockResolvedValue({
+        hasLiked: false,
+      });
+
+      const result = await controller.hasLikedComment(userId, commentId);
+
+      expect(result).toEqual({ hasLiked: false });
+    });
+  });
+
+  describe('getCommentVersions', () => {
+    it('should return comment version history', async () => {
+      const commentId = 'comment-789';
+      const mockVersions = [
+        {
+          id: 'version-1',
+          content: 'Original content',
+          createdAt: new Date('2024-01-01'),
+        },
+        {
+          id: 'version-2',
+          content: 'Edited content',
+          createdAt: new Date('2024-01-02'),
+        },
+      ];
+
+      mockCommentsService.getCommentVersions.mockResolvedValue(mockVersions);
+
+      const result = await controller.getCommentVersions(commentId);
+
+      expect(result).toEqual(mockVersions);
+      expect(commentsService.getCommentVersions).toHaveBeenCalledWith(
+        commentId,
+      );
+    });
+
+    it('should return empty array when no version history', async () => {
+      const commentId = 'comment-789';
+
+      mockCommentsService.getCommentVersions.mockResolvedValue([]);
+
+      const result = await controller.getCommentVersions(commentId);
+
+      expect(result).toEqual([]);
+    });
+
+    it('should throw NotFoundException when comment not found', async () => {
+      const commentId = 'non-existent';
+
+      mockCommentsService.getCommentVersions.mockRejectedValue(
+        new NotFoundException('Comment not found'),
+      );
+
+      await expect(controller.getCommentVersions(commentId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

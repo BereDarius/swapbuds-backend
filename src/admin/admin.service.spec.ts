@@ -410,7 +410,6 @@ describe('AdminService', () => {
         where: { id: 'user-1' },
         data: {
           role: UserRole.MODERATOR,
-          isAdmin: false,
         },
       });
       expect(mockAuditLogService.log).toHaveBeenCalledWith({
@@ -456,7 +455,6 @@ describe('AdminService', () => {
         where: { id: 'user-1' },
         data: {
           role: UserRole.ADMIN,
-          isAdmin: true,
         },
       });
     });
@@ -743,7 +741,7 @@ describe('AdminService', () => {
 
       expect(mockPrismaService.user.updateMany).toHaveBeenCalledWith({
         where: { id: { in: ['user-1', 'user-2'] } },
-        data: { role: UserRole.MODERATOR, isAdmin: false },
+        data: { role: UserRole.MODERATOR },
       });
 
       expect(mockAuditLogService.log).toHaveBeenCalledTimes(2);
@@ -766,7 +764,7 @@ describe('AdminService', () => {
 
       expect(mockPrismaService.user.updateMany).toHaveBeenCalledWith({
         where: { id: { in: ['user-1'] } },
-        data: { role: UserRole.ADMIN, isAdmin: true },
+        data: { role: UserRole.ADMIN },
       });
     });
 

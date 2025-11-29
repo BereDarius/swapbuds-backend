@@ -1,5 +1,9 @@
-import { CurrentUser } from '@/auth/decorators/auth.decorators';
+import {
+  CurrentUser,
+  RequireVerified,
+} from '@/auth/decorators/auth.decorators';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { VerifiedGuard } from '@/auth/guards/verified.guard';
 import {
   Body,
   Controller,
@@ -28,6 +32,8 @@ export class MessagesController {
    * Send a message
    */
   @Post()
+  @UseGuards(VerifiedGuard)
+  @RequireVerified()
   async sendMessage(
     @CurrentUser('id') userId: string,
     @Body() dto: SendMessageDto,
@@ -80,6 +86,20 @@ export class MessagesController {
   }
 
   /**
+   * Update/edit a message
+   */
+  @Patch(':id')
+  @UseGuards(VerifiedGuard)
+  @RequireVerified()
+  async updateMessage(
+    @CurrentUser('id') userId: string,
+    @Param('id') messageId: string,
+    @Body() dto: { content: string },
+  ): Promise<MessageResponseDto> {
+    return this.messagesService.updateMessage(userId, messageId, dto.content);
+  }
+
+  /**
    * Delete a message
    */
   @Delete(':id')
@@ -100,5 +120,13 @@ export class MessagesController {
   ): Promise<{ count: number }> {
     const count = await this.messagesService.getUnreadCount(userId);
     return { count };
+  }
+
+  /**
+   * Get message version history (admin only)
+   */
+  @Get(':id/versions')
+  async getMessageVersions(@Param('id') messageId: string) {
+    return this.messagesService.getMessageVersions(messageId);
   }
 }

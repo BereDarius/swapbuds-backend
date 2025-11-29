@@ -1,5 +1,10 @@
-import { CurrentUser, Public } from '@/auth/decorators/auth.decorators';
+import {
+  CurrentUser,
+  Public,
+  RequireVerified,
+} from '@/auth/decorators/auth.decorators';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { VerifiedGuard } from '@/auth/guards/verified.guard';
 import {
   Body,
   Controller,
@@ -36,8 +41,11 @@ export class CommentsController {
 
   /**
    * Create a comment on an item
+   * Requires authentication and verification
    */
   @Post(':itemId/comments')
+  @UseGuards(VerifiedGuard)
+  @RequireVerified()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a comment on an item' })
   @ApiParam({ name: 'itemId', description: 'Item ID' })
@@ -51,6 +59,10 @@ export class CommentsController {
     status: 404,
     description: 'Item not found',
   })
+  @ApiResponse({
+    status: 403,
+    description: 'Verification required',
+  })
   async createComment(
     @CurrentUser('id') userId: string,
     @Param('itemId') itemId: string,
@@ -60,12 +72,12 @@ export class CommentsController {
   }
 
   /**
-   * Get all comments for an item
+   * Get all comments for an item with nested replies
    */
   @Get(':itemId/comments')
   @Public()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Get all comments for an item' })
+  @ApiOperation({ summary: 'Get all comments for an item with nested replies' })
   @ApiParam({ name: 'itemId', description: 'Item ID' })
   @ApiResponse({
     status: 200,
@@ -74,8 +86,9 @@ export class CommentsController {
   })
   async getItemComments(
     @Param('itemId') itemId: string,
+    @CurrentUser('id') currentUserId?: string,
   ): Promise<CommentDto[]> {
-    return this.commentsService.getItemComments(itemId);
+    return this.commentsService.getItemComments(itemId, currentUserId);
   }
 
   /**
@@ -115,12 +128,18 @@ export class CommentsController {
    * Delete a comment
    */
   @Delete('comments/:commentId')
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete a comment' })
   @ApiParam({ name: 'commentId', description: 'Comment ID' })
   @ApiResponse({
-    status: 204,
+    status: 200,
     description: 'Comment deleted successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        commentsCount: { type: 'number', example: 5 },
+      },
+    },
   })
   @ApiResponse({
     status: 404,
@@ -133,8 +152,8 @@ export class CommentsController {
   async deleteComment(
     @CurrentUser('id') userId: string,
     @Param('commentId') commentId: string,
-  ): Promise<void> {
-    await this.commentsService.deleteComment(commentId, userId);
+  ) {
+    return this.commentsService.deleteComment(commentId, userId);
   }
 
   /**
@@ -158,5 +177,90 @@ export class CommentsController {
   async getCommentsCount(@Param('itemId') itemId: string) {
     const count = await this.commentsService.getCommentsCount(itemId);
     return { count };
+  }
+
+  /**
+   * Like a comment
+   */
+  @Post('comments/:commentId/like')
+  @UseGuards(VerifiedGuard)
+  @RequireVerified()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Like a comment' })
+  @ApiParam({ name: 'commentId', description: 'Comment ID' })
+  @ApiResponse({
+    status: 201,
+    description: 'Comment liked successfully',
+  })
+  async likeComment(
+    @CurrentUser('id') userId: string,
+    @Param('commentId') commentId: string,
+  ) {
+    const { count, hasLiked } = await this.commentsService.likeComment(
+      userId,
+      commentId,
+    );
+    return {
+      message: 'Comment liked successfully',
+      likesCount: count,
+      hasLiked,
+    };
+  }
+
+  /**
+   * Unlike a comment
+   */
+  @Delete('comments/:commentId/like')
+  @UseGuards(VerifiedGuard)
+  @RequireVerified()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Unlike a comment' })
+  @ApiParam({ name: 'commentId', description: 'Comment ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Comment unliked successfully',
+  })
+  async unlikeComment(
+    @CurrentUser('id') userId: string,
+    @Param('commentId') commentId: string,
+  ) {
+    const { count, hasLiked } = await this.commentsService.unlikeComment(
+      userId,
+      commentId,
+    );
+    return { likesCount: count, hasLiked };
+  }
+
+  /**
+   * Check if user has liked a comment
+   */
+  @Get('comments/:commentId/liked')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Check if user has liked a comment' })
+  @ApiParam({ name: 'commentId', description: 'Comment ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Like status retrieved',
+  })
+  async hasLikedComment(
+    @CurrentUser('id') userId: string,
+    @Param('commentId') commentId: string,
+  ) {
+    return this.commentsService.hasLikedComment(userId, commentId);
+  }
+
+  /**
+   * Get comment version history (admin/moderator only)
+   */
+  @Get('comments/:commentId/versions')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get comment edit history (admin/moderator only)' })
+  @ApiParam({ name: 'commentId', description: 'Comment ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Version history retrieved',
+  })
+  async getCommentVersions(@Param('commentId') commentId: string) {
+    return this.commentsService.getCommentVersions(commentId);
   }
 }

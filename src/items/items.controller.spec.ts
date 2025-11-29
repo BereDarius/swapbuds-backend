@@ -1,12 +1,14 @@
 import { ItemsController } from '@/items/items.controller';
 import { ItemsService } from '@/items/items.service';
 import { RecommendationsService } from '@/items/recommendations.service';
+import { PrismaService } from '@/prisma/prisma.service';
 import {
   mockItem,
   mockItemWithRelations,
   mockItems,
 } from '@/test/fixtures/item.fixture';
 import { mockItemsService } from '@/test/mocks/items.mock';
+import { mockPrismaService } from '@/test/mocks/prisma.mock';
 import { mockRecommendationsService } from '@/test/mocks/recommendations.mock';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -29,6 +31,10 @@ describe('ItemsController', () => {
         {
           provide: RecommendationsService,
           useValue: mockRecommendationsService,
+        },
+        {
+          provide: PrismaService,
+          useValue: mockPrismaService,
         },
       ],
     }).compile();

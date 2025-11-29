@@ -366,6 +366,83 @@ export class MessagesService {
   /**
    * Delete a message (soft delete)
    */
+  /**
+   * Update/edit a message (saves version history)
+   */
+  async updateMessage(
+    userId: string,
+    messageId: string,
+    content: string,
+  ): Promise<MessageResponseDto> {
+    const message = await this.prisma.message.findUnique({
+      where: { id: messageId },
+      include: {
+        conversation: true,
+        sender: {
+          select: {
+            id: true,
+            username: true,
+            avatarUrl: true,
+          },
+        },
+      },
+    });
+
+    if (!message) {
+      throw new NotFoundException('Message not found');
+    }
+
+    if (message.senderId !== userId) {
+      throw new ForbiddenException('You can only edit your own messages');
+    }
+
+    if (message.isDeleted) {
+      throw new BadRequestException('Cannot edit a deleted message');
+    }
+
+    // Save version history before updating
+    await this.prisma.messageVersion.create({
+      data: {
+        messageId: message.id,
+        content: message.content, // Save previous content
+        editedBy: userId,
+      },
+    });
+
+    // Update message
+    const updatedMessage = await this.prisma.message.update({
+      where: { id: messageId },
+      data: {
+        content,
+        isEdited: true,
+        editedAt: new Date(),
+      },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            username: true,
+            avatarUrl: true,
+          },
+        },
+      },
+    });
+
+    const formattedMessage = this.formatMessageResponse(updatedMessage);
+
+    // Emit update to other user via WebSocket
+    const otherUserId =
+      message.conversation.user1Id === userId
+        ? message.conversation.user2Id
+        : message.conversation.user1Id;
+    this.messagesGateway.emitMessageUpdated(otherUserId, formattedMessage);
+
+    return formattedMessage;
+  }
+
+  /**
+   * Soft delete a message (user)
+   */
   async deleteMessage(userId: string, messageId: string): Promise<void> {
     const message = await this.prisma.message.findUnique({
       where: { id: messageId },
@@ -382,9 +459,17 @@ export class MessagesService {
       throw new ForbiddenException('You can only delete your own messages');
     }
 
+    if (message.isDeleted) {
+      throw new BadRequestException('Message already deleted');
+    }
+
     await this.prisma.message.update({
       where: { id: messageId },
-      data: { isDeleted: true },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedBy: userId,
+      },
     });
 
     // Emit deletion to other user via WebSocket
@@ -397,6 +482,65 @@ export class MessagesService {
       messageId,
       message.conversationId,
     );
+  }
+
+  /**
+   * Moderator delete message with reason
+   */
+  async moderatorDeleteMessage(
+    moderatorId: string,
+    messageId: string,
+    reason: string,
+  ): Promise<void> {
+    const message = await this.prisma.message.findUnique({
+      where: { id: messageId },
+      include: {
+        conversation: true,
+      },
+    });
+
+    if (!message) {
+      throw new NotFoundException('Message not found');
+    }
+
+    await this.prisma.message.update({
+      where: { id: messageId },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedBy: moderatorId,
+        deleteReason: reason,
+      },
+    });
+
+    // Emit deletion to both users via WebSocket
+    this.messagesGateway.emitMessageDeleted(
+      message.conversation.user1Id,
+      messageId,
+      message.conversationId,
+    );
+    this.messagesGateway.emitMessageDeleted(
+      message.conversation.user2Id,
+      messageId,
+      message.conversationId,
+    );
+  }
+
+  /**
+   * Get message version history (admin/moderator only)
+   */
+  async getMessageVersions(messageId: string) {
+    const versions = await this.prisma.messageVersion.findMany({
+      where: { messageId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return versions.map((v) => ({
+      id: v.id,
+      content: v.content,
+      editedBy: v.editedBy,
+      createdAt: v.createdAt,
+    }));
   }
 
   /**
@@ -471,6 +615,12 @@ export class MessagesService {
       conversationId: message.conversationId,
       isRead: message.isRead,
       readAt: message.readAt,
+      isDeleted: message.isDeleted,
+      isEdited: message.isEdited,
+      editedAt: message.editedAt,
+      deletedAt: message.deletedAt,
+      deletedBy: message.deletedBy,
+      deleteReason: message.deleteReason,
       createdAt: message.createdAt,
       updatedAt: message.updatedAt,
       sender: message.sender,

@@ -84,7 +84,9 @@ describe('VerificationService', () => {
     const userId = 'user-123';
     const dto = {
       documentType: DocumentType.ID_CARD,
-      documentUrl: 'https://cloudinary.com/document.jpg',
+      documentUrlFront: 'https://cloudinary.com/document-front.jpg',
+      documentUrlBack: 'https://cloudinary.com/document-back.jpg',
+      selfieUrl: 'https://cloudinary.com/selfie.jpg',
     };
 
     it('should create new verification request', async () => {
@@ -100,7 +102,7 @@ describe('VerificationService', () => {
 
       expect(result.status).toBe(VerificationStatus.PENDING);
       expect(mockDocumentSecurityService.encryptUrl).toHaveBeenCalledWith(
-        dto.documentUrl,
+        dto.documentUrlFront,
       );
       expect(mockVerificationAuditService.logSubmission).toHaveBeenCalledWith(
         userId,
@@ -111,7 +113,9 @@ describe('VerificationService', () => {
         data: {
           userId,
           documentType: dto.documentType,
-          documentUrl: `encrypted:${dto.documentUrl}`,
+          documentUrlFront: `encrypted:${dto.documentUrlFront}`,
+          documentUrlBack: `encrypted:${dto.documentUrlBack}`,
+          selfieUrl: `encrypted:${dto.selfieUrl}`,
           status: VerificationStatus.PENDING,
         },
       });
@@ -248,6 +252,9 @@ describe('VerificationService', () => {
         id: 'verif-1',
         userId: 'user-123',
         status: VerificationStatus.PENDING,
+        documentUrlFront: 'encrypted:https://cloudinary.com/document-front.jpg',
+        documentUrlBack: 'encrypted:https://cloudinary.com/document-back.jpg',
+        selfieUrl: 'encrypted:https://cloudinary.com/selfie.jpg',
         user: {
           id: 'user-123',
           username: 'testuser',
@@ -263,7 +270,12 @@ describe('VerificationService', () => {
 
       const result = await service.getVerificationById('verif-1');
 
-      expect(result).toEqual(verification);
+      expect(result).toEqual({
+        ...verification,
+        documentUrlFront: 'https://cloudinary.com/document-front.jpg',
+        documentUrlBack: 'https://cloudinary.com/document-back.jpg',
+        selfieUrl: 'https://cloudinary.com/selfie.jpg',
+      });
       expect(
         mockPrismaService.userVerification.findUnique,
       ).toHaveBeenCalledWith({
@@ -479,8 +491,22 @@ describe('VerificationService', () => {
   describe('getPendingVerifications', () => {
     it('should return paginated pending verifications', async () => {
       const verifications = [
-        { id: 'verif-1', status: VerificationStatus.PENDING },
-        { id: 'verif-2', status: VerificationStatus.PENDING },
+        {
+          id: 'verif-1',
+          status: VerificationStatus.PENDING,
+          documentUrlFront:
+            'encrypted:https://cloudinary.com/document-front.jpg',
+          documentUrlBack: 'encrypted:https://cloudinary.com/document-back.jpg',
+          selfieUrl: 'encrypted:https://cloudinary.com/selfie.jpg',
+        },
+        {
+          id: 'verif-2',
+          status: VerificationStatus.PENDING,
+          documentUrlFront:
+            'encrypted:https://cloudinary.com/document-front2.jpg',
+          documentUrlBack: null,
+          selfieUrl: 'encrypted:https://cloudinary.com/selfie2.jpg',
+        },
       ];
 
       mockPrismaService.userVerification.findMany.mockResolvedValue(
@@ -490,7 +516,22 @@ describe('VerificationService', () => {
 
       const result = await service.getPendingVerifications(1, 20);
 
-      expect(result.verifications).toEqual(verifications);
+      expect(result.verifications).toEqual([
+        {
+          id: 'verif-1',
+          status: VerificationStatus.PENDING,
+          documentUrlFront: 'https://cloudinary.com/document-front.jpg',
+          documentUrlBack: 'https://cloudinary.com/document-back.jpg',
+          selfieUrl: 'https://cloudinary.com/selfie.jpg',
+        },
+        {
+          id: 'verif-2',
+          status: VerificationStatus.PENDING,
+          documentUrlFront: 'https://cloudinary.com/document-front2.jpg',
+          documentUrlBack: null,
+          selfieUrl: 'https://cloudinary.com/selfie2.jpg',
+        },
+      ]);
       expect(result.total).toBe(25);
       expect(result.totalPages).toBe(2);
     });
@@ -523,7 +564,8 @@ describe('VerificationService', () => {
     it('should generate signed URL for document', async () => {
       mockPrismaService.userVerification.findUnique.mockResolvedValue({
         id: verificationId,
-        documentUrl: 'encrypted:https://cloudinary.com/doc.jpg',
+        documentUrlFront: 'encrypted:https://cloudinary.com/doc-front.jpg',
+        documentUrlBack: 'encrypted:https://cloudinary.com/doc-back.jpg',
       });
 
       const result = await service.getDocumentSignedUrl(
@@ -534,7 +576,7 @@ describe('VerificationService', () => {
       expect(result.signedUrl).toBe('signed:public-id-123');
       expect(result.expiresIn).toBe(300);
       expect(mockDocumentSecurityService.decryptUrl).toHaveBeenCalledWith(
-        'encrypted:https://cloudinary.com/doc.jpg',
+        'encrypted:https://cloudinary.com/doc-front.jpg',
       );
       expect(
         mockDocumentSecurityService.generateSignedUrl,
@@ -555,18 +597,20 @@ describe('VerificationService', () => {
     it('should throw NotFoundException if document not found', async () => {
       mockPrismaService.userVerification.findUnique.mockResolvedValue({
         id: verificationId,
-        documentUrl: null,
+        documentUrlFront: null,
+        documentUrlBack: null,
       });
 
       await expect(
         service.getDocumentSignedUrl(verificationId, adminId),
-      ).rejects.toThrow('Document not found or already deleted');
+      ).rejects.toThrow('Document front not found or already deleted');
     });
 
     it('should throw BadRequestException if invalid publicId', async () => {
       mockPrismaService.userVerification.findUnique.mockResolvedValue({
         id: verificationId,
-        documentUrl: 'encrypted:https://cloudinary.com/doc.jpg',
+        documentUrlFront: 'encrypted:https://cloudinary.com/doc-front.jpg',
+        documentUrlBack: null,
       });
       mockDocumentSecurityService.extractPublicId.mockReturnValue(null);
 
@@ -594,6 +638,92 @@ describe('VerificationService', () => {
       expect(
         mockVerificationRateLimitService.checkRateLimit,
       ).toHaveBeenCalledWith('user-123');
+    });
+  });
+
+  describe('updateNotes', () => {
+    const verificationId = 'verif-1';
+    const notes = 'Additional verification notes';
+
+    it('should update notes for a verification', async () => {
+      mockPrismaService.userVerification.findUnique.mockResolvedValue({
+        id: verificationId,
+        userId: 'user-1',
+        status: 'PENDING',
+      });
+      mockPrismaService.userVerification.update.mockResolvedValue({
+        id: verificationId,
+        notes,
+      });
+
+      const result = await service.updateNotes(verificationId, notes);
+
+      expect(result.notes).toBe(notes);
+      expect(mockPrismaService.userVerification.update).toHaveBeenCalledWith({
+        where: { id: verificationId },
+        data: { notes },
+      });
+    });
+
+    it('should throw NotFoundException if verification does not exist', async () => {
+      mockPrismaService.userVerification.findUnique.mockResolvedValue(null);
+
+      await expect(service.updateNotes(verificationId, notes)).rejects.toThrow(
+        NotFoundException,
+      );
+      await expect(service.updateNotes(verificationId, notes)).rejects.toThrow(
+        'Verification not found',
+      );
+    });
+  });
+
+  describe('approveVerification - underage rejection', () => {
+    const verificationId = 'verif-1';
+    const adminId = 'admin-1';
+
+    it('should auto-reject verification if user is under 18', async () => {
+      const dateOfBirth = new Date();
+      dateOfBirth.setFullYear(dateOfBirth.getFullYear() - 17); // 17 years old
+
+      mockPrismaService.userVerification.findUnique.mockResolvedValue({
+        id: verificationId,
+        userId: 'user-1',
+        status: 'PENDING',
+      });
+
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        email: 'user@test.com',
+        username: 'testuser',
+      });
+
+      await expect(
+        service.approveVerification(verificationId, adminId, {
+          dateOfBirth: dateOfBirth.toISOString().split('T')[0],
+        }),
+      ).rejects.toThrow(BadRequestException);
+
+      await expect(
+        service.approveVerification(verificationId, adminId, {
+          dateOfBirth: dateOfBirth.toISOString().split('T')[0],
+        }),
+      ).rejects.toThrow(
+        'User is under 18 years old. Account has been suspended.',
+      );
+
+      expect(mockPrismaService.userVerification.update).toHaveBeenCalledWith({
+        where: { id: verificationId },
+        data: expect.objectContaining({
+          status: 'UNDERAGE',
+          isOver18: false,
+          rejectionReason:
+            'You must be at least 18 years old to use this platform',
+        }),
+      });
+
+      expect(mockPrismaService.user.update).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+        data: { isActive: false },
+      });
     });
   });
 });

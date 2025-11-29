@@ -1,7 +1,9 @@
+import { PrismaService } from '@/prisma/prisma.service';
 import {
   mockTradeWithRelations,
   mockTrades,
 } from '@/test/fixtures/trade.fixture';
+import { mockPrismaService } from '@/test/mocks/prisma.mock';
 import { mockTradesService } from '@/test/mocks/trades.mock';
 import { TradesController } from '@/trades/trades.controller';
 import { TradesService } from '@/trades/trades.service';
@@ -25,6 +27,10 @@ describe('TradesController', () => {
         {
           provide: TradesService,
           useValue: mockTradesService,
+        },
+        {
+          provide: PrismaService,
+          useValue: mockPrismaService,
         },
       ],
     }).compile();

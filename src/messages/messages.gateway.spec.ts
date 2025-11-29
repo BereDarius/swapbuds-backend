@@ -182,5 +182,165 @@ describe('MessagesGateway', () => {
       gateway.handleDisconnect(mockClient);
       expect(gateway.isUserOnline('user-123')).toBe(false);
     });
+
+    it('should handle disconnect for client without userId', () => {
+      const mockClient: any = {
+        id: 'socket-123',
+      };
+
+      expect(() => gateway.handleDisconnect(mockClient)).not.toThrow();
+    });
+  });
+
+  describe('handleConnection', () => {
+    it('should log when client connects', () => {
+      const mockClient: any = {
+        id: 'socket-123',
+      };
+
+      expect(() => gateway.handleConnection(mockClient)).not.toThrow();
+    });
+  });
+
+  describe('emitMessageToUser', () => {
+    it('should emit message to user room', () => {
+      const message = {
+        id: 'msg-1',
+        content: 'Hello',
+        senderId: 'user-1',
+        conversationId: 'conv-1',
+      };
+
+      (gateway as any).server = {
+        to: jest.fn().mockReturnThis(),
+        emit: jest.fn(),
+      };
+
+      gateway.emitMessageToUser('user-123', message);
+
+      expect((gateway as any).server.to).toHaveBeenCalledWith('user:user-123');
+      expect((gateway as any).server.emit).toHaveBeenCalledWith(
+        'message',
+        message,
+      );
+    });
+  });
+
+  describe('emitMessageRead', () => {
+    it('should emit message read status to user', () => {
+      (gateway as any).server = {
+        to: jest.fn().mockReturnThis(),
+        emit: jest.fn(),
+      };
+
+      gateway.emitMessageRead('user-123', 'msg-1', 'conv-1');
+
+      expect((gateway as any).server.to).toHaveBeenCalledWith('user:user-123');
+      expect((gateway as any).server.emit).toHaveBeenCalledWith('messageRead', {
+        messageId: 'msg-1',
+        conversationId: 'conv-1',
+      });
+    });
+  });
+
+  describe('emitConversationRead', () => {
+    it('should emit conversation read status to user', () => {
+      (gateway as any).server = {
+        to: jest.fn().mockReturnThis(),
+        emit: jest.fn(),
+      };
+
+      gateway.emitConversationRead('user-123', 'conv-1', 5);
+
+      expect((gateway as any).server.to).toHaveBeenCalledWith('user:user-123');
+      expect((gateway as any).server.emit).toHaveBeenCalledWith(
+        'conversationRead',
+        {
+          conversationId: 'conv-1',
+          count: 5,
+        },
+      );
+    });
+  });
+
+  describe('emitMessageUpdated', () => {
+    it('should emit message updated event to user', () => {
+      const message = {
+        id: 'msg-1',
+        content: 'Updated content',
+      };
+
+      (gateway as any).server = {
+        to: jest.fn().mockReturnThis(),
+        emit: jest.fn(),
+      };
+
+      gateway.emitMessageUpdated('user-123', message);
+
+      expect((gateway as any).server.to).toHaveBeenCalledWith('user:user-123');
+      expect((gateway as any).server.emit).toHaveBeenCalledWith(
+        'messageUpdated',
+        message,
+      );
+    });
+  });
+
+  describe('emitMessageDeleted', () => {
+    it('should emit message deleted event to user', () => {
+      (gateway as any).server = {
+        to: jest.fn().mockReturnThis(),
+        emit: jest.fn(),
+      };
+
+      gateway.emitMessageDeleted('user-123', 'msg-1', 'conv-1');
+
+      expect((gateway as any).server.to).toHaveBeenCalledWith('user:user-123');
+      expect((gateway as any).server.emit).toHaveBeenCalledWith(
+        'messageDeleted',
+        {
+          messageId: 'msg-1',
+          conversationId: 'conv-1',
+        },
+      );
+    });
+  });
+
+  describe('handleTyping', () => {
+    it('should return error for invalid data (missing userId)', () => {
+      const mockClient: any = {
+        id: 'socket-123',
+        to: jest.fn().mockReturnThis(),
+        emit: jest.fn(),
+      };
+
+      const data = {
+        conversationId: 'conv-123',
+        isTyping: true,
+        username: 'testuser',
+      };
+
+      const result = gateway.handleTyping(mockClient, data);
+
+      expect(result).toEqual({ success: false, message: 'Invalid data' });
+    });
+
+    it('should return error for missing conversationId', () => {
+      const mockClient: any = {
+        id: 'socket-123',
+        userId: 'user-123',
+        to: jest.fn().mockReturnThis(),
+        emit: jest.fn(),
+      };
+
+      const data = {
+        conversationId: '',
+        isTyping: true,
+        username: 'testuser',
+      };
+
+      const result = gateway.handleTyping(mockClient, data);
+
+      expect(result).toEqual({ success: false, message: 'Invalid data' });
+    });
   });
 });

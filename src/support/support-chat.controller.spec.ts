@@ -1,5 +1,7 @@
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 import { SupportGuard } from '@/auth/guards/support.guard';
+import { PrismaService } from '@/prisma/prisma.service';
+import { mockPrismaService } from '@/test/mocks/prisma.mock';
 import { mockSupportChatService } from '@/test/mocks/support.mock';
 import { Test, TestingModule } from '@nestjs/testing';
 import { SupportChatStatus, SupportPriority, UserRole } from '@prisma/client';
@@ -58,6 +60,10 @@ describe('SupportChatController', () => {
           provide: SupportChatGateway,
           useValue: mockSupportChatGateway,
         },
+        {
+          provide: PrismaService,
+          useValue: mockPrismaService,
+        },
       ],
     })
       .overrideGuard(JwtAuthGuard)
@@ -84,8 +90,7 @@ describe('SupportChatController', () => {
 
     const mockRequest = {
       user: {
-        sub: 'user-1',
-        userId: 'user-1',
+        id: 'user-1',
         username: 'testuser',
         role: UserRole.USER,
       },
@@ -111,7 +116,7 @@ describe('SupportChatController', () => {
 
   describe('getUserChats', () => {
     const mockRequest = {
-      user: { sub: 'user-1', userId: 'user-1', username: 'testuser' },
+      user: { id: 'user-1', username: 'testuser' },
     };
 
     it('should return user chats without resolved by default', async () => {
@@ -146,7 +151,7 @@ describe('SupportChatController', () => {
 
   describe('getChat', () => {
     const mockRequest = {
-      user: { sub: 'user-1', userId: 'user-1', role: UserRole.USER },
+      user: { id: 'user-1', role: UserRole.USER },
     };
 
     it('should return chat details', async () => {
@@ -169,7 +174,7 @@ describe('SupportChatController', () => {
     };
 
     const mockRequest = {
-      user: { sub: 'user-1', userId: 'user-1', role: UserRole.USER },
+      user: { id: 'user-1', role: UserRole.USER },
     };
 
     it('should send message and emit via WebSocket', async () => {
@@ -197,7 +202,7 @@ describe('SupportChatController', () => {
 
   describe('closeChat', () => {
     const mockRequest = {
-      user: { sub: 'user-1', userId: 'user-1', role: UserRole.USER },
+      user: { id: 'user-1', role: UserRole.USER },
     };
 
     it('should close chat and emit via WebSocket', async () => {
@@ -220,7 +225,7 @@ describe('SupportChatController', () => {
 
   describe('getAgentChats', () => {
     const mockRequest = {
-      user: { sub: 'agent-1', userId: 'agent-1', role: UserRole.SUPPORT },
+      user: { id: 'agent-1', role: UserRole.SUPPORT },
     };
 
     it('should return agent chats', async () => {
@@ -242,7 +247,7 @@ describe('SupportChatController', () => {
     };
 
     const mockRequest = {
-      user: { sub: 'agent-1', userId: 'agent-1', role: UserRole.SUPPORT },
+      user: { id: 'agent-1', role: UserRole.SUPPORT },
     };
 
     it('should resolve chat and emit via WebSocket', async () => {

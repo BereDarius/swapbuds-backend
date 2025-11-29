@@ -17,10 +17,11 @@ export class LikesService {
    * Like an item
    * @param userId - User ID
    * @param itemId - Item ID
+   * @returns Updated like count
    * @throws NotFoundException if item doesn't exist
    * @throws ConflictException if already liked
    */
-  async likeItem(userId: string, itemId: string): Promise<void> {
+  async likeItem(userId: string, itemId: string): Promise<{ count: number }> {
     // Check if item exists
     const item = await this.prisma.item.findUnique({
       where: { id: itemId },
@@ -51,15 +52,23 @@ export class LikesService {
         itemId,
       },
     });
+
+    // Return updated count
+    const count = await this.prisma.like.count({
+      where: { itemId },
+    });
+
+    return { count };
   }
 
   /**
    * Unlike an item
    * @param userId - User ID
    * @param itemId - Item ID
+   * @returns Updated like count
    * @throws NotFoundException if like doesn't exist
    */
-  async unlikeItem(userId: string, itemId: string): Promise<void> {
+  async unlikeItem(userId: string, itemId: string): Promise<{ count: number }> {
     const like = await this.prisma.like.findUnique({
       where: {
         userId_itemId: {
@@ -73,11 +82,20 @@ export class LikesService {
       throw new NotFoundException('Like not found');
     }
 
+    const itemId_forCount = like.itemId;
+
     await this.prisma.like.delete({
       where: {
         id: like.id,
       },
     });
+
+    // Return updated count
+    const count = await this.prisma.like.count({
+      where: { itemId: itemId_forCount },
+    });
+
+    return { count };
   }
 
   /**

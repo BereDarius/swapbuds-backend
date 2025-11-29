@@ -1,3 +1,5 @@
+import { PrismaService } from '@/prisma/prisma.service';
+import { mockPrismaService } from '@/test/mocks/prisma.mock';
 import { mockReviewsService } from '@/test/mocks/reviews.mock';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CreateReviewDto } from './dto/create-review.dto';
@@ -37,6 +39,10 @@ describe('ReviewsController', () => {
         {
           provide: ReviewsService,
           useValue: mockReviewsService,
+        },
+        {
+          provide: PrismaService,
+          useValue: mockPrismaService,
         },
       ],
     }).compile();

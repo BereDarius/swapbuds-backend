@@ -293,4 +293,171 @@ export class ModerationController {
       ipAddress,
     );
   }
+
+  // ========== COMMENT MODERATION ==========
+
+  /**
+   * Flag a comment for moderation (authenticated users)
+   */
+  @Post('comments/:id/flag')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Flag a comment for moderation' })
+  @ApiResponse({ status: 201, description: 'Comment flagged successfully' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 404, description: 'Comment not found' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        reason: {
+          type: 'string',
+          enum: [
+            'INAPPROPRIATE',
+            'SPAM',
+            'SCAM',
+            'DUPLICATE',
+            'PROHIBITED',
+            'MISLEADING',
+            'COPYRIGHT',
+            'OTHER',
+          ],
+        },
+        description: { type: 'string' },
+      },
+      required: ['reason'],
+    },
+  })
+  async flagComment(
+    @Param('id') commentId: string,
+    @Body()
+    dto: {
+      reason: FlagReason;
+      description?: string;
+    },
+    @Request() req,
+  ) {
+    const ipAddress = req.ip;
+    return this.moderationService.flagComment(
+      commentId,
+      req.user.userId,
+      dto,
+      ipAddress,
+    );
+  }
+
+  /**
+   * Get all flagged comments (moderators only)
+   */
+  @Get('comments/flagged')
+  @UseGuards(JwtAuthGuard, ModeratorGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all flagged comments' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns paginated flagged comments',
+  })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['PENDING', 'APPROVED', 'REMOVED'],
+  })
+  @ApiQuery({
+    name: 'reason',
+    required: false,
+    enum: [
+      'INAPPROPRIATE',
+      'SPAM',
+      'SCAM',
+      'DUPLICATE',
+      'PROHIBITED',
+      'MISLEADING',
+      'COPYRIGHT',
+      'OTHER',
+    ],
+  })
+  async getFlaggedComments(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('status') status?: ModerationStatus,
+    @Query('reason') reason?: FlagReason,
+  ) {
+    return this.moderationService.getFlaggedComments({
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 20,
+      status,
+      reason,
+    });
+  }
+
+  /**
+   * Approve a flagged comment (dismiss the flag) - moderators only
+   */
+  @Patch('comments/flagged/:id/approve')
+  @UseGuards(JwtAuthGuard, ModeratorGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Approve a flagged comment (dismiss flag)' })
+  @ApiResponse({ status: 200, description: 'Comment approved successfully' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 404, description: 'Flagged comment not found' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        notes: { type: 'string' },
+      },
+    },
+  })
+  async approveFlaggedComment(
+    @Param('id') flagId: string,
+    @Body() dto: { notes?: string },
+    @Request() req,
+  ) {
+    const ipAddress = req.ip;
+    await this.moderationService.approveFlaggedComment(
+      flagId,
+      req.user.userId,
+      dto,
+      ipAddress,
+    );
+    return { message: 'Comment approved successfully' };
+  }
+
+  /**
+   * Remove a flagged comment (soft delete) - moderators only
+   */
+  @Delete('comments/flagged/:id/remove')
+  @UseGuards(JwtAuthGuard, ModeratorGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Remove a flagged comment (soft delete)' })
+  @ApiResponse({ status: 200, description: 'Comment removed successfully' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 404, description: 'Flagged comment not found' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        reason: { type: 'string' },
+        notifyUser: { type: 'boolean' },
+      },
+      required: ['reason'],
+    },
+  })
+  async removeFlaggedComment(
+    @Param('id') flagId: string,
+    @Body() dto: { reason: string; notifyUser?: boolean },
+    @Request() req,
+  ) {
+    const ipAddress = req.ip;
+    await this.moderationService.removeFlaggedComment(
+      flagId,
+      req.user.userId,
+      dto,
+      ipAddress,
+    );
+    return { message: 'Comment removed successfully' };
+  }
 }

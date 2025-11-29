@@ -808,4 +808,323 @@ describe('ModerationService', () => {
       ).rejects.toThrow('Cannot remove items that are not pending');
     });
   });
+
+  describe('flagComment', () => {
+    it('should flag a comment successfully', async () => {
+      const commentId = 'comment-1';
+      const userId = 'user-1';
+      const dto = {
+        reason: FlagReason.INAPPROPRIATE,
+        description: 'Offensive language',
+      };
+
+      const mockComment = {
+        id: commentId,
+        isDeleted: false,
+        userId: 'different-user',
+        content: 'Test comment',
+      };
+
+      mockPrismaService.comment.findUnique.mockResolvedValue(mockComment);
+      mockPrismaService.flaggedComment.findFirst.mockResolvedValue(null);
+      mockPrismaService.flaggedComment.create.mockResolvedValue({
+        id: 'flag-1',
+        commentId,
+        reportedById: userId,
+        reason: dto.reason,
+        description: dto.description,
+        status: ModerationStatus.PENDING,
+        comment: mockComment,
+        reportedBy: {
+          id: userId,
+          username: 'user1',
+          email: 'user1@test.com',
+        },
+      });
+
+      const result = await service.flagComment(
+        commentId,
+        userId,
+        dto,
+        '127.0.0.1',
+      );
+
+      expect(result.commentId).toBe(commentId);
+      expect(result.reason).toBe(dto.reason);
+      expect(mockAuditLogService.log).toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException if comment not found', async () => {
+      mockPrismaService.comment.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.flagComment('comment-1', 'user-1', {
+          reason: FlagReason.SPAM,
+          description: 'Spam',
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw BadRequestException if comment is already deleted', async () => {
+      mockPrismaService.comment.findUnique.mockResolvedValue({
+        id: 'comment-1',
+        isDeleted: true,
+        userId: 'user-2',
+        content: 'Deleted',
+      });
+
+      await expect(
+        service.flagComment('comment-1', 'user-1', {
+          reason: FlagReason.SPAM,
+          description: 'Spam',
+        }),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.flagComment('comment-1', 'user-1', {
+          reason: FlagReason.SPAM,
+          description: 'Spam',
+        }),
+      ).rejects.toThrow('Cannot flag a deleted comment');
+    });
+
+    it('should throw BadRequestException if user tries to flag their own comment', async () => {
+      const userId = 'user-1';
+      mockPrismaService.comment.findUnique.mockResolvedValue({
+        id: 'comment-1',
+        isDeleted: false,
+        userId: userId,
+        content: 'My comment',
+      });
+
+      await expect(
+        service.flagComment('comment-1', userId, {
+          reason: FlagReason.SPAM,
+          description: 'Spam',
+        }),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.flagComment('comment-1', userId, {
+          reason: FlagReason.SPAM,
+          description: 'Spam',
+        }),
+      ).rejects.toThrow('You cannot flag your own comment');
+    });
+
+    it('should throw BadRequestException if user already flagged this comment', async () => {
+      mockPrismaService.comment.findUnique.mockResolvedValue({
+        id: 'comment-1',
+        isDeleted: false,
+        userId: 'user-2',
+        content: 'Comment',
+      });
+      mockPrismaService.flaggedComment.findFirst.mockResolvedValue({
+        id: 'existing-flag',
+        commentId: 'comment-1',
+        reportedById: 'user-1',
+        reason: FlagReason.SPAM,
+        status: ModerationStatus.PENDING,
+      } as any);
+
+      await expect(
+        service.flagComment('comment-1', 'user-1', {
+          reason: FlagReason.SPAM,
+          description: 'Spam',
+        }),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.flagComment('comment-1', 'user-1', {
+          reason: FlagReason.SPAM,
+          description: 'Spam',
+        }),
+      ).rejects.toThrow(
+        'You have already flagged this comment with this reason',
+      );
+    });
+  });
+
+  describe('getFlaggedComments', () => {
+    it('should return paginated flagged comments', async () => {
+      const mockComments = [
+        {
+          id: 'flag-1',
+          commentId: 'comment-1',
+          reason: FlagReason.SPAM,
+          status: ModerationStatus.PENDING,
+          comment: {
+            id: 'comment-1',
+            content: 'Test comment',
+            user: { id: 'user-1', username: 'user1', email: 'user1@test.com' },
+            item: { id: 'item-1', title: 'Test item' },
+          },
+          reportedBy: {
+            id: 'user-2',
+            username: 'user2',
+            email: 'user2@test.com',
+          },
+          reviewedBy: null,
+        },
+      ];
+
+      mockPrismaService.flaggedComment.findMany.mockResolvedValue(mockComments);
+      mockPrismaService.flaggedComment.count.mockResolvedValue(1);
+
+      const result = await service.getFlaggedComments({
+        page: 1,
+        limit: 20,
+      });
+
+      expect(result.comments).toHaveLength(1);
+      expect(result.total).toBe(1);
+      expect(result.totalPages).toBe(1);
+    });
+
+    it('should filter by status and reason', async () => {
+      mockPrismaService.flaggedComment.findMany.mockResolvedValue([]);
+      mockPrismaService.flaggedComment.count.mockResolvedValue(0);
+
+      await service.getFlaggedComments({
+        page: 1,
+        limit: 20,
+        status: ModerationStatus.APPROVED,
+        reason: FlagReason.SPAM,
+      });
+
+      expect(mockPrismaService.flaggedComment.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            status: ModerationStatus.APPROVED,
+            reason: FlagReason.SPAM,
+          },
+        }),
+      );
+    });
+  });
+
+  describe('approveFlaggedComment', () => {
+    it('should approve a flagged comment successfully', async () => {
+      const flagId = 'flag-1';
+      const moderatorId = 'mod-1';
+      const dto = { notes: 'No violation found' };
+
+      mockPrismaService.flaggedComment.findUnique.mockResolvedValue({
+        id: flagId,
+        commentId: 'comment-1',
+        status: ModerationStatus.PENDING,
+        reason: FlagReason.SPAM,
+        comment: { id: 'comment-1', content: 'Comment' },
+      });
+
+      await service.approveFlaggedComment(
+        flagId,
+        moderatorId,
+        dto,
+        '127.0.0.1',
+      );
+
+      expect(mockPrismaService.flaggedComment.update).toHaveBeenCalledWith({
+        where: { id: flagId },
+        data: {
+          status: ModerationStatus.APPROVED,
+          reviewedById: moderatorId,
+          reviewedAt: expect.any(Date),
+          reviewNotes: dto.notes,
+        },
+      });
+      expect(mockAuditLogService.log).toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException if flag not found', async () => {
+      mockPrismaService.flaggedComment.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.approveFlaggedComment('flag-1', 'mod-1', { notes: 'Notes' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw BadRequestException if flag is not pending', async () => {
+      mockPrismaService.flaggedComment.findUnique.mockResolvedValue({
+        id: 'flag-1',
+        commentId: 'comment-1',
+        status: ModerationStatus.APPROVED,
+        reason: FlagReason.SPAM,
+        comment: { id: 'comment-1', content: 'Comment' },
+      });
+
+      await expect(
+        service.approveFlaggedComment('flag-1', 'mod-1', { notes: 'Notes' }),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.approveFlaggedComment('flag-1', 'mod-1', { notes: 'Notes' }),
+      ).rejects.toThrow('Flag is already approved');
+    });
+  });
+
+  describe('removeFlaggedComment', () => {
+    it('should remove a flagged comment successfully', async () => {
+      const flagId = 'flag-1';
+      const moderatorId = 'mod-1';
+      const dto = { reason: 'Confirmed violation' };
+
+      mockPrismaService.flaggedComment.findUnique.mockResolvedValue({
+        id: flagId,
+        commentId: 'comment-1',
+        status: ModerationStatus.PENDING,
+        reason: FlagReason.INAPPROPRIATE,
+        comment: { id: 'comment-1', content: 'Offensive comment' },
+      });
+
+      await service.removeFlaggedComment(flagId, moderatorId, dto, '127.0.0.1');
+
+      expect(mockPrismaService.comment.update).toHaveBeenCalledWith({
+        where: { id: 'comment-1' },
+        data: {
+          isDeleted: true,
+          deletedAt: expect.any(Date),
+          deletedBy: moderatorId,
+          deleteReason: dto.reason,
+        },
+      });
+      expect(mockPrismaService.flaggedComment.update).toHaveBeenCalledWith({
+        where: { id: flagId },
+        data: {
+          status: ModerationStatus.REMOVED,
+          reviewedById: moderatorId,
+          reviewedAt: expect.any(Date),
+          reviewNotes: dto.reason,
+        },
+      });
+      expect(mockAuditLogService.log).toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException if flag not found', async () => {
+      mockPrismaService.flaggedComment.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.removeFlaggedComment('flag-1', 'mod-1', {
+          reason: 'Violation',
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw BadRequestException if flag is not pending', async () => {
+      mockPrismaService.flaggedComment.findUnique.mockResolvedValue({
+        id: 'flag-1',
+        commentId: 'comment-1',
+        status: ModerationStatus.REMOVED,
+        reason: FlagReason.SPAM,
+        comment: { id: 'comment-1', content: 'Comment' },
+      });
+
+      await expect(
+        service.removeFlaggedComment('flag-1', 'mod-1', {
+          reason: 'Violation',
+        }),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.removeFlaggedComment('flag-1', 'mod-1', {
+          reason: 'Violation',
+        }),
+      ).rejects.toThrow('Flag is already removed');
+    });
+  });
 });

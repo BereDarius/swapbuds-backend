@@ -18,6 +18,7 @@ const mockMessagesGateway = {
   emitMessageRead: jest.fn(),
   emitConversationRead: jest.fn(),
   emitMessageDeleted: jest.fn(),
+  emitMessageUpdated: jest.fn(),
   isUserOnline: jest.fn(),
 };
 
@@ -413,6 +414,8 @@ describe('MessagesService', () => {
     const deletedMessage = {
       ...mockMessage,
       isDeleted: true,
+      deletedAt: new Date(),
+      deletedBy: 'user-1',
     };
 
     beforeEach(() => {
@@ -425,7 +428,11 @@ describe('MessagesService', () => {
 
       expect(mockPrismaService.message.update).toHaveBeenCalledWith({
         where: { id: 'msg-123' },
-        data: { isDeleted: true },
+        data: {
+          isDeleted: true,
+          deletedAt: expect.any(Date),
+          deletedBy: 'user-1',
+        },
       });
       expect(mockMessagesGateway.emitMessageDeleted).toHaveBeenCalledWith(
         'user-2',
@@ -445,6 +452,17 @@ describe('MessagesService', () => {
     it('should throw ForbiddenException if user is not sender', async () => {
       await expect(service.deleteMessage('user-2', 'msg-123')).rejects.toThrow(
         ForbiddenException,
+      );
+    });
+
+    it('should throw BadRequestException if message already deleted', async () => {
+      mockPrismaService.message.findUnique.mockResolvedValue({
+        ...mockMessage,
+        isDeleted: true,
+      });
+
+      await expect(service.deleteMessage('user-1', 'msg-123')).rejects.toThrow(
+        BadRequestException,
       );
     });
   });
@@ -500,6 +518,328 @@ describe('MessagesService', () => {
       const result = await service.getUnreadCount('user-1');
 
       expect(result).toBe(0);
+    });
+  });
+
+  describe('updateMessage - Version History', () => {
+    const userId = 'user-1';
+    const messageId = 'msg-123';
+    const newContent = 'Updated message content';
+
+    const mockMessageVersion = {
+      id: 'version-1',
+      messageId: 'msg-123',
+      content: 'Hello Bob!',
+      editedBy: 'user-1',
+      createdAt: new Date('2025-01-01T12:00:00Z'),
+    };
+
+    beforeEach(() => {
+      mockPrismaService.message.findUnique.mockResolvedValue(mockMessage);
+      mockPrismaService.messageVersion.create.mockResolvedValue(
+        mockMessageVersion,
+      );
+      mockPrismaService.message.update.mockResolvedValue({
+        ...mockMessage,
+        content: newContent,
+        isEdited: true,
+        editedAt: new Date('2025-01-02'),
+      });
+    });
+
+    it('should create a version history entry when updating a message', async () => {
+      await service.updateMessage(userId, messageId, newContent);
+
+      expect(mockPrismaService.messageVersion.create).toHaveBeenCalledWith({
+        data: {
+          messageId,
+          content: mockMessage.content,
+          editedBy: userId,
+        },
+      });
+
+      expect(mockPrismaService.message.update).toHaveBeenCalledWith({
+        where: { id: messageId },
+        data: {
+          content: newContent,
+          isEdited: true,
+          editedAt: expect.any(Date),
+        },
+        include: {
+          sender: {
+            select: {
+              id: true,
+              username: true,
+              avatarUrl: true,
+            },
+          },
+        },
+      });
+    });
+
+    it('should create multiple version entries on multiple edits', async () => {
+      await service.updateMessage(userId, messageId, 'First edit');
+
+      const editedMessage = {
+        ...mockMessage,
+        content: 'First edit',
+        isEdited: true,
+      };
+      mockPrismaService.message.findUnique.mockResolvedValue(editedMessage);
+      mockPrismaService.messageVersion.create.mockResolvedValue({
+        ...mockMessageVersion,
+        id: 'version-2',
+        content: 'First edit',
+      });
+
+      await service.updateMessage(userId, messageId, 'Second edit');
+
+      expect(mockPrismaService.messageVersion.create).toHaveBeenCalledTimes(2);
+      expect(mockPrismaService.messageVersion.create).toHaveBeenNthCalledWith(
+        1,
+        {
+          data: {
+            messageId,
+            content: mockMessage.content,
+            editedBy: userId,
+          },
+        },
+      );
+      expect(mockPrismaService.messageVersion.create).toHaveBeenNthCalledWith(
+        2,
+        {
+          data: {
+            messageId,
+            content: 'First edit',
+            editedBy: userId,
+          },
+        },
+      );
+    });
+
+    it('should not create version if message does not exist', async () => {
+      mockPrismaService.message.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.updateMessage(userId, messageId, newContent),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(mockPrismaService.messageVersion.create).not.toHaveBeenCalled();
+    });
+
+    it('should not create version if user is not the sender', async () => {
+      mockPrismaService.message.findUnique.mockResolvedValue({
+        ...mockMessage,
+        senderId: 'different-user',
+      });
+
+      await expect(
+        service.updateMessage(userId, messageId, newContent),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(mockPrismaService.messageVersion.create).not.toHaveBeenCalled();
+    });
+
+    it('should not allow editing deleted messages', async () => {
+      mockPrismaService.message.findUnique.mockResolvedValue({
+        ...mockMessage,
+        isDeleted: true,
+      });
+
+      await expect(
+        service.updateMessage(userId, messageId, newContent),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockPrismaService.messageVersion.create).not.toHaveBeenCalled();
+    });
+
+    it('should preserve original content in version, not updated content', async () => {
+      const originalContent = 'This is the original';
+      const updatedContent = 'This is the update';
+
+      mockPrismaService.message.findUnique.mockResolvedValue({
+        ...mockMessage,
+        content: originalContent,
+      });
+
+      await service.updateMessage(userId, messageId, updatedContent);
+
+      const createCall =
+        mockPrismaService.messageVersion.create.mock.calls[0][0];
+      expect(createCall.data.content).toBe(originalContent);
+      expect(createCall.data.content).not.toBe(updatedContent);
+    });
+
+    it('should emit WebSocket update to other user', async () => {
+      await service.updateMessage(userId, messageId, newContent);
+
+      expect(mockMessagesGateway.emitMessageUpdated).toHaveBeenCalledWith(
+        'user-2',
+        expect.objectContaining({
+          id: messageId,
+          content: newContent,
+          isEdited: true,
+        }),
+      );
+    });
+  });
+
+  describe('getMessageVersions - Version Retrieval', () => {
+    const messageId = 'msg-123';
+
+    it('should retrieve all versions for a message', async () => {
+      const mockVersions = [
+        {
+          id: 'version-3',
+          messageId,
+          content: 'Second edit',
+          editedBy: 'user-1',
+          createdAt: new Date('2025-01-03'),
+        },
+        {
+          id: 'version-2',
+          messageId,
+          content: 'First edit',
+          editedBy: 'user-1',
+          createdAt: new Date('2025-01-02'),
+        },
+        {
+          id: 'version-1',
+          messageId,
+          content: 'Original message',
+          editedBy: 'user-1',
+          createdAt: new Date('2025-01-01'),
+        },
+      ];
+
+      mockPrismaService.messageVersion.findMany.mockResolvedValue(mockVersions);
+
+      const result = await service.getMessageVersions(messageId);
+
+      expect(mockPrismaService.messageVersion.findMany).toHaveBeenCalledWith({
+        where: { messageId },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      expect(result).toHaveLength(3);
+      expect(result[0].content).toBe('Second edit');
+      expect(result[1].content).toBe('First edit');
+      expect(result[2].content).toBe('Original message');
+    });
+
+    it('should return empty array if no versions exist', async () => {
+      mockPrismaService.messageVersion.findMany.mockResolvedValue([]);
+
+      const result = await service.getMessageVersions(messageId);
+
+      expect(result).toEqual([]);
+    });
+
+    it('should return versions in descending order (newest first)', async () => {
+      const mockVersions = [
+        {
+          id: 'version-3',
+          messageId,
+          content: 'Newest',
+          editedBy: 'user-1',
+          createdAt: new Date('2025-01-03'),
+        },
+        {
+          id: 'version-2',
+          messageId,
+          content: 'Middle',
+          editedBy: 'user-1',
+          createdAt: new Date('2025-01-02'),
+        },
+        {
+          id: 'version-1',
+          messageId,
+          content: 'Oldest',
+          editedBy: 'user-1',
+          createdAt: new Date('2025-01-01'),
+        },
+      ];
+
+      mockPrismaService.messageVersion.findMany.mockResolvedValue(mockVersions);
+
+      const result = await service.getMessageVersions(messageId);
+
+      expect(result[0].content).toBe('Newest');
+      expect(result[1].content).toBe('Middle');
+      expect(result[2].content).toBe('Oldest');
+    });
+
+    it('should include all required fields in version DTOs', async () => {
+      const mockVersions = [
+        {
+          id: 'version-1',
+          messageId,
+          content: 'Test message',
+          editedBy: 'user-1',
+          createdAt: new Date('2025-01-01'),
+        },
+      ];
+
+      mockPrismaService.messageVersion.findMany.mockResolvedValue(mockVersions);
+
+      const result = await service.getMessageVersions(messageId);
+
+      expect(result[0]).toEqual({
+        id: 'version-1',
+        content: 'Test message',
+        editedBy: 'user-1',
+        createdAt: expect.any(Date),
+      });
+    });
+  });
+
+  describe('moderatorDeleteMessage', () => {
+    const moderatorId = 'mod-1';
+    const messageId = 'msg-123';
+    const reason = 'Inappropriate content';
+
+    beforeEach(() => {
+      mockPrismaService.message.findUnique.mockResolvedValue(mockMessage);
+      mockPrismaService.message.update.mockResolvedValue({
+        ...mockMessage,
+        isDeleted: true,
+        deletedBy: moderatorId,
+        deleteReason: reason,
+      });
+    });
+
+    it('should delete message with reason and notify both users', async () => {
+      await service.moderatorDeleteMessage(moderatorId, messageId, reason);
+
+      expect(mockPrismaService.message.update).toHaveBeenCalledWith({
+        where: { id: messageId },
+        data: {
+          isDeleted: true,
+          deletedAt: expect.any(Date),
+          deletedBy: moderatorId,
+          deleteReason: reason,
+        },
+      });
+
+      expect(mockMessagesGateway.emitMessageDeleted).toHaveBeenCalledTimes(2);
+      expect(mockMessagesGateway.emitMessageDeleted).toHaveBeenCalledWith(
+        'user-1',
+        messageId,
+        'conv-123',
+      );
+      expect(mockMessagesGateway.emitMessageDeleted).toHaveBeenCalledWith(
+        'user-2',
+        messageId,
+        'conv-123',
+      );
+    });
+
+    it('should throw NotFoundException if message does not exist', async () => {
+      mockPrismaService.message.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.moderatorDeleteMessage(moderatorId, messageId, reason),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });

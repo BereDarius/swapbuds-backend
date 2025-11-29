@@ -35,8 +35,9 @@ describe('LikesService', () => {
       prisma.item.findUnique.mockResolvedValue(mockItem);
       prisma.like.findUnique.mockResolvedValue(null);
       prisma.like.create.mockResolvedValue(mockLike);
+      prisma.like.count.mockResolvedValue(1);
 
-      await service.likeItem(userId, itemId);
+      const result = await service.likeItem(userId, itemId);
 
       expect(prisma.item.findUnique).toHaveBeenCalledWith({
         where: { id: itemId },
@@ -44,6 +45,10 @@ describe('LikesService', () => {
       expect(prisma.like.create).toHaveBeenCalledWith({
         data: { userId, itemId },
       });
+      expect(prisma.like.count).toHaveBeenCalledWith({
+        where: { itemId },
+      });
+      expect(result).toEqual({ count: 1 });
     });
 
     it('should throw NotFoundException if item does not exist', async () => {
@@ -77,8 +82,9 @@ describe('LikesService', () => {
     it('should unlike an item successfully', async () => {
       prisma.like.findUnique.mockResolvedValue(mockLike);
       prisma.like.delete.mockResolvedValue(mockLike);
+      prisma.like.count.mockResolvedValue(0);
 
-      await service.unlikeItem(userId, itemId);
+      const result = await service.unlikeItem(userId, itemId);
 
       expect(prisma.like.findUnique).toHaveBeenCalledWith({
         where: {
@@ -88,6 +94,10 @@ describe('LikesService', () => {
       expect(prisma.like.delete).toHaveBeenCalledWith({
         where: { id: mockLike.id },
       });
+      expect(prisma.like.count).toHaveBeenCalledWith({
+        where: { itemId: mockLike.itemId },
+      });
+      expect(result).toEqual({ count: 0 });
     });
 
     it('should throw NotFoundException if like does not exist', async () => {
