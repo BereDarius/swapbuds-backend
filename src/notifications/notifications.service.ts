@@ -36,6 +36,7 @@ export class NotificationsService {
    */
   @CacheInvalidate((dto: CreateNotificationDto) => [
     `users:${dto.userId}:notifications:*`,
+    `users:${dto.userId}:notifications:unread`,
   ])
   async createNotification(
     createNotificationDto: CreateNotificationDto,
@@ -122,6 +123,7 @@ export class NotificationsService {
    */
   @CacheInvalidate((notificationId: string, userId: string) => [
     `users:${userId}:notifications:*`,
+    `users:${userId}:notifications:unread`,
   ])
   async markAsRead(
     notificationId: string,
@@ -158,7 +160,10 @@ export class NotificationsService {
    * @param userId - User ID
    * @returns Count of updated notifications
    */
-  @CacheInvalidate((userId: string) => [`users:${userId}:notifications:*`])
+  @CacheInvalidate((userId: string) => [
+    `users:${userId}:notifications:*`,
+    `users:${userId}:notifications:unread`,
+  ])
   async markAllAsRead(userId: string): Promise<{ count: number }> {
     const result = await this.prisma.notification.updateMany({
       where: {
