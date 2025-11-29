@@ -27,6 +27,7 @@ export class MessagesService {
    */
   @CacheInvalidate((senderId: string, dto: SendMessageDto) => [
     `users:${dto.recipientId}:messages:*`,
+    `users:${dto.recipientId}:messages:unread`,
   ])
   async sendMessage(
     senderId: string,
@@ -313,7 +314,10 @@ export class MessagesService {
   /**
    * Mark all messages in a conversation as read
    */
-  @CacheInvalidate((userId: string) => [`users:${userId}:messages:*`])
+  @CacheInvalidate((userId: string) => [
+    `users:${userId}:messages:*`,
+    `users:${userId}:messages:unread`,
+  ])
   async markConversationAsRead(
     userId: string,
     conversationId: string,
