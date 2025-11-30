@@ -15,7 +15,6 @@ import { LegalService } from './legal.service';
 
 describe('LegalService', () => {
   let service: LegalService;
-  let prisma: PrismaService;
 
   const mockPrismaService = {
     legalDocument: {
@@ -62,7 +61,6 @@ describe('LegalService', () => {
     }).compile();
 
     service = module.get<LegalService>(LegalService);
-    prisma = module.get<PrismaService>(PrismaService);
 
     jest.clearAllMocks();
   });

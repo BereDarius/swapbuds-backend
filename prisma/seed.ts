@@ -1,12 +1,16 @@
 import { PrismaClient } from '@prisma/client';
+import { seedDisputes } from './seeds/disputes.seed';
 import { seedEngagement } from './seeds/engagement.seed';
 import { seedItems } from './seeds/items.seed';
 import { seedLegalDocuments } from './seeds/legal.seed';
+import { seedModeration } from './seeds/moderation.seed';
 import { seedNotificationsAndSupport } from './seeds/notifications.seed';
 import { seedReviews } from './seeds/reviews.seed';
 import { seedUserSettings } from './seeds/settings.seed';
+import { seedSupport } from './seeds/support.seed';
 import { seedTrades } from './seeds/trades.seed';
 import { seedUsers } from './seeds/users.seed';
+import { seedVerifications } from './seeds/verification.seed';
 
 const prisma = new PrismaClient();
 
@@ -46,16 +50,35 @@ async function main() {
     await seedReviews(prisma, users, trades);
     console.log('');
 
-    // 8. Seed notifications and support
+    // 8. Seed verifications (ID document verification)
+    await seedVerifications(prisma, users);
+    console.log('');
+
+    // 9. Seed disputes (trade disputes)
+    await seedDisputes(prisma, users, trades);
+    console.log('');
+
+    // 10. Seed moderation flags (flagged items and comments)
+    await seedModeration(prisma, users, items);
+    console.log('');
+
+    // 11. Seed support tickets and messages
+    await seedSupport(prisma, users);
+    console.log('');
+
+    // 12. Seed notifications and support
     await seedNotificationsAndSupport(prisma, users);
     console.log('');
 
     console.log('✅ All seed operations completed successfully!');
     console.log('\n📊 Summary:');
-    console.log(`   - ${users.length} users created`);
+    console.log(`   - ${users.length} users created (all roles)`);
     console.log(`   - ${items.length} items created`);
-    console.log(`   - ${trades.length} trades created`);
-    console.log('\n🎉 Database is ready for testing!\n');
+    console.log(`   - ${trades.length} trades created (all statuses)`);
+    console.log(
+      `   - Verifications, disputes, moderation flags, and support tickets seeded`,
+    );
+    console.log('\n🎉 Database is ready for comprehensive testing!\n');
   } catch (error) {
     console.error('\n❌ Seed failed:', error);
     throw error;

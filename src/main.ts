@@ -52,8 +52,10 @@ async function bootstrap() {
   const nodeEnv = configService.get('nodeEnv');
 
   // Increase body size limit for file uploads (base64 encoded images)
-  app.use(require('express').json({ limit: '10mb' }));
-  app.use(require('express').urlencoded({ limit: '10mb', extended: true }));
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const express = require('express');
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
   // Global prefix
   app.setGlobalPrefix('api');

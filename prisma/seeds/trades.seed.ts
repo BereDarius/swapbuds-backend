@@ -48,16 +48,16 @@ export async function seedTrades(
         "I'm interested in your LOTR illustrated edition. Would you trade for my tennis racket?",
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
     },
-    // Completed trade: Maria and Mike completed a trade
+    // Completed trade: John and Mike completed a trade (both verified users)
     {
-      proposerId: regularUsers[3].id, // Maria
-      responderId: regularUsers[4].id, // Mike
-      itemOfferedId: items[9]?.id, // Designer Handbag
+      proposerId: regularUsers[0].id, // John (verified)
+      responderId: regularUsers[4].id, // Mike (verified)
+      itemOfferedId: items[1]?.id, // Nintendo Switch
       itemRequestedId: items[11]?.id, // Marvel Legends figures
       status: TradeStatus.COMPLETED,
       deliveryMethod: DeliveryMethod.MAIL,
       message:
-        'Would you be interested in trading some of your Marvel figures for my handbag? My nephew would love them!',
+        'Would you be interested in trading some of your Marvel figures for my Nintendo Switch?',
       completedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
     },
     // Rejected trade: John's offer was declined
