@@ -1,5 +1,6 @@
 import { AuthController } from '@/auth/auth.controller';
 import { AuthService } from '@/auth/auth.service';
+import { EmailService } from '@/auth/email.service';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 import { MFAService } from '@/auth/mfa.service';
 import { OAuthService } from '@/auth/oauth.service';
@@ -28,6 +29,7 @@ import { PassportModule } from '@nestjs/passport';
   controllers: [AuthController],
   providers: [
     AuthService,
+    EmailService,
     MFAService,
     OAuthService,
     JwtStrategy,
@@ -37,6 +39,13 @@ import { PassportModule } from '@nestjs/passport';
     // AppleStrategy,
     JwtAuthGuard,
   ],
-  exports: [AuthService, MFAService, OAuthService, JwtAuthGuard, JwtModule],
+  exports: [
+    AuthService,
+    EmailService,
+    MFAService,
+    OAuthService,
+    JwtAuthGuard,
+    JwtModule,
+  ],
 })
 export class AuthModule {}

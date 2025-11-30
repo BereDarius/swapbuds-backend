@@ -129,6 +129,55 @@ export class AuthController {
     return user; // User object from JWT token
   }
 
+  // ==================== EMAIL VERIFICATION ENDPOINTS ====================
+
+  /**
+   * Verify email address with token
+   *
+   * Verifies user's email address using the token sent via email.
+   * Token expires after 24 hours.
+   *
+   * @param token - Verification token from email
+   * @returns Success message
+   */
+  @Public()
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify email address' })
+  @ApiResponse({ status: 200, description: 'Email verified successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid or expired token' })
+  async verifyEmail(
+    @Body() body: { token: string },
+  ): Promise<{ message: string }> {
+    return this.authService.verifyEmail(body.token);
+  }
+
+  /**
+   * Resend verification email
+   *
+   * Sends a new verification email to the authenticated user.
+   * Rate limited to once every 5 minutes.
+   *
+   * @param user - Current user (injected by @CurrentUser decorator)
+   * @returns Success message
+   */
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Resend verification email' })
+  @ApiResponse({ status: 200, description: 'Verification email sent' })
+  @ApiResponse({
+    status: 400,
+    description: 'Email already verified or rate limit exceeded',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async resendVerificationEmail(
+    @CurrentUser() user: any,
+  ): Promise<{ message: string }> {
+    return this.authService.resendVerificationEmail(user.id);
+  }
+
   // ==================== MFA ENDPOINTS ====================
 
   /**

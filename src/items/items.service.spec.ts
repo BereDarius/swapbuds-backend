@@ -11,7 +11,7 @@ import { ItemsService } from './items.service';
 describe('ItemsService', () => {
   let service: ItemsService;
   let prisma: typeof mockPrismaService;
-  let cacheService: typeof mockCacheService;
+  let cacheService: jest.Mocked<CacheService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -30,7 +30,7 @@ describe('ItemsService', () => {
 
     service = module.get<ItemsService>(ItemsService);
     prisma = mockPrismaService;
-    cacheService = mockCacheService;
+    cacheService = module.get(CacheService);
 
     jest.clearAllMocks();
   });

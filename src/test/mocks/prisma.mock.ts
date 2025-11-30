@@ -223,18 +223,3 @@ export const mockPrismaService = {
   $connect: jest.fn(),
   $disconnect: jest.fn(),
 };
-
-/**
- * Reset all mock functions
- */
-export const resetPrismaMocks = () => {
-  Object.values(mockPrismaService).forEach((model) => {
-    if (typeof model === 'object' && model !== null) {
-      Object.values(model).forEach((fn) => {
-        if (jest.isMockFunction(fn)) {
-          fn.mockReset();
-        }
-      });
-    }
-  });
-};

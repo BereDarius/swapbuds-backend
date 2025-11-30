@@ -12,7 +12,7 @@ import { UsersService } from './users.service';
 describe('UsersService', () => {
   let service: UsersService;
   let prisma: typeof mockPrismaService;
-  let uploadService: typeof mockUploadService;
+  let uploadService: jest.Mocked<UploadService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -35,7 +35,7 @@ describe('UsersService', () => {
 
     service = module.get<UsersService>(UsersService);
     prisma = mockPrismaService;
-    uploadService = mockUploadService;
+    uploadService = module.get(UploadService);
 
     jest.clearAllMocks();
   });
@@ -457,7 +457,7 @@ describe('UsersService', () => {
       };
 
       prisma.user.findUnique.mockResolvedValueOnce(mockUser);
-      uploadService.uploadImage.mockResolvedValue(uploadResult);
+      uploadService.uploadImage.mockResolvedValue(uploadResult as any);
       prisma.user.update.mockResolvedValue(userWithCounts);
       prisma.user.findUnique.mockResolvedValueOnce(userWithCounts);
 
@@ -491,7 +491,7 @@ describe('UsersService', () => {
         ...mockUser,
         avatarUrl: oldAvatarUrl,
       });
-      uploadService.uploadImage.mockResolvedValue(uploadResult);
+      uploadService.uploadImage.mockResolvedValue(uploadResult as any);
       uploadService.deleteImage.mockResolvedValue({ result: 'ok' });
       prisma.user.update.mockResolvedValue(userWithCounts);
       prisma.user.findUnique.mockResolvedValueOnce(userWithCounts);

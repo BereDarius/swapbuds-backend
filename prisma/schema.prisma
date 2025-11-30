@@ -57,6 +57,12 @@ model User {
   isActive   Boolean @default(true)
   isVerified Boolean @default(false)
 
+  // Email Verification
+  emailVerified            Boolean   @default(false)
+  emailVerificationToken   String?   @unique
+  emailVerificationExpires DateTime?
+  emailVerificationSentAt  DateTime?
+
   // Multi-Factor Authentication
   mfaEnabled Boolean    @default(false)
   mfaSecret  MFASecret?

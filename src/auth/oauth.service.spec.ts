@@ -21,7 +21,7 @@ jest.mock('bcrypt');
 describe('OAuthService', () => {
   let service: OAuthService;
   let prisma: typeof mockPrismaService;
-  let jwtService: typeof mockJwtService;
+  let jwtService: jest.Mocked<JwtService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -44,7 +44,7 @@ describe('OAuthService', () => {
 
     service = module.get<OAuthService>(OAuthService);
     prisma = mockPrismaService;
-    jwtService = mockJwtService;
+    jwtService = module.get(JwtService);
 
     // Reset all mocks
     jest.clearAllMocks();

@@ -239,6 +239,10 @@ COMMUNITY_GUIDELINES COMMUNITY_GUIDELINES
     DateTime lastLoginAt "❓"
     Boolean isActive 
     Boolean isVerified 
+    Boolean emailVerified 
+    String emailVerificationToken "❓"
+    DateTime emailVerificationExpires "❓"
+    DateTime emailVerificationSentAt "❓"
     Boolean mfaEnabled 
     DateTime deletionRequestedAt "❓"
     DateTime scheduledDeletionAt "❓"

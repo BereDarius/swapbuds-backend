@@ -1,18 +1,22 @@
 import { AuthResponseDto, LoginDto, RegisterDto } from '@/auth/dto/auth.dto';
 import { MFARequiredResponseDto } from '@/auth/dto/mfa.dto';
+import { EmailService } from '@/auth/email.service';
 import { MFAService } from '@/auth/mfa.service';
 import { JwtPayload } from '@/auth/strategies/jwt.strategy';
 import { PrismaService } from '@/prisma/prisma.service';
 import { RecaptchaService } from '@/recaptcha/recaptcha.service';
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   Logger,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -25,6 +29,7 @@ export class AuthService {
     private configService: ConfigService,
     private recaptchaService: RecaptchaService,
     private mfaService: MFAService,
+    private emailService: EmailService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
@@ -103,6 +108,11 @@ export class AuthService {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, this.SALT_ROUNDS);
 
+    // Generate email verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationExpires = new Date();
+    verificationExpires.setHours(verificationExpires.getHours() + 24); // 24 hour expiry
+
     // Create user with legal compliance fields
     const now = new Date();
     const user = await this.prisma.user.create({
@@ -117,6 +127,10 @@ export class AuthService {
         tosVersion,
         privacyAcceptedAt: now,
         privacyVersion,
+        emailVerificationToken: verificationToken,
+        emailVerificationExpires: verificationExpires,
+        emailVerificationSentAt: now,
+        emailVerified: false,
       },
       select: {
         id: true,
@@ -124,12 +138,23 @@ export class AuthService {
         username: true,
         avatarUrl: true,
         role: true,
+        emailVerified: true,
       },
     });
 
     this.logger.log(
       `New user registered: ${user.username} (${user.email}) - Age: ${age}`,
     );
+
+    // Send verification email (non-blocking)
+    this.emailService
+      .sendVerificationEmail(user.email, user.username, verificationToken)
+      .catch((error) => {
+        this.logger.error(
+          `Failed to send verification email to ${user.email}`,
+          error,
+        );
+      });
 
     // Generate JWT
     const accessToken = await this.generateToken(user);
@@ -262,6 +287,107 @@ export class AuthService {
     }
 
     return user;
+  }
+
+  /**
+   * Verify email address with token
+   */
+  async verifyEmail(token: string): Promise<{ message: string }> {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        emailVerificationToken: token,
+        emailVerificationExpires: {
+          gt: new Date(),
+        },
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Invalid or expired verification token');
+    }
+
+    // Mark email as verified
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationExpires: null,
+      },
+    });
+
+    this.logger.log(
+      `Email verified for user: ${user.username} (${user.email})`,
+    );
+
+    return {
+      message: 'Email verified successfully',
+    };
+  }
+
+  /**
+   * Resend verification email
+   */
+  async resendVerificationEmail(userId: string): Promise<{ message: string }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        emailVerified: true,
+        emailVerificationSentAt: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.emailVerified) {
+      throw new BadRequestException('Email already verified');
+    }
+
+    // Rate limiting: only allow resend once every 5 minutes
+    if (user.emailVerificationSentAt) {
+      const minutesSinceLastSent =
+        (new Date().getTime() - user.emailVerificationSentAt.getTime()) /
+        1000 /
+        60;
+      if (minutesSinceLastSent < 5) {
+        throw new BadRequestException(
+          `Please wait ${Math.ceil(5 - minutesSinceLastSent)} minutes before requesting another verification email`,
+        );
+      }
+    }
+
+    // Generate new verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationExpires = new Date();
+    verificationExpires.setHours(verificationExpires.getHours() + 24);
+
+    // Update user with new token
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerificationToken: verificationToken,
+        emailVerificationExpires: verificationExpires,
+        emailVerificationSentAt: new Date(),
+      },
+    });
+
+    // Send verification email
+    await this.emailService.sendVerificationEmail(
+      user.email,
+      user.username,
+      verificationToken,
+    );
+
+    this.logger.log(`Verification email resent to: ${user.email}`);
+
+    return {
+      message: 'Verification email sent',
+    };
   }
 
   private async generateToken(user: {
