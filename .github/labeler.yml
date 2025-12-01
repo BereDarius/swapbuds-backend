@@ -1,0 +1,42 @@
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+          - 'docs/**/*'
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file: '.github/**/*'
+
+database:
+  - changed-files:
+      - any-glob-to-any-file: 'prisma/**/*'
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.spec.ts'
+          - '**/*.test.ts'
+          - '**/*.e2e-spec.ts'
+          - 'test/**/*'
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'package.json'
+          - 'yarn.lock'
+
+api:
+  - changed-files:
+      - any-glob-to-any-file: 'src/**/*.controller.ts'
+
+services:
+  - changed-files:
+      - any-glob-to-any-file: 'src/**/*.service.ts'
+
+config:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '*.config.*'
+          - '.env*'
+          - 'src/config/**/*'
