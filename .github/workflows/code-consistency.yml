@@ -28,11 +28,15 @@ jobs:
       - name: Check Prettier formatting
         run: |
           echo "Checking if code is properly formatted..."
-          yarn prettier --check . || {
-            echo "❌ Code is not properly formatted"
-            echo "Run 'yarn prettier --write .' to fix formatting"
-            exit 1
-          }
+          if grep -q '"prettier"' package.json; then
+            yarn prettier --check . || {
+              echo "❌ Code is not properly formatted"
+              echo "Run 'yarn prettier --write .' to fix formatting"
+              exit 1
+            }
+          else
+            echo "ℹ️  Prettier not configured, skipping formatting check"
+          fi
 
   validate-branch-name:
     name: Validate Branch Name
