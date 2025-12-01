@@ -1,0 +1,49 @@
+# Codecov Configuration
+# https://docs.codecov.com/docs/codecov-yaml
+
+coverage:
+  status:
+    # Project-wide coverage check
+    project:
+      default:
+        target: 85% # Match Jest threshold
+        threshold: 1% # Allow 1% decrease
+        informational: false # Make it a required check
+    # Per-file coverage check
+    patch:
+      default:
+        target: 85% # Match Jest threshold - new code must maintain 85% coverage
+        threshold: 2%
+        informational: false
+
+  # Coverage range for visualization
+  range: 60..100
+
+# PR Comment Configuration
+comment:
+  layout: 'reach, diff, flags, files'
+  behavior: default # Update existing comment
+  require_changes: false # Always comment
+  require_base: false
+  require_head: true
+
+# Flags for different test types
+flags:
+  backend-unit:
+    paths:
+      - src/
+    carryforward: false
+  backend:
+    paths:
+      - src/
+    carryforward: false
+
+# Ignore paths
+ignore:
+  - 'test/'
+  - '**/*.spec.ts'
+  - '**/*.test.ts'
+  - '**/*.e2e-spec.ts'
+  - 'coverage/'
+  - 'dist/'
+  - 'node_modules/'
