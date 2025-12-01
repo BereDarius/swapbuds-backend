@@ -43,14 +43,14 @@ describe('ModerationController', () => {
         description: 'This is spam',
       };
       const req = {
-        user: { userId: 'user-1' },
+        user: { id: 'user-1' },
         ip: '127.0.0.1',
       };
 
       const mockResult = {
         id: 'flag-1',
         itemId,
-        reportedById: req.user.userId,
+        reportedById: req.user.id,
         reason: dto.reason,
         description: dto.description,
       };
@@ -62,7 +62,7 @@ describe('ModerationController', () => {
       expect(result).toEqual(mockResult);
       expect(mockModerationService.flagItem).toHaveBeenCalledWith(
         itemId,
-        req.user.userId,
+        req.user.id,
         dto,
         req.ip,
       );
@@ -152,14 +152,14 @@ describe('ModerationController', () => {
       const flagId = 'flag-1';
       const dto = { notes: 'False alarm' };
       const req = {
-        user: { userId: 'admin-1' },
+        user: { id: 'admin-1' },
         ip: '127.0.0.1',
       };
 
       const mockResult = {
         id: flagId,
         status: ModerationStatus.APPROVED,
-        reviewedById: req.user.userId,
+        reviewedById: req.user.id,
         reviewNotes: dto.notes,
       };
 
@@ -170,7 +170,7 @@ describe('ModerationController', () => {
       expect(result).toEqual(mockResult);
       expect(mockModerationService.approveItem).toHaveBeenCalledWith(
         flagId,
-        req.user.userId,
+        req.user.id,
         dto,
         req.ip,
       );
@@ -185,14 +185,14 @@ describe('ModerationController', () => {
         notifyUser: true,
       };
       const req = {
-        user: { userId: 'admin-1' },
+        user: { id: 'admin-1' },
         ip: '127.0.0.1',
       };
 
       const mockResult = {
         id: flagId,
         status: ModerationStatus.REMOVED,
-        reviewedById: req.user.userId,
+        reviewedById: req.user.id,
         reviewNotes: dto.reason,
       };
 
@@ -203,7 +203,7 @@ describe('ModerationController', () => {
       expect(result).toEqual(mockResult);
       expect(mockModerationService.removeItem).toHaveBeenCalledWith(
         flagId,
-        req.user.userId,
+        req.user.id,
         dto,
         req.ip,
       );
@@ -240,7 +240,7 @@ describe('ModerationController', () => {
         notes: 'Approved after review',
       };
       const req = {
-        user: { userId: 'moderator-1' },
+        user: { id: 'moderator-1' },
         ip: '127.0.0.1',
       };
 
@@ -261,7 +261,7 @@ describe('ModerationController', () => {
       expect(result).toEqual(mockResult);
       expect(mockModerationService.bulkApprove).toHaveBeenCalledWith(
         dto.flaggedItemIds,
-        req.user.userId,
+        req.user.id,
         dto.notes,
         req.ip,
       );
@@ -275,7 +275,7 @@ describe('ModerationController', () => {
         reason: 'Not a valid flag',
       };
       const req = {
-        user: { userId: 'moderator-1' },
+        user: { id: 'moderator-1' },
         ip: '127.0.0.1',
       };
 
@@ -295,7 +295,7 @@ describe('ModerationController', () => {
       expect(result).toEqual(mockResult);
       expect(mockModerationService.bulkReject).toHaveBeenCalledWith(
         dto.flaggedItemIds,
-        req.user.userId,
+        req.user.id,
         dto.reason,
         req.ip,
       );
@@ -309,7 +309,7 @@ describe('ModerationController', () => {
         reason: 'Confirmed violations',
       };
       const req = {
-        user: { userId: 'moderator-1' },
+        user: { id: 'moderator-1' },
         ip: '127.0.0.1',
       };
 
@@ -330,7 +330,7 @@ describe('ModerationController', () => {
       expect(result).toEqual(mockResult);
       expect(mockModerationService.bulkRemove).toHaveBeenCalledWith(
         dto.flaggedItemIds,
-        req.user.userId,
+        req.user.id,
         dto.reason,
         req.ip,
       );
@@ -345,14 +345,14 @@ describe('ModerationController', () => {
         description: 'This is spam',
       };
       const req = {
-        user: { userId: 'user-1' },
+        user: { id: 'user-1' },
         ip: '127.0.0.1',
       };
 
       const mockResult = {
         id: 'flag-1',
         commentId,
-        reportedById: req.user.userId,
+        reportedById: req.user.id,
         reason: dto.reason,
         description: dto.description,
       };
@@ -364,7 +364,7 @@ describe('ModerationController', () => {
       expect(result).toEqual(mockResult);
       expect(mockModerationService.flagComment).toHaveBeenCalledWith(
         commentId,
-        req.user.userId,
+        req.user.id,
         dto,
         req.ip,
       );
@@ -376,14 +376,14 @@ describe('ModerationController', () => {
         reason: FlagReason.INAPPROPRIATE,
       };
       const req = {
-        user: { userId: 'user-1' },
+        user: { id: 'user-1' },
         ip: '127.0.0.1',
       };
 
       const mockResult = {
         id: 'flag-1',
         commentId,
-        reportedById: req.user.userId,
+        reportedById: req.user.id,
         reason: dto.reason,
       };
 
@@ -394,7 +394,7 @@ describe('ModerationController', () => {
       expect(result).toEqual(mockResult);
       expect(mockModerationService.flagComment).toHaveBeenCalledWith(
         commentId,
-        req.user.userId,
+        req.user.id,
         dto,
         req.ip,
       );
@@ -466,7 +466,7 @@ describe('ModerationController', () => {
       const flagId = 'flag-1';
       const dto = { notes: 'False alarm' };
       const req = {
-        user: { userId: 'moderator-1' },
+        user: { id: 'moderator-1' },
         ip: '127.0.0.1',
       };
 
@@ -481,7 +481,7 @@ describe('ModerationController', () => {
       expect(result).toEqual({ message: 'Comment approved successfully' });
       expect(mockModerationService.approveFlaggedComment).toHaveBeenCalledWith(
         flagId,
-        req.user.userId,
+        req.user.id,
         dto,
         req.ip,
       );
@@ -491,7 +491,7 @@ describe('ModerationController', () => {
       const flagId = 'flag-1';
       const dto = {};
       const req = {
-        user: { userId: 'moderator-1' },
+        user: { id: 'moderator-1' },
         ip: '127.0.0.1',
       };
 
@@ -506,7 +506,7 @@ describe('ModerationController', () => {
       expect(result).toEqual({ message: 'Comment approved successfully' });
       expect(mockModerationService.approveFlaggedComment).toHaveBeenCalledWith(
         flagId,
-        req.user.userId,
+        req.user.id,
         dto,
         req.ip,
       );
@@ -521,7 +521,7 @@ describe('ModerationController', () => {
         notifyUser: true,
       };
       const req = {
-        user: { userId: 'moderator-1' },
+        user: { id: 'moderator-1' },
         ip: '127.0.0.1',
       };
 
@@ -536,7 +536,7 @@ describe('ModerationController', () => {
       expect(result).toEqual({ message: 'Comment removed successfully' });
       expect(mockModerationService.removeFlaggedComment).toHaveBeenCalledWith(
         flagId,
-        req.user.userId,
+        req.user.id,
         dto,
         req.ip,
       );
@@ -549,7 +549,7 @@ describe('ModerationController', () => {
         notifyUser: false,
       };
       const req = {
-        user: { userId: 'moderator-1' },
+        user: { id: 'moderator-1' },
         ip: '127.0.0.1',
       };
 
@@ -564,7 +564,7 @@ describe('ModerationController', () => {
       expect(result).toEqual({ message: 'Comment removed successfully' });
       expect(mockModerationService.removeFlaggedComment).toHaveBeenCalledWith(
         flagId,
-        req.user.userId,
+        req.user.id,
         dto,
         req.ip,
       );
