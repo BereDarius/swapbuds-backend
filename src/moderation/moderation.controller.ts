@@ -79,7 +79,7 @@ export class ModerationController {
     const ipAddress = req.ip;
     return this.moderationService.flagItem(
       itemId,
-      req.user.userId,
+      req.user.id, // Fixed: JWT strategy returns user.id, not user.userId
       dto,
       ipAddress,
     );
@@ -168,7 +168,7 @@ export class ModerationController {
     const ipAddress = req.ip;
     return this.moderationService.approveItem(
       flagId,
-      req.user.userId,
+      req.user.id,
       dto,
       ipAddress,
     );
@@ -203,7 +203,7 @@ export class ModerationController {
     const ipAddress = req.ip;
     return this.moderationService.removeItem(
       flagId,
-      req.user.userId,
+      req.user.id,
       dto,
       ipAddress,
     );
@@ -241,7 +241,7 @@ export class ModerationController {
     const ipAddress = req.ip;
     return this.moderationService.bulkApprove(
       dto.flaggedItemIds,
-      req.user.userId,
+      req.user.id,
       dto.notes,
       ipAddress,
     );
@@ -264,7 +264,7 @@ export class ModerationController {
     const ipAddress = req.ip;
     return this.moderationService.bulkReject(
       dto.flaggedItemIds,
-      req.user.userId,
+      req.user.id,
       dto.reason,
       ipAddress,
     );
@@ -288,7 +288,7 @@ export class ModerationController {
     const ipAddress = req.ip;
     return this.moderationService.bulkRemove(
       dto.flaggedItemIds,
-      req.user.userId,
+      req.user.id,
       dto.reason,
       ipAddress,
     );
@@ -340,7 +340,7 @@ export class ModerationController {
     const ipAddress = req.ip;
     return this.moderationService.flagComment(
       commentId,
-      req.user.userId,
+      req.user.id,
       dto,
       ipAddress,
     );
@@ -418,7 +418,7 @@ export class ModerationController {
     const ipAddress = req.ip;
     await this.moderationService.approveFlaggedComment(
       flagId,
-      req.user.userId,
+      req.user.id,
       dto,
       ipAddress,
     );
@@ -454,7 +454,7 @@ export class ModerationController {
     const ipAddress = req.ip;
     await this.moderationService.removeFlaggedComment(
       flagId,
-      req.user.userId,
+      req.user.id,
       dto,
       ipAddress,
     );
