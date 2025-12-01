@@ -22,6 +22,9 @@ jobs:
           node-version: "20"
           cache: "yarn"
 
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
       - name: Check Prettier formatting
         run: |
           echo "Checking if code is properly formatted..."
