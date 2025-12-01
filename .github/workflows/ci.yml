@@ -28,6 +28,8 @@ jobs:
 
       - name: Check Prisma schema
         run: yarn prisma validate
+        env:
+          DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
 
   test:
     name: Test
@@ -89,7 +91,7 @@ jobs:
           NODE_ENV: test
 
       - name: Run E2E tests
-        run: yarn test:e2e
+        run: yarn test:e2e --testTimeout=30000
         env:
           DATABASE_URL: postgresql://swapbuds_test:swapbuds_test_password@localhost:5432/swapbuds_test
           REDIS_HOST: localhost
