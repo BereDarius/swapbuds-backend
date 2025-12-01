@@ -1,0 +1,120 @@
+name: Code Consistency
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-formatting:
+    name: Check Code Formatting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+
+      - name: Check Prettier formatting
+        run: |
+          echo "Checking if code is properly formatted..."
+          yarn prettier --check . || {
+            echo "❌ Code is not properly formatted"
+            echo "Run 'yarn prettier --write .' to fix formatting"
+            exit 1
+          }
+
+  validate-branch-name:
+    name: Validate Branch Name
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check branch naming convention
+        run: |
+          BRANCH_NAME="${{ github.head_ref }}"
+
+          if ! echo "$BRANCH_NAME" | grep -E '^(feat|feature|fix|hotfix|bugfix|chore|docs|style|refactor|perf|test|build|ci|revert)/[a-z0-9-]+$'; then
+            echo "❌ Invalid branch name: $BRANCH_NAME"
+            echo ""
+            echo "Branch name must follow pattern: <type>/<description>"
+            echo "Valid types: feat, fix, hotfix, bugfix, chore, docs, style, refactor, perf, test, build, ci, revert"
+            echo "Example: feat/user-authentication"
+            exit 1
+          fi
+          echo "✅ Valid branch name: $BRANCH_NAME"
+
+  check-console-logs:
+    name: Check for Console Logs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for console.log statements
+        run: |
+          echo "Checking for console.log statements..."
+          console_logs=$(git diff origin/main...HEAD -- 'src/**/*.ts' | grep "^+.*console\.log" | wc -l)
+
+          if [ "$console_logs" -gt 0 ]; then
+            echo "⚠️  Warning: $console_logs new console.log statements found"
+            echo "Consider removing debug logs before merging"
+            git diff origin/main...HEAD -- 'src/**/*.ts' | grep "^+.*console\.log" | head -5
+          else
+            echo "✅ No new console.log statements"
+          fi
+
+  check-file-sizes:
+    name: Check File Sizes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for large files
+        run: |
+          echo "Checking for files larger than 5MB..."
+          large_files=$(find . -type f -size +5M -not -path "./.git/*" -not -path "./node_modules/*" -not -path "./dist/*")
+          if [ -n "$large_files" ]; then
+            echo "❌ Large files detected (>5MB):"
+            echo "$large_files"
+            exit 1
+          fi
+          echo "✅ No large files detected"
+
+  check-prisma-schema:
+    name: Validate Prisma Schema
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Validate Prisma schema
+        env:
+          DATABASE_URL: postgresql://user:pass@localhost:5432/db
+        run: yarn prisma validate
+
+      - name: Check for pending migrations
+        run: |
+          if git diff --name-only origin/main...HEAD | grep -q "prisma/schema.prisma"; then
+            if ! git diff --name-only origin/main...HEAD | grep -q "prisma/migrations/"; then
+              echo "⚠️  Warning: schema.prisma changed but no migrations added"
+              echo "Run 'yarn prisma migrate dev' to create migrations"
+            fi
+          fi
