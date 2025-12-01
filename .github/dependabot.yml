@@ -1,20 +1,20 @@
 version: 2
 updates:
-  - package-ecosystem: "npm"
-    directory: "/"
+  - package-ecosystem: 'npm'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "03:00"
+      interval: 'weekly'
+      day: 'monday'
+      time: '03:00'
     reviewers:
-      - "your-github-username"
+      - 'BereDarius'
     assignees:
-      - "your-github-username"
+      - 'BereDarius'
     pull-request-branch-name:
-      separator: "/"
+      separator: '/'
     allow:
-      - dependency-type: "direct"
-      - dependency-type: "indirect"
+      - dependency-type: 'direct'
+      - dependency-type: 'indirect'
     labels:
-      - "dependencies"
-    rebase-strategy: "auto"
+      - 'dependencies'
+    rebase-strategy: 'auto'
