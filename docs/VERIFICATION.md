@@ -5,6 +5,7 @@
 The Verification module handles user identity verification including ID verification, age verification, and document security.
 
 **Features:**
+
 - Identity document verification
 - Age verification
 - KYC (Know Your Customer) compliance
@@ -15,13 +16,13 @@ The Verification module handles user identity verification including ID verifica
 
 ## Endpoints
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/verification/id` | JWT | Submit ID for verification |
-| GET | `/verification/status` | JWT | Get verification status |
-| POST | `/verification/age` | JWT | Submit age verification |
-| GET | `/verification/documents` | JWT | Get uploaded documents |
-| DELETE | `/verification/documents/:id` | JWT | Delete document |
+| Method | Endpoint                      | Auth | Description                |
+| ------ | ----------------------------- | ---- | -------------------------- |
+| POST   | `/verification/id`            | JWT  | Submit ID for verification |
+| GET    | `/verification/status`        | JWT  | Get verification status    |
+| POST   | `/verification/age`           | JWT  | Submit age verification    |
+| GET    | `/verification/documents`     | JWT  | Get uploaded documents     |
+| DELETE | `/verification/documents/:id` | JWT  | Delete document            |
 
 ## Submit ID Verification
 
@@ -40,6 +41,7 @@ Content-Type: multipart/form-data
 ```
 
 **Response (201):**
+
 ```json
 {
   "id": "verification-123",
@@ -62,6 +64,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "idVerified": true,
@@ -92,6 +95,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (201):**
+
 ```json
 {
   "id": "age-verification-123",
@@ -121,6 +125,7 @@ Authorization: Bearer <token>
 **Module:** `src/verification/`
 
 **Key Files:**
+
 - `verification.controller.ts` - API endpoints
 - `verification.service.ts` - Business logic
 - `document-security.service.ts` - Document validation

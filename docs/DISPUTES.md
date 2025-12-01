@@ -5,6 +5,7 @@
 The Disputes module handles trade dispute resolution with detailed messaging, admin review, and conflict resolution.
 
 **Features:**
+
 - Dispute creation and management
 - Dispute messaging
 - Admin resolution
@@ -14,15 +15,15 @@ The Disputes module handles trade dispute resolution with detailed messaging, ad
 
 ## Endpoints
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/disputes` | JWT | Create dispute |
-| GET | `/disputes` | JWT | List user disputes |
-| GET | `/disputes/:id` | JWT | Get dispute details |
-| PATCH | `/disputes/:id` | Admin | Update dispute |
-| PATCH | `/disputes/:id/resolve` | Admin | Resolve dispute |
-| POST | `/disputes/:id/messages` | JWT | Add dispute message |
-| GET | `/disputes/:id/messages` | JWT | Get dispute messages |
+| Method | Endpoint                 | Auth  | Description          |
+| ------ | ------------------------ | ----- | -------------------- |
+| POST   | `/disputes`              | JWT   | Create dispute       |
+| GET    | `/disputes`              | JWT   | List user disputes   |
+| GET    | `/disputes/:id`          | JWT   | Get dispute details  |
+| PATCH  | `/disputes/:id`          | Admin | Update dispute       |
+| PATCH  | `/disputes/:id/resolve`  | Admin | Resolve dispute      |
+| POST   | `/disputes/:id/messages` | JWT   | Add dispute message  |
+| GET    | `/disputes/:id/messages` | JWT   | Get dispute messages |
 
 ## Create Dispute
 
@@ -38,6 +39,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (201):**
+
 ```json
 {
   "id": "dispute-123",
@@ -86,6 +88,7 @@ Authorization: Bearer <admin-token>
 ```
 
 **Resolution Types:**
+
 - REFUND_FULL - Full refund to buyer
 - REFUND_PARTIAL - Partial refund
 - NO_ACTION - No resolution needed
@@ -96,5 +99,6 @@ Authorization: Bearer <admin-token>
 **Module:** `src/disputes/`
 
 **Key Files:**
+
 - `disputes.controller.ts` - API endpoints
 - `disputes.service.ts` - Business logic

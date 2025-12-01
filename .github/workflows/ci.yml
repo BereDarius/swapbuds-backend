@@ -106,8 +106,7 @@ jobs:
           files: ./coverage/lcov.info
           flags: backend
           name: backend-coverage
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   build:
     name: Build

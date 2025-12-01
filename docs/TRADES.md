@@ -5,6 +5,7 @@
 The Trades module manages the trading system with multi-item support, counter-offers, expiration, and detailed statistics.
 
 **Features:**
+
 - Multi-item trade proposals
 - Trade counter-offers
 - Automatic trade expiration
@@ -15,20 +16,20 @@ The Trades module manages the trading system with multi-item support, counter-of
 
 ## Endpoints
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/trades` | JWT | Create trade proposal |
-| GET | `/trades` | JWT | List user's trades |
-| GET | `/trades/:id` | JWT | Get trade details |
-| GET | `/trades/filter` | JWT | Filter trades |
-| PATCH | `/trades/:id/accept` | JWT | Accept trade |
-| PATCH | `/trades/:id/reject` | JWT | Reject trade |
-| PATCH | `/trades/:id/cancel` | JWT | Cancel trade |
-| PATCH | `/trades/:id/complete` | JWT | Mark as completed |
-| POST | `/trades/:tradeId/counter-offers` | JWT | Create counter-offer |
-| GET | `/trades/:tradeId/counter-offers` | JWT | List counter-offers |
-| PATCH | `/counter-offers/:id/accept` | JWT | Accept counter-offer |
-| PATCH | `/counter-offers/:id/reject` | JWT | Reject counter-offer |
+| Method | Endpoint                          | Auth | Description           |
+| ------ | --------------------------------- | ---- | --------------------- |
+| POST   | `/trades`                         | JWT  | Create trade proposal |
+| GET    | `/trades`                         | JWT  | List user's trades    |
+| GET    | `/trades/:id`                     | JWT  | Get trade details     |
+| GET    | `/trades/filter`                  | JWT  | Filter trades         |
+| PATCH  | `/trades/:id/accept`              | JWT  | Accept trade          |
+| PATCH  | `/trades/:id/reject`              | JWT  | Reject trade          |
+| PATCH  | `/trades/:id/cancel`              | JWT  | Cancel trade          |
+| PATCH  | `/trades/:id/complete`            | JWT  | Mark as completed     |
+| POST   | `/trades/:tradeId/counter-offers` | JWT  | Create counter-offer  |
+| GET    | `/trades/:tradeId/counter-offers` | JWT  | List counter-offers   |
+| PATCH  | `/counter-offers/:id/accept`      | JWT  | Accept counter-offer  |
+| PATCH  | `/counter-offers/:id/reject`      | JWT  | Reject counter-offer  |
 
 ## Create Trade
 
@@ -44,6 +45,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (201):**
+
 ```json
 {
   "id": "trade-123",
@@ -141,6 +143,7 @@ Authorization: Bearer <token>
 **Module:** `src/trades/`
 
 **Key Files:**
+
 - `trades.controller.ts` - API endpoints
 - `trades.service.ts` - Business logic
 - `trade-expiration.service.ts` - Expiration handling

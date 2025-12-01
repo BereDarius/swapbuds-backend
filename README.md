@@ -20,30 +20,30 @@ This is the production-ready backend API for SWAPBUDS, providing secure authenti
 
 Navigate to each functionality module:
 
-| Module | Documentation | Purpose |
-|--------|---------------|---------|
-| **Setup** | [SETUP.md](SETUP.md) | Installation, environment, running locally/production |
-| **Architecture** | [ARCHITECTURE.md](ARCHITECTURE.md) | Project structure, modules, database schema |
-| **Authentication** | [AUTH.md](AUTH.md) | JWT, OAuth, MFA, guards, registration/login |
-| **Users** | [USERS.md](USERS.md) | User profiles, settings, statistics, filtering |
-| **Items** | [ITEMS.md](ITEMS.md) | Item CRUD, categories, conditions, filtering, recommendations |
-| **Trades** | [TRADES.md](TRADES.md) | Trading system, proposals, counter-offers, expiration |
-| **Reviews** | [REVIEWS.md](REVIEWS.md) | Reviews, ratings, reputation system |
-| **Likes** | [LIKES.md](LIKES.md) | Item likes, favorites system |
-| **Comments** | [COMMENTS.md](COMMENTS.md) | Comments on items |
-| **Disputes** | [DISPUTES.md](DISPUTES.md) | Dispute resolution system |
-| **Notifications** | [NOTIFICATIONS.md](NOTIFICATIONS.md) | In-app notifications, preferences, unread counts |
-| **Messages** | [MESSAGES.md](MESSAGES.md) | Real-time messaging, conversations, WebSocket |
-| **Support** | [SUPPORT.md](SUPPORT.md) | Live Support Chat, priority queue, agent assignment |
-| **Moderation** | [MODERATION.md](MODERATION.md) | Content moderation, flagging, bulk operations |
-| **Admin** | [ADMIN.md](ADMIN.md) | Admin dashboard, user management, roles |
-| **GDPR** | [GDPR.md](GDPR.md) | Data export, deletion, privacy compliance |
-| **Verification** | [VERIFICATION.md](VERIFICATION.md) | ID verification, age checks, security |
-| **Upload** | [UPLOAD.md](UPLOAD.md) | File uploads, Cloudinary integration |
-| **Caching** | [CACHING.md](CACHING.md) | Redis caching, cache keys, performance |
-| **Monitoring** | [MONITORING.md](MONITORING.md) | Health checks, metrics, platform monitoring |
-| **Security** | [SECURITY.md](SECURITY.md) | Best practices, rate limiting, validation |
-| **Testing** | [TESTING.md](TESTING.md) | Unit/E2E tests, mocks, fixtures |
+| Module             | Documentation                        | Purpose                                                       |
+| ------------------ | ------------------------------------ | ------------------------------------------------------------- |
+| **Setup**          | [SETUP.md](SETUP.md)                 | Installation, environment, running locally/production         |
+| **Architecture**   | [ARCHITECTURE.md](ARCHITECTURE.md)   | Project structure, modules, database schema                   |
+| **Authentication** | [AUTH.md](AUTH.md)                   | JWT, OAuth, MFA, guards, registration/login                   |
+| **Users**          | [USERS.md](USERS.md)                 | User profiles, settings, statistics, filtering                |
+| **Items**          | [ITEMS.md](ITEMS.md)                 | Item CRUD, categories, conditions, filtering, recommendations |
+| **Trades**         | [TRADES.md](TRADES.md)               | Trading system, proposals, counter-offers, expiration         |
+| **Reviews**        | [REVIEWS.md](REVIEWS.md)             | Reviews, ratings, reputation system                           |
+| **Likes**          | [LIKES.md](LIKES.md)                 | Item likes, favorites system                                  |
+| **Comments**       | [COMMENTS.md](COMMENTS.md)           | Comments on items                                             |
+| **Disputes**       | [DISPUTES.md](DISPUTES.md)           | Dispute resolution system                                     |
+| **Notifications**  | [NOTIFICATIONS.md](NOTIFICATIONS.md) | In-app notifications, preferences, unread counts              |
+| **Messages**       | [MESSAGES.md](MESSAGES.md)           | Real-time messaging, conversations, WebSocket                 |
+| **Support**        | [SUPPORT.md](SUPPORT.md)             | Live Support Chat, priority queue, agent assignment           |
+| **Moderation**     | [MODERATION.md](MODERATION.md)       | Content moderation, flagging, bulk operations                 |
+| **Admin**          | [ADMIN.md](ADMIN.md)                 | Admin dashboard, user management, roles                       |
+| **GDPR**           | [GDPR.md](GDPR.md)                   | Data export, deletion, privacy compliance                     |
+| **Verification**   | [VERIFICATION.md](VERIFICATION.md)   | ID verification, age checks, security                         |
+| **Upload**         | [UPLOAD.md](UPLOAD.md)               | File uploads, Cloudinary integration                          |
+| **Caching**        | [CACHING.md](CACHING.md)             | Redis caching, cache keys, performance                        |
+| **Monitoring**     | [MONITORING.md](MONITORING.md)       | Health checks, metrics, platform monitoring                   |
+| **Security**       | [SECURITY.md](SECURITY.md)           | Best practices, rate limiting, validation                     |
+| **Testing**        | [TESTING.md](TESTING.md)             | Unit/E2E tests, mocks, fixtures                               |
 
 ## ✨ Features
 
@@ -144,23 +144,27 @@ yarn dev
 ## 📖 Getting Started by Role
 
 ### 👨‍💻 Backend Developers
+
 1. [SETUP.md](SETUP.md) - Get the project running locally
 2. [ARCHITECTURE.md](ARCHITECTURE.md) - Understand project structure
 3. [AUTH.md](AUTH.md) - Learn authentication patterns
 4. [SECURITY.md](SECURITY.md) - Understand security best practices
 
 ### 🔌 API Consumers
+
 1. [AUTH.md](AUTH.md) - Register and authenticate
 2. Browse individual feature docs (ITEMS.md, TRADES.md, etc.)
 3. [SWAGGER DOCS](http://localhost:3001/api/docs) - Interactive API reference
 
 ### ⚙️ DevOps/Operations
+
 1. [SETUP.md](SETUP.md) - Deployment instructions
 2. [MONITORING.md](MONITORING.md) - Health checks and monitoring
 3. [CACHING.md](CACHING.md) - Performance optimization
 4. [SECURITY.md](SECURITY.md) - Security configuration
 
 ### 👑 Admins/Moderators
+
 1. [ADMIN.md](ADMIN.md) - Admin dashboard and tools
 2. [MODERATION.md](MODERATION.md) - Content moderation
 3. [MONITORING.md](MONITORING.md) - Platform statistics
@@ -197,4 +201,4 @@ yarn dev
 <div align="center">
   <p>Part of the <a href="https://github.com/BereDarius/swapbuds">SWAPBUDS</a> project</p>
   <p>Made with ❤️ using NestJS</p>
-</div># Test
+</div>

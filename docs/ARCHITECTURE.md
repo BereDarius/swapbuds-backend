@@ -59,41 +59,49 @@ module/
 ### Core Entities
 
 **User**
+
 - id, email, username, password
 - firstName, lastName, bio, profileImage
 - isVerified, role, isActive, isSuspended, isBanned
 - createdAt, updatedAt
 
 **Item**
+
 - id, title, description, category, condition
 - estimatedValue, deliveryMethod, deliveryScope
 - ownerId, status, createdAt, updatedAt
 - images
 
 **Trade**
+
 - id, offeredById, requestedById
 - itemsOffered, itemsRequested
 - status, deliveryMethod, expiresAt
 - createdAt, updatedAt
 
 **Review**
+
 - id, tradeId, authorId, targetUserId
 - rating, title, comment, categories
 - isVerified, createdAt, updatedAt
 
 **Message**
+
 - id, conversationId, senderId, recipientId
 - content, isRead, createdAt
 
 **Notification**
+
 - id, userId, type, title, message
 - isRead, data, createdAt
 
 **Verification**
+
 - id, userId, type, status
 - documentType, submittedAt, verifiedAt
 
 **Dispute**
+
 - id, tradeId, initiatedById, reason
 - status, resolution, createdAt, updatedAt
 
@@ -118,16 +126,19 @@ module/
 ## Data Flow
 
 ### Item Creation
+
 ```
 User → POST /items → Controller → Service → Database → Notification
 ```
 
 ### Trade Proposal
+
 ```
 User A → POST /trades → Service → Database → Notification to User B
 ```
 
 ### Real-time Updates
+
 ```
 WebSocket Connection → Gateway → Service → Broadcast to clients
 ```
@@ -135,6 +146,7 @@ WebSocket Connection → Gateway → Service → Broadcast to clients
 ## Key Design Patterns
 
 ### Decorators
+
 - `@Public()` - Skip JWT authentication
 - `@CurrentUser()` - Inject authenticated user
 - `@Cacheable()` - Cache method result
@@ -142,11 +154,13 @@ WebSocket Connection → Gateway → Service → Broadcast to clients
 - `@UseGuards()` - Apply authentication guards
 
 ### Interceptors
+
 - `HttpCacheInterceptor` - HTTP caching
 - `MonitoringInterceptor` - Request/response timing
 - `LoggingInterceptor` - Request logging
 
 ### Guards
+
 - `JwtAuthGuard` - JWT validation
 - `AdminGuard` - Admin role check
 - `ModeratorGuard` - Moderator role check

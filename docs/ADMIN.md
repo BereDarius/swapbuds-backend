@@ -5,6 +5,7 @@
 The Admin module provides comprehensive admin dashboard and user management with role-based access control.
 
 **Features:**
+
 - User management and moderation
 - Admin statistics and metrics
 - Audit logging
@@ -15,18 +16,18 @@ The Admin module provides comprehensive admin dashboard and user management with
 
 ## Endpoints
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/admin/stats` | Admin | Get platform statistics |
-| GET | `/admin/users` | Admin | List all users |
-| GET | `/admin/users/:id` | Admin | Get user details |
-| PATCH | `/admin/users/:id/role` | Admin | Change user role |
-| PATCH | `/admin/users/:id/suspend` | Admin | Suspend user account |
-| PATCH | `/admin/users/:id/ban` | Admin | Ban user permanently |
-| PATCH | `/admin/users/:id/unsuspend` | Admin | Unsuspend user |
-| GET | `/admin/audit-logs` | Admin | Get audit logs |
-| GET | `/admin/items` | Admin | List flagged items |
-| GET | `/admin/trades` | Admin | List problematic trades |
+| Method | Endpoint                     | Auth  | Description             |
+| ------ | ---------------------------- | ----- | ----------------------- |
+| GET    | `/admin/stats`               | Admin | Get platform statistics |
+| GET    | `/admin/users`               | Admin | List all users          |
+| GET    | `/admin/users/:id`           | Admin | Get user details        |
+| PATCH  | `/admin/users/:id/role`      | Admin | Change user role        |
+| PATCH  | `/admin/users/:id/suspend`   | Admin | Suspend user account    |
+| PATCH  | `/admin/users/:id/ban`       | Admin | Ban user permanently    |
+| PATCH  | `/admin/users/:id/unsuspend` | Admin | Unsuspend user          |
+| GET    | `/admin/audit-logs`          | Admin | Get audit logs          |
+| GET    | `/admin/items`               | Admin | List flagged items      |
+| GET    | `/admin/trades`              | Admin | List problematic trades |
 
 ## Platform Statistics
 
@@ -36,6 +37,7 @@ Authorization: Bearer <admin-token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "totalUsers": 1250,
@@ -81,6 +83,7 @@ Authorization: Bearer <admin-token>
 ```
 
 **Available Roles:**
+
 - USER
 - SUPPORT
 - MODERATOR
@@ -117,6 +120,7 @@ Authorization: Bearer <admin-token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "data": [
@@ -146,6 +150,7 @@ Authorization: Bearer <admin-token>
 **Module:** `src/admin/`
 
 **Key Files:**
+
 - `admin.controller.ts` - API endpoints
 - `admin.service.ts` - Business logic
 - `audit-log.service.ts` - Audit logging

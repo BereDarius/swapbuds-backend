@@ -5,6 +5,7 @@
 The Notifications module provides in-app notifications with WebSocket real-time updates, email notifications, and customizable preferences.
 
 **Features:**
+
 - Real-time WebSocket notifications
 - Email notifications
 - Notification preferences
@@ -15,15 +16,15 @@ The Notifications module provides in-app notifications with WebSocket real-time 
 
 ## Endpoints
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/notifications` | JWT | List user notifications |
-| GET | `/notifications/unread-count` | JWT | Get unread count |
-| PATCH | `/notifications/:id/read` | JWT | Mark as read |
-| PATCH | `/notifications/read-all` | JWT | Mark all as read |
-| DELETE | `/notifications/:id` | JWT | Delete notification |
-| GET | `/notifications/preferences` | JWT | Get preferences |
-| PUT | `/notifications/preferences` | JWT | Update preferences |
+| Method | Endpoint                      | Auth | Description             |
+| ------ | ----------------------------- | ---- | ----------------------- |
+| GET    | `/notifications`              | JWT  | List user notifications |
+| GET    | `/notifications/unread-count` | JWT  | Get unread count        |
+| PATCH  | `/notifications/:id/read`     | JWT  | Mark as read            |
+| PATCH  | `/notifications/read-all`     | JWT  | Mark all as read        |
+| DELETE | `/notifications/:id`          | JWT  | Delete notification     |
+| GET    | `/notifications/preferences`  | JWT  | Get preferences         |
+| PUT    | `/notifications/preferences`  | JWT  | Update preferences      |
 
 ## List Notifications
 
@@ -33,6 +34,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "data": [
@@ -62,6 +64,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "unreadCount": 5
@@ -103,6 +106,7 @@ Authorization: Bearer <token>
 **Module:** `src/notifications/`
 
 **Key Files:**
+
 - `notifications.controller.ts` - API endpoints
 - `notifications.service.ts` - Business logic
 - `notifications.gateway.ts` - WebSocket gateway

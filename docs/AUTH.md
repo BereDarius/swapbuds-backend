@@ -5,6 +5,7 @@
 The Authentication module provides secure JWT-based authentication with OAuth support, MFA capabilities, and multiple login strategies.
 
 **Features:**
+
 - JWT token-based authentication
 - User registration and login
 - Token refresh mechanism
@@ -15,19 +16,19 @@ The Authentication module provides secure JWT-based authentication with OAuth su
 
 ## Endpoints
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/auth/register` | Public | Register new user |
-| POST | `/auth/login` | Public | Login and get JWT tokens |
-| POST | `/auth/refresh` | Public | Refresh expired token |
-| GET | `/auth/me` | JWT | Get current authenticated user |
-| POST | `/auth/logout` | JWT | Logout (invalidate token) |
-| POST | `/auth/oauth/google` | Public | Google OAuth login |
-| POST | `/auth/oauth/facebook` | Public | Facebook OAuth login |
-| POST | `/auth/oauth/apple` | Public | Apple OAuth login |
-| POST | `/auth/mfa/setup` | JWT | Setup MFA for user |
-| POST | `/auth/mfa/verify` | JWT | Verify MFA code |
-| DELETE | `/auth/mfa` | JWT | Disable MFA for user |
+| Method | Endpoint               | Auth   | Description                    |
+| ------ | ---------------------- | ------ | ------------------------------ |
+| POST   | `/auth/register`       | Public | Register new user              |
+| POST   | `/auth/login`          | Public | Login and get JWT tokens       |
+| POST   | `/auth/refresh`        | Public | Refresh expired token          |
+| GET    | `/auth/me`             | JWT    | Get current authenticated user |
+| POST   | `/auth/logout`         | JWT    | Logout (invalidate token)      |
+| POST   | `/auth/oauth/google`   | Public | Google OAuth login             |
+| POST   | `/auth/oauth/facebook` | Public | Facebook OAuth login           |
+| POST   | `/auth/oauth/apple`    | Public | Apple OAuth login              |
+| POST   | `/auth/mfa/setup`      | JWT    | Setup MFA for user             |
+| POST   | `/auth/mfa/verify`     | JWT    | Verify MFA code                |
+| DELETE | `/auth/mfa`            | JWT    | Disable MFA for user           |
 
 ## Registration
 
@@ -45,6 +46,7 @@ POST /auth/register
 ```
 
 **Response (201):**
+
 ```json
 {
   "id": "user-123",
@@ -63,6 +65,7 @@ POST /auth/register
 **Module:** `src/auth/`
 
 **Key Files:**
+
 - `auth.controller.ts` - API endpoints
 - `auth.service.ts` - Business logic
 - `strategies/jwt.strategy.ts` - JWT strategy

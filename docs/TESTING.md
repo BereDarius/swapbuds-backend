@@ -55,6 +55,7 @@ yarn test:e2e
 ## Test Configuration
 
 **jest.config.js:**
+
 ```typescript
 module.exports = {
   moduleFileExtensions: ['js', 'json', 'ts'],
@@ -63,9 +64,7 @@ module.exports = {
   transform: {
     '^.+\\.(t|j)s$': 'ts-jest',
   },
-  collectCoverageFrom: [
-    '**/*.(t|j)s',
-  ],
+  collectCoverageFrom: ['**/*.(t|j)s'],
   coverageDirectory: '../coverage',
   testEnvironment: 'node',
   moduleNameMapper: {
@@ -288,6 +287,7 @@ describe('ComponentName', () => {
 ## Implementation Details
 
 **Test Modules:** 30+ test suites covering:
+
 - Authentication and authorization
 - Item management
 - Trade system

@@ -82,6 +82,7 @@ docker-compose up -d
 ```
 
 Verify services:
+
 ```bash
 docker ps
 ```
@@ -147,6 +148,7 @@ yarn format           # Format with Prettier
 ### Environment Setup
 
 Update `.env.production`:
+
 ```env
 NODE_ENV=production
 DATABASE_URL="postgresql://user:pass@prod-db:5432/swapbuds"

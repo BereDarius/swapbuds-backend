@@ -5,6 +5,7 @@
 The Caching module provides Redis-based caching system with decorators, cache warming, and performance monitoring.
 
 **Features:**
+
 - Redis caching layer
 - Cacheable decorator for automatic caching
 - Cache warming and preloading
@@ -16,11 +17,13 @@ The Caching module provides Redis-based caching system with decorators, cache wa
 ## Cache Keys
 
 ### User Cache Keys
+
 - `user:{userId}` - User profile
 - `user:{userId}:stats` - User statistics
 - `user:{userId}:reputation` - User reputation
 
 ### Item Cache Keys
+
 - `item:{itemId}` - Item details
 - `items:popular` - Popular items
 - `items:category:{category}` - Items by category
@@ -28,10 +31,12 @@ The Caching module provides Redis-based caching system with decorators, cache wa
 - `items:recommendations:{userId}` - User recommendations
 
 ### Trade Cache Keys
+
 - `trade:{tradeId}` - Trade details
 - `user:{userId}:trades` - User trades
 
 ### Review Cache Keys
+
 - `review:{reviewId}` - Review details
 - `user:{userId}:reviews` - User reviews
 
@@ -61,13 +66,13 @@ async updateItem(@Param('id') id: string, @Body() dto: UpdateItemDto) {
 
 ## Cache Endpoints
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/cache/stats` | Admin | Get cache statistics |
-| GET | `/cache/keys` | Admin | List cached keys |
-| DELETE | `/cache/:key` | Admin | Clear specific cache |
-| DELETE | `/cache` | Admin | Clear all cache |
-| POST | `/cache/warm` | Admin | Warm cache |
+| Method | Endpoint       | Auth  | Description          |
+| ------ | -------------- | ----- | -------------------- |
+| GET    | `/cache/stats` | Admin | Get cache statistics |
+| GET    | `/cache/keys`  | Admin | List cached keys     |
+| DELETE | `/cache/:key`  | Admin | Clear specific cache |
+| DELETE | `/cache`       | Admin | Clear all cache      |
+| POST   | `/cache/warm`  | Admin | Warm cache           |
 
 ## Cache Statistics
 
@@ -77,6 +82,7 @@ Authorization: Bearer <admin-token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "totalKeys": 1234,
@@ -107,6 +113,7 @@ Authorization: Bearer <admin-token>
 ```
 
 **Response (202):**
+
 ```json
 {
   "status": "WARMING",
@@ -120,6 +127,7 @@ Authorization: Bearer <admin-token>
 **Module:** `src/cache/`
 
 **Key Files:**
+
 - `cache.service.ts` - Core caching logic
 - `cache.controller.ts` - Cache management endpoints
 - `decorators/cacheable.decorator.ts` - Caching decorators

@@ -5,6 +5,7 @@
 The GDPR module provides data privacy compliance features including data export, deletion, and consent management.
 
 **Features:**
+
 - Data export functionality
 - Account deletion requests
 - Data retention policies
@@ -15,14 +16,14 @@ The GDPR module provides data privacy compliance features including data export,
 
 ## Endpoints
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/gdpr/export` | JWT | Request data export |
-| GET | `/gdpr/export/:id` | JWT | Download exported data |
-| POST | `/gdpr/delete` | JWT | Request account deletion |
-| GET | `/gdpr/delete-status` | JWT | Check deletion status |
-| GET | `/gdpr/privacy-settings` | JWT | Get privacy settings |
-| PATCH | `/gdpr/privacy-settings` | JWT | Update privacy settings |
+| Method | Endpoint                 | Auth | Description              |
+| ------ | ------------------------ | ---- | ------------------------ |
+| POST   | `/gdpr/export`           | JWT  | Request data export      |
+| GET    | `/gdpr/export/:id`       | JWT  | Download exported data   |
+| POST   | `/gdpr/delete`           | JWT  | Request account deletion |
+| GET    | `/gdpr/delete-status`    | JWT  | Check deletion status    |
+| GET    | `/gdpr/privacy-settings` | JWT  | Get privacy settings     |
+| PATCH  | `/gdpr/privacy-settings` | JWT  | Update privacy settings  |
 
 ## Data Export
 
@@ -40,6 +41,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (202):**
+
 ```json
 {
   "id": "export-123",
@@ -73,6 +75,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (202):**
+
 ```json
 {
   "id": "deletion-123",
@@ -91,6 +94,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "status": "PENDING",
@@ -109,6 +113,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "userId": "user-123",
@@ -138,6 +143,7 @@ Authorization: Bearer <token>
 **Module:** `src/gdpr/`
 
 **Key Files:**
+
 - `gdpr.controller.ts` - API endpoints
 - `gdpr.service.ts` - Business logic
 - `data-export.service.ts` - Data export functionality

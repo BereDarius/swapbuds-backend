@@ -5,6 +5,7 @@
 The Support module manages live support chat system with priority queue and agent assignment.
 
 **Features:**
+
 - Live chat support
 - Ticket/conversation tracking
 - Priority queue system
@@ -15,16 +16,16 @@ The Support module manages live support chat system with priority queue and agen
 
 ## Endpoints
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/support/tickets` | JWT | Create support ticket |
-| GET | `/support/tickets` | JWT | List user's tickets |
-| GET | `/support/tickets/:id` | JWT | Get ticket details |
-| POST | `/support/tickets/:id/messages` | JWT | Add message to ticket |
-| GET | `/support/tickets/:id/messages` | JWT | Get ticket messages |
-| GET | `/support/queue` | Support | Get support queue (support only) |
-| PATCH | `/support/tickets/:id/assign` | Support | Assign ticket to agent |
-| PATCH | `/support/tickets/:id/resolve` | Support | Resolve ticket |
+| Method | Endpoint                        | Auth    | Description                      |
+| ------ | ------------------------------- | ------- | -------------------------------- |
+| POST   | `/support/tickets`              | JWT     | Create support ticket            |
+| GET    | `/support/tickets`              | JWT     | List user's tickets              |
+| GET    | `/support/tickets/:id`          | JWT     | Get ticket details               |
+| POST   | `/support/tickets/:id/messages` | JWT     | Add message to ticket            |
+| GET    | `/support/tickets/:id/messages` | JWT     | Get ticket messages              |
+| GET    | `/support/queue`                | Support | Get support queue (support only) |
+| PATCH  | `/support/tickets/:id/assign`   | Support | Assign ticket to agent           |
+| PATCH  | `/support/tickets/:id/resolve`  | Support | Resolve ticket                   |
 
 ## Create Support Ticket
 
@@ -41,6 +42,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (201):**
+
 ```json
 {
   "id": "ticket-123",
@@ -63,6 +65,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "data": [
@@ -116,6 +119,7 @@ Authorization: Bearer <token>
 **Module:** `src/support/`
 
 **Key Files:**
+
 - `support-chat.controller.ts` - API endpoints
 - `support-chat.service.ts` - Business logic
 - `support-chat.gateway.ts` - WebSocket gateway
