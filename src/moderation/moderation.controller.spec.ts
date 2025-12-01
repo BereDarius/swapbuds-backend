@@ -43,7 +43,7 @@ describe('ModerationController', () => {
         description: 'This is spam',
       };
       const req = {
-        user: { userId: 'user-1' },
+        user: { id: 'user-1' },
         ip: '127.0.0.1',
       };
 
@@ -152,7 +152,7 @@ describe('ModerationController', () => {
       const flagId = 'flag-1';
       const dto = { notes: 'False alarm' };
       const req = {
-        user: { userId: 'admin-1' },
+        user: { id: 'admin-1' },
         ip: '127.0.0.1',
       };
 
@@ -185,7 +185,7 @@ describe('ModerationController', () => {
         notifyUser: true,
       };
       const req = {
-        user: { userId: 'admin-1' },
+        user: { id: 'admin-1' },
         ip: '127.0.0.1',
       };
 
@@ -240,7 +240,7 @@ describe('ModerationController', () => {
         notes: 'Approved after review',
       };
       const req = {
-        user: { userId: 'moderator-1' },
+        user: { id: 'moderator-1' },
         ip: '127.0.0.1',
       };
 
@@ -275,7 +275,7 @@ describe('ModerationController', () => {
         reason: 'Not a valid flag',
       };
       const req = {
-        user: { userId: 'moderator-1' },
+        user: { id: 'moderator-1' },
         ip: '127.0.0.1',
       };
 
@@ -309,7 +309,7 @@ describe('ModerationController', () => {
         reason: 'Confirmed violations',
       };
       const req = {
-        user: { userId: 'moderator-1' },
+        user: { id: 'moderator-1' },
         ip: '127.0.0.1',
       };
 
@@ -345,7 +345,7 @@ describe('ModerationController', () => {
         description: 'This is spam',
       };
       const req = {
-        user: { userId: 'user-1' },
+        user: { id: 'user-1' },
         ip: '127.0.0.1',
       };
 
@@ -376,7 +376,7 @@ describe('ModerationController', () => {
         reason: FlagReason.INAPPROPRIATE,
       };
       const req = {
-        user: { userId: 'user-1' },
+        user: { id: 'user-1' },
         ip: '127.0.0.1',
       };
 
@@ -466,7 +466,7 @@ describe('ModerationController', () => {
       const flagId = 'flag-1';
       const dto = { notes: 'False alarm' };
       const req = {
-        user: { userId: 'moderator-1' },
+        user: { id: 'moderator-1' },
         ip: '127.0.0.1',
       };
 
@@ -491,7 +491,7 @@ describe('ModerationController', () => {
       const flagId = 'flag-1';
       const dto = {};
       const req = {
-        user: { userId: 'moderator-1' },
+        user: { id: 'moderator-1' },
         ip: '127.0.0.1',
       };
 
@@ -521,7 +521,7 @@ describe('ModerationController', () => {
         notifyUser: true,
       };
       const req = {
-        user: { userId: 'moderator-1' },
+        user: { id: 'moderator-1' },
         ip: '127.0.0.1',
       };
 
@@ -549,7 +549,7 @@ describe('ModerationController', () => {
         notifyUser: false,
       };
       const req = {
-        user: { userId: 'moderator-1' },
+        user: { id: 'moderator-1' },
         ip: '127.0.0.1',
       };
 
