@@ -5,6 +5,7 @@
 The Items module manages product listings with comprehensive filtering, categorization, conditions, and smart recommendations.
 
 **Features:**
+
 - Item CRUD operations
 - Advanced filtering and search
 - Category and condition systems
@@ -16,16 +17,16 @@ The Items module manages product listings with comprehensive filtering, categori
 
 ## Endpoints
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/items` | JWT | Create new item |
-| GET | `/items` | Public | List items with filtering |
-| GET | `/items/:id` | Public | Get item details |
-| GET | `/items/:id/similar` | Public | Get similar items |
-| GET | `/items/user/:userId` | Public | Get user's items |
-| GET | `/items/recommendations` | JWT | Get personalized recommendations |
-| PATCH | `/items/:id` | JWT | Update item (owner only) |
-| DELETE | `/items/:id` | JWT | Delete item (owner only) |
+| Method | Endpoint                 | Auth   | Description                      |
+| ------ | ------------------------ | ------ | -------------------------------- |
+| POST   | `/items`                 | JWT    | Create new item                  |
+| GET    | `/items`                 | Public | List items with filtering        |
+| GET    | `/items/:id`             | Public | Get item details                 |
+| GET    | `/items/:id/similar`     | Public | Get similar items                |
+| GET    | `/items/user/:userId`    | Public | Get user's items                 |
+| GET    | `/items/recommendations` | JWT    | Get personalized recommendations |
+| PATCH  | `/items/:id`             | JWT    | Update item (owner only)         |
+| DELETE | `/items/:id`             | JWT    | Delete item (owner only)         |
 
 ## Create Item
 
@@ -45,6 +46,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (201):**
+
 ```json
 {
   "id": "item-123",
@@ -67,6 +69,7 @@ GET /items?page=1&limit=20&category=ELECTRONICS&condition=GOOD&search=phone
 ```
 
 **Query Parameters:**
+
 - `page` - Page number (default: 1)
 - `limit` - Items per page (default: 20)
 - `search` - Search title/description
@@ -79,6 +82,7 @@ GET /items?page=1&limit=20&category=ELECTRONICS&condition=GOOD&search=phone
 - `sortOrder` - Sort order (asc, desc)
 
 **Response (200):**
+
 ```json
 {
   "data": [
@@ -109,6 +113,7 @@ GET /items?page=1&limit=20&category=ELECTRONICS&condition=GOOD&search=phone
 ## Categories
 
 Available categories:
+
 - ELECTRONICS
 - CLOTHING
 - BOOKS
@@ -133,6 +138,7 @@ Available categories:
 **Module:** `src/items/`
 
 **Key Files:**
+
 - `items.controller.ts` - API endpoints
 - `items.service.ts` - Business logic
 - `recommendations.service.ts` - Recommendation engine

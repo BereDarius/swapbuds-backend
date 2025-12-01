@@ -5,6 +5,7 @@
 The Security module provides authentication, authorization, rate limiting, validation, and security best practices.
 
 **Features:**
+
 - JWT token validation
 - Rate limiting
 - Request validation
@@ -17,21 +18,23 @@ The Security module provides authentication, authorization, rate limiting, valid
 ## Rate Limiting
 
 ### Global Rate Limit
+
 - **Default:** 100 requests per 15 minutes per IP
 - **Apply to:** All endpoints except `/health`
 
 ### Endpoint-Specific Rate Limits
 
-| Endpoint | Limit | Window |
-|----------|-------|--------|
-| `/auth/login` | 5 requests | 15 minutes |
-| `/auth/register` | 3 requests | 1 hour |
-| `/verification/*` | 10 requests | 24 hours |
-| `/messages` | 50 requests | 1 minute |
+| Endpoint          | Limit       | Window     |
+| ----------------- | ----------- | ---------- |
+| `/auth/login`     | 5 requests  | 15 minutes |
+| `/auth/register`  | 3 requests  | 1 hour     |
+| `/verification/*` | 10 requests | 24 hours   |
+| `/messages`       | 50 requests | 1 minute   |
 
 ## Request Validation
 
 ### Payload Validation
+
 ```typescript
 // Example DTO with validation
 import { IsEmail, MinLength, IsString } from 'class-validator';
@@ -47,6 +50,7 @@ export class LoginDto {
 ```
 
 ### CORS Configuration
+
 ```typescript
 {
   origin: process.env.FRONTEND_URL,
@@ -59,6 +63,7 @@ export class LoginDto {
 ## Security Headers
 
 **Helmet.js Configuration:**
+
 - Content Security Policy (CSP)
 - X-Frame-Options
 - X-Content-Type-Options
@@ -68,6 +73,7 @@ export class LoginDto {
 ## Password Security
 
 ### Requirements
+
 - Minimum 8 characters
 - At least one uppercase letter
 - At least one lowercase letter
@@ -75,12 +81,14 @@ export class LoginDto {
 - At least one special character
 
 ### Hashing
+
 - Algorithm: bcrypt
 - Rounds: 10
 
 ## API Security
 
 ### JWT Token Claims
+
 ```json
 {
   "sub": "user-123",
@@ -92,6 +100,7 @@ export class LoginDto {
 ```
 
 ### Token Validation
+
 - **Issuer:** SWAPBUDS
 - **Signature Algorithm:** HS256
 - **Expiration:** 7 days access token, 30 days refresh token
@@ -119,6 +128,7 @@ export class LoginDto {
 **Module:** `src/auth/` and `src/config/`
 
 **Key Files:**
+
 - `auth/guards/` - Authentication guards
 - `config/configuration.ts` - Security configuration
 - Global middleware for rate limiting and validation

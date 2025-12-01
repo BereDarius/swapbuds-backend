@@ -5,6 +5,7 @@
 The Reviews module manages user reviews and ratings for trades and users with comprehensive reputation tracking.
 
 **Features:**
+
 - Trade reviews and ratings
 - User reputation scoring
 - Review filtering and sorting
@@ -15,15 +16,15 @@ The Reviews module manages user reviews and ratings for trades and users with co
 
 ## Endpoints
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/reviews` | JWT | Create review |
-| GET | `/reviews` | Public | List reviews |
-| GET | `/reviews/user/:userId` | Public | Get reviews for user |
-| GET | `/reviews/trade/:tradeId` | Public | Get reviews for trade |
-| GET | `/reviews/:id` | Public | Get review details |
-| PATCH | `/reviews/:id` | JWT | Update review (owner only) |
-| DELETE | `/reviews/:id` | JWT | Delete review (owner only) |
+| Method | Endpoint                  | Auth   | Description                |
+| ------ | ------------------------- | ------ | -------------------------- |
+| POST   | `/reviews`                | JWT    | Create review              |
+| GET    | `/reviews`                | Public | List reviews               |
+| GET    | `/reviews/user/:userId`   | Public | Get reviews for user       |
+| GET    | `/reviews/trade/:tradeId` | Public | Get reviews for trade      |
+| GET    | `/reviews/:id`            | Public | Get review details         |
+| PATCH  | `/reviews/:id`            | JWT    | Update review (owner only) |
+| DELETE | `/reviews/:id`            | JWT    | Delete review (owner only) |
 
 ## Create Review
 
@@ -44,6 +45,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (201):**
+
 ```json
 {
   "id": "review-123",
@@ -70,6 +72,7 @@ GET /reviews?page=1&limit=20&userId=user-456&sortBy=createdAt
 ```
 
 **Query Parameters:**
+
 - `page` - Page number
 - `limit` - Results per page
 - `userId` - Filter by reviewed user
@@ -78,6 +81,7 @@ GET /reviews?page=1&limit=20&userId=user-456&sortBy=createdAt
 - `sortBy` - Sort field (createdAt, rating)
 
 **Response (200):**
+
 ```json
 {
   "data": [
@@ -105,6 +109,7 @@ GET /reviews?page=1&limit=20&userId=user-456&sortBy=createdAt
 **Module:** `src/reviews/`
 
 **Key Files:**
+
 - `reviews.controller.ts` - API endpoints
 - `reviews.service.ts` - Business logic
 - `dto/create-review.dto.ts` - Creation DTO

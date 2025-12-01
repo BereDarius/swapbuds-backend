@@ -5,6 +5,7 @@
 The Monitoring module provides health checks, platform monitoring, and real-time metrics for system observability.
 
 **Features:**
+
 - Health check endpoints
 - Real-time metrics
 - Database monitoring
@@ -15,13 +16,13 @@ The Monitoring module provides health checks, platform monitoring, and real-time
 
 ## Endpoints
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/health` | Public | Basic health check |
-| GET | `/health/detailed` | Public | Detailed health status |
-| GET | `/monitoring/metrics` | Admin | Get platform metrics |
-| GET | `/monitoring/stats` | Admin | Get platform statistics |
-| GET | `/monitoring/errors` | Admin | Get recent errors |
+| Method | Endpoint              | Auth   | Description             |
+| ------ | --------------------- | ------ | ----------------------- |
+| GET    | `/health`             | Public | Basic health check      |
+| GET    | `/health/detailed`    | Public | Detailed health status  |
+| GET    | `/monitoring/metrics` | Admin  | Get platform metrics    |
+| GET    | `/monitoring/stats`   | Admin  | Get platform statistics |
+| GET    | `/monitoring/errors`  | Admin  | Get recent errors       |
 
 ## Health Check
 
@@ -32,6 +33,7 @@ GET /health
 ```
 
 **Response (200):**
+
 ```json
 {
   "status": "ok",
@@ -46,6 +48,7 @@ GET /health/detailed
 ```
 
 **Response (200):**
+
 ```json
 {
   "status": "UP",
@@ -86,6 +89,7 @@ Authorization: Bearer <admin-token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "period": "24h",
@@ -110,6 +114,7 @@ Authorization: Bearer <admin-token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "timestamp": "2025-11-23T10:30:00Z",
@@ -151,6 +156,7 @@ Authorization: Bearer <admin-token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "data": [
@@ -172,6 +178,7 @@ Authorization: Bearer <admin-token>
 **Module:** `src/monitoring/`
 
 **Key Files:**
+
 - `monitoring.controller.ts` - API endpoints
 - `monitoring.service.ts` - Metrics collection
 - `health.controller.ts` - Health checks

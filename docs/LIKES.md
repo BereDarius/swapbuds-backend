@@ -5,6 +5,7 @@
 The Likes module manages item likes and favorites functionality for users.
 
 **Features:**
+
 - Item like/unlike
 - Like tracking
 - User favorites list
@@ -13,13 +14,13 @@ The Likes module manages item likes and favorites functionality for users.
 
 ## Endpoints
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/likes/:itemId` | JWT | Like item |
-| DELETE | `/likes/:itemId` | JWT | Unlike item |
-| GET | `/likes/user/:userId` | JWT | Get user's liked items |
-| GET | `/likes/:itemId` | Public | Get like count |
-| GET | `/items/popular` | Public | Get popular items |
+| Method | Endpoint              | Auth   | Description            |
+| ------ | --------------------- | ------ | ---------------------- |
+| POST   | `/likes/:itemId`      | JWT    | Like item              |
+| DELETE | `/likes/:itemId`      | JWT    | Unlike item            |
+| GET    | `/likes/user/:userId` | JWT    | Get user's liked items |
+| GET    | `/likes/:itemId`      | Public | Get like count         |
+| GET    | `/items/popular`      | Public | Get popular items      |
 
 ## Like Item
 
@@ -29,6 +30,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (201):**
+
 ```json
 {
   "id": "like-123",
@@ -46,6 +48,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "message": "Item unliked successfully"
@@ -60,6 +63,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "data": [
@@ -89,5 +93,6 @@ Authorization: Bearer <token>
 **Module:** `src/likes/`
 
 **Key Files:**
+
 - `likes.controller.ts` - API endpoints
 - `likes.service.ts` - Business logic

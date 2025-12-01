@@ -5,6 +5,7 @@
 The Moderation module provides content moderation tools for flagging, approving, and removing items and trades.
 
 **Features:**
+
 - Item and trade flagging
 - Content moderation workflow
 - Bulk moderation actions
@@ -15,15 +16,15 @@ The Moderation module provides content moderation tools for flagging, approving,
 
 ## Endpoints
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/moderation/flag/item` | JWT | Flag item for review |
-| POST | `/moderation/flag/trade` | JWT | Flag trade for review |
-| GET | `/moderation/items` | Moderator | Get flagged items |
-| GET | `/moderation/trades` | Moderator | Get flagged trades |
-| PATCH | `/moderation/items/:id/approve` | Moderator | Approve item |
-| PATCH | `/moderation/items/:id/reject` | Moderator | Remove item |
-| PATCH | `/moderation/bulk-action` | Moderator | Bulk moderation action |
+| Method | Endpoint                        | Auth      | Description            |
+| ------ | ------------------------------- | --------- | ---------------------- |
+| POST   | `/moderation/flag/item`         | JWT       | Flag item for review   |
+| POST   | `/moderation/flag/trade`        | JWT       | Flag trade for review  |
+| GET    | `/moderation/items`             | Moderator | Get flagged items      |
+| GET    | `/moderation/trades`            | Moderator | Get flagged trades     |
+| PATCH  | `/moderation/items/:id/approve` | Moderator | Approve item           |
+| PATCH  | `/moderation/items/:id/reject`  | Moderator | Remove item            |
+| PATCH  | `/moderation/bulk-action`       | Moderator | Bulk moderation action |
 
 ## Flag Item
 
@@ -38,6 +39,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (201):**
+
 ```json
 {
   "id": "flag-123",
@@ -69,6 +71,7 @@ Authorization: Bearer <moderator-token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "data": [
@@ -131,5 +134,6 @@ Authorization: Bearer <moderator-token>
 **Module:** `src/moderation/`
 
 **Key Files:**
+
 - `moderation.controller.ts` - API endpoints
 - `moderation.service.ts` - Business logic

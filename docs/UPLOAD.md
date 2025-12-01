@@ -5,6 +5,7 @@
 The Upload module manages file uploads with Cloudinary integration for images and documents.
 
 **Features:**
+
 - Image upload and management
 - Document upload
 - Cloudinary integration
@@ -15,12 +16,12 @@ The Upload module manages file uploads with Cloudinary integration for images an
 
 ## Endpoints
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/upload/image` | JWT | Upload image |
-| POST | `/upload/document` | JWT | Upload document |
-| DELETE | `/upload/:id` | JWT | Delete upload |
-| GET | `/upload/:id` | Public | Get upload info |
+| Method | Endpoint           | Auth   | Description     |
+| ------ | ------------------ | ------ | --------------- |
+| POST   | `/upload/image`    | JWT    | Upload image    |
+| POST   | `/upload/document` | JWT    | Upload document |
+| DELETE | `/upload/:id`      | JWT    | Delete upload   |
+| GET    | `/upload/:id`      | Public | Get upload info |
 
 ## Upload Image
 
@@ -35,6 +36,7 @@ Content-Type: multipart/form-data
 ```
 
 **Response (201):**
+
 ```json
 {
   "id": "upload-123",
@@ -64,6 +66,7 @@ Content-Type: multipart/form-data
 ```
 
 **Response (201):**
+
 ```json
 {
   "id": "upload-124",
@@ -84,6 +87,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (200):**
+
 ```json
 {
   "message": "Upload deleted successfully"
@@ -93,12 +97,14 @@ Authorization: Bearer <token>
 ## Supported File Types
 
 **Images:**
+
 - JPG/JPEG
 - PNG
 - WebP
 - GIF
 
 **Documents:**
+
 - PDF
 - DOC/DOCX
 - XLS/XLSX
@@ -109,6 +115,7 @@ Authorization: Bearer <token>
 **Module:** `src/upload/`
 
 **Key Files:**
+
 - `upload.controller.ts` - API endpoints
 - `upload.service.ts` - Business logic
 - Cloudinary integration

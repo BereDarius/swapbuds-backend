@@ -5,6 +5,7 @@
 The Comments module manages comments on items with threading, moderation, and user interactions.
 
 **Features:**
+
 - Comment creation and deletion
 - Comment threading
 - Comment moderation
@@ -14,13 +15,13 @@ The Comments module manages comments on items with threading, moderation, and us
 
 ## Endpoints
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/comments` | JWT | Create comment |
-| GET | `/comments/item/:itemId` | Public | Get item comments |
-| GET | `/comments/:id` | Public | Get comment details |
-| PATCH | `/comments/:id` | JWT | Update comment (owner only) |
-| DELETE | `/comments/:id` | JWT | Delete comment (owner or mod) |
+| Method | Endpoint                 | Auth   | Description                   |
+| ------ | ------------------------ | ------ | ----------------------------- |
+| POST   | `/comments`              | JWT    | Create comment                |
+| GET    | `/comments/item/:itemId` | Public | Get item comments             |
+| GET    | `/comments/:id`          | Public | Get comment details           |
+| PATCH  | `/comments/:id`          | JWT    | Update comment (owner only)   |
+| DELETE | `/comments/:id`          | JWT    | Delete comment (owner or mod) |
 
 ## Create Comment
 
@@ -35,6 +36,7 @@ Authorization: Bearer <token>
 ```
 
 **Response (201):**
+
 ```json
 {
   "id": "comment-123",
@@ -59,6 +61,7 @@ GET /comments/item/item-123?page=1&limit=20
 ```
 
 **Response (200):**
+
 ```json
 {
   "data": [
@@ -97,6 +100,7 @@ GET /comments/item/item-123?page=1&limit=20
 **Module:** `src/comments/`
 
 **Key Files:**
+
 - `comments.controller.ts` - API endpoints
 - `comments.service.ts` - Business logic
 - `dto/create-comment.dto.ts` - Creation DTO

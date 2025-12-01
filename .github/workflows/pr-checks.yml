@@ -56,9 +56,9 @@ jobs:
       - name: Check for merge conflicts
         uses: eps1lon/actions-label-merge-conflict@v3
         with:
-          dirtyLabel: "merge-conflict"
-          removeOnDirtyLabel: "ready-to-merge"
-          repoToken: "${{ secrets.GITHUB_TOKEN }}"
+          dirtyLabel: 'merge-conflict'
+          removeOnDirtyLabel: 'ready-to-merge'
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
 
   label-pr:
     name: Label PR
@@ -73,5 +73,5 @@ jobs:
       - name: Label based on changed files
         uses: actions/labeler@v5
         with:
-          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          repo-token: '${{ secrets.GITHUB_TOKEN }}'
           configuration-path: .github/labeler.yml
