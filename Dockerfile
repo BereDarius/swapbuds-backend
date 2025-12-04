@@ -26,6 +26,10 @@ RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
+# Create non-root user for security
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nestjs
+
 # Install production dependencies only
 COPY package.json yarn.lock ./
 COPY prisma ./prisma/
@@ -34,10 +38,13 @@ RUN yarn install --frozen-lockfile --production && \
     yarn cache clean
 
 # Copy built application from builder
-COPY --from=builder /app/dist ./dist
+COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
 
 # Copy necessary runtime files
-COPY --from=builder /app/prisma ./prisma
+COPY --from=builder --chown=nestjs:nodejs /app/prisma ./prisma
+
+# Switch to non-root user
+USER nestjs
 
 # Expose port
 EXPOSE 3001
