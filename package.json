@@ -36,7 +36,7 @@
     "@nestjs/terminus": "^11.0.0",
     "@nestjs/throttler": "^6.5.0",
     "@nestjs/websockets": "^11.1.9",
-    "@prisma/client": "5.22.0",
+    "@prisma/client": "7.1.0",
     "@types/multer": "^2.0.0",
     "@types/nodemailer": "^7.0.4",
     "axios": "^1.13.2",
