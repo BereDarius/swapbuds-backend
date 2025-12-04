@@ -1,0 +1,156 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.head_commit.message, 'chore(release)') }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Get current version
+        id: current_version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Determine version bump
+        id: version_bump
+        run: |
+          # Check commit messages since last tag
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+          if [ -z "$LAST_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"%s")
+          else
+            COMMITS=$(git log ${LAST_TAG}..HEAD --pretty=format:"%s")
+          fi
+
+          # Determine bump type based on conventional commits
+          if echo "$COMMITS" | grep -qE "^(feat|feature)(\(.+\))?!:|^BREAKING CHANGE:"; then
+            echo "bump=major" >> $GITHUB_OUTPUT
+          elif echo "$COMMITS" | grep -qE "^feat(\(.+\))?:"; then
+            echo "bump=minor" >> $GITHUB_OUTPUT
+          elif echo "$COMMITS" | grep -qE "^fix(\(.+\))?:|^perf(\(.+\))?:"; then
+            echo "bump=patch" >> $GITHUB_OUTPUT
+          else
+            echo "bump=none" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Bump version
+        if: steps.version_bump.outputs.bump != 'none'
+        id: new_version
+        run: |
+          BUMP_TYPE=${{ steps.version_bump.outputs.bump }}
+          npm version $BUMP_TYPE -m "chore(release): bump version to %s [skip ci]"
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        if: steps.version_bump.outputs.bump != 'none'
+        id: changelog
+        run: |
+          LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          NEW_TAG="v${{ steps.new_version.outputs.version }}"
+
+          if [ -z "$LAST_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"* %s (%h)" HEAD^)
+          else
+            COMMITS=$(git log ${LAST_TAG}..HEAD^ --pretty=format:"* %s (%h)")
+          fi
+
+          # Categorize commits
+          FEATURES=$(echo "$COMMITS" | grep "^* feat" || true)
+          FIXES=$(echo "$COMMITS" | grep "^* fix" || true)
+          PERF=$(echo "$COMMITS" | grep "^* perf" || true)
+          DOCS=$(echo "$COMMITS" | grep "^* docs" || true)
+          CHORES=$(echo "$COMMITS" | grep "^* chore" || true)
+
+          CHANGELOG="## ${NEW_TAG}\n\n"
+          CHANGELOG="${CHANGELOG}**Release Date:** $(date +%Y-%m-%d)\n\n"
+
+          if [ -n "$FEATURES" ]; then
+            CHANGELOG="${CHANGELOG}### ✨ Features\n${FEATURES}\n\n"
+          fi
+
+          if [ -n "$FIXES" ]; then
+            CHANGELOG="${CHANGELOG}### 🐛 Bug Fixes\n${FIXES}\n\n"
+          fi
+
+          if [ -n "$PERF" ]; then
+            CHANGELOG="${CHANGELOG}### ⚡ Performance\n${PERF}\n\n"
+          fi
+
+          if [ -n "$DOCS" ]; then
+            CHANGELOG="${CHANGELOG}### 📚 Documentation\n${DOCS}\n\n"
+          fi
+
+          if [ -n "$CHORES" ]; then
+            CHANGELOG="${CHANGELOG}### 🔧 Chores\n${CHORES}\n\n"
+          fi
+
+          echo "$CHANGELOG" > CHANGELOG_TEMP.md
+          cat CHANGELOG_TEMP.md
+
+      - name: Update CHANGELOG.md
+        if: steps.version_bump.outputs.bump != 'none'
+        run: |
+          if [ -f CHANGELOG.md ]; then
+            cat CHANGELOG_TEMP.md CHANGELOG.md > CHANGELOG_NEW.md
+            mv CHANGELOG_NEW.md CHANGELOG.md
+          else
+            mv CHANGELOG_TEMP.md CHANGELOG.md
+          fi
+
+          git add CHANGELOG.md
+          git commit --amend --no-edit
+
+      - name: Push changes
+        if: steps.version_bump.outputs.bump != 'none'
+        run: |
+          git push origin main --follow-tags
+
+      - name: Create GitHub Release
+        if: steps.version_bump.outputs.bump != 'none'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.new_version.outputs.version }}
+          release_name: Release v${{ steps.new_version.outputs.version }}
+          body_path: CHANGELOG_TEMP.md
+          draft: false
+          prerelease: false
+
+      - name: Trigger Docker build
+        if: steps.version_bump.outputs.bump != 'none'
+        run: |
+          echo "Docker build will be triggered by tag push"
+          echo "Tag: v${{ steps.new_version.outputs.version }}"
