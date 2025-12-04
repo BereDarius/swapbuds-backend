@@ -1,5 +1,6 @@
 version: 2
 updates:
+  # Backend npm packages
   - package-ecosystem: 'npm'
     directory: '/'
     schedule:
@@ -10,9 +11,42 @@ updates:
       - 'BereDarius'
     pull-request-branch-name:
       separator: '/'
+    open-pull-requests-limit: 10
     allow:
       - dependency-type: 'direct'
       - dependency-type: 'indirect'
+    # Group updates to reduce PR spam
+    groups:
+      minor-and-patch:
+        patterns:
+          - '*'
+        update-types:
+          - 'minor'
+          - 'patch'
+      major:
+        patterns:
+          - '*'
+        update-types:
+          - 'major'
     labels:
       - 'dependencies'
+      - 'automerge'
+    commit-message:
+      prefix: 'chore(deps)'
+      include: 'scope'
     rebase-strategy: 'auto'
+
+  # GitHub Actions updates
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '03:00'
+    assignees:
+      - 'BereDarius'
+    labels:
+      - 'dependencies'
+      - 'github-actions'
+    commit-message:
+      prefix: 'chore(ci)'
