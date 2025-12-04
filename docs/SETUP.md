@@ -123,7 +123,7 @@ yarn dev              # Start with hot reload
 # Production
 yarn build            # Build TypeScript
 yarn start            # Run production build
-yarn start:prod       # Build and run
+yarn start       # Build and run
 
 # Database
 yarn prisma migrate dev    # Create migration
@@ -167,7 +167,7 @@ yarn build
 ### Run Production Server
 
 ```bash
-yarn start:prod
+yarn start
 ```
 
 ### Docker Deployment

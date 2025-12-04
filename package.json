@@ -13,7 +13,6 @@
     "dev:basic": "nest start --watch",
     "start:dev": "nodemon",
     "start:debug": "nest start --debug --watch --watchAssets",
-    "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",

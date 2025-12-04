@@ -127,7 +127,7 @@ yarn prisma migrate deploy
 yarn prisma generate
 
 # Restart application
-yarn start:prod
+yarn start
 ```
 
 ### Environment Variables
