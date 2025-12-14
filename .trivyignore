@@ -1,0 +1,12 @@
+# html-minifier vulnerability - transitive dependency from mjml (email templating)
+# CVE-2022-37620: ReDoS vulnerability
+# Status: No fix available, only used in development/email rendering
+# Risk: LOW - mjml only processes trusted email templates, not user input
+CVE-2022-37620
+
+# zlib1g vulnerability in Debian base image
+# CVE-2023-45853: Integer overflow and resultant heap-based buffer overflow in zipOpenNewFileInZip4_6
+# Status: will_not_fix in Debian 12.12
+# Risk: LOW - Application doesn't use vulnerable zip functionality directly
+# Note: Requires upgrading to Debian 13 (not yet stable) or accepting risk
+CVE-2023-45853

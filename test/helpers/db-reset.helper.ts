@@ -9,7 +9,7 @@ const execAsync = promisify(exec);
  */
 export async function resetDatabase() {
   try {
-    await execAsync('yarn prisma migrate reset --force --skip-generate', {
+    await execAsync('yarn prisma migrate reset --force', {
       cwd: process.cwd(),
       env: { ...process.env, DATABASE_URL: process.env.DATABASE_URL },
     });
