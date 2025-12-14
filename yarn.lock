@@ -1807,7 +1807,7 @@
     socket.io "4.8.1"
     tslib "2.8.1"
 
-"@nestjs/schedule@^6.0.1":
+"@nestjs/schedule@^6.1.0":
   version "6.1.0"
   resolved "https://registry.yarnpkg.com/@nestjs/schedule/-/schedule-6.1.0.tgz#4653383c6aaf82e19754eae281ec1036da41febe"
   integrity sha512-W25Ydc933Gzb1/oo7+bWzzDiOissE+h/dhIAPugA39b9MuIzBbLybuXpc1AjoQLczO3v0ldmxaffVl87W0uqoQ==
@@ -4195,7 +4195,7 @@ cache-manager@^5.7.6:
     lru-cache "^10.2.2"
     promise-coalesce "^1.1.2"
 
-cache-manager@^7.2.6:
+cache-manager@^7.2.7:
   version "7.2.7"
   resolved "https://registry.yarnpkg.com/cache-manager/-/cache-manager-7.2.7.tgz#17271c6bfd63ec6fc93dfe300882065acd29e1d8"
   integrity sha512-TKeeb9nSybk1e9E5yAiPVJ6YKdX9FYhwqqy8fBfVKAFVTJYZUNmeIvwjURW6+UikNsO6l2ta27thYgo/oumDsw==
@@ -8819,7 +8819,7 @@ preview-email@^3.0.19:
     pug "^3.0.3"
     uuid "^9.0.1"
 
-prisma-erd-generator@^2.3.0:
+prisma-erd-generator@^2.4.2:
   version "2.4.2"
   resolved "https://registry.yarnpkg.com/prisma-erd-generator/-/prisma-erd-generator-2.4.2.tgz#36a362734b40da895c4f488a3eee4258460a3a06"
   integrity sha512-AmFuCB4wKhCF7HNj4b73tmgewRJTuwKrR7eucjctIKOmZSiY/0uTlBYNCKxkYrcXsXGvePVb7IP0z8aD8nCogA==
