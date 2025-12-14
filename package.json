@@ -102,6 +102,7 @@
     "winston": "^3.19.0"
   },
   "jest": {
+    "coverageProvider": "v8",
     "moduleFileExtensions": [
       "js",
       "json",
