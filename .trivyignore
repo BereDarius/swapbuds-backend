@@ -1,0 +1,5 @@
+# html-minifier vulnerability - transitive dependency from mjml (email templating)
+# CVE-2022-37620: ReDoS vulnerability
+# Status: No fix available, only used in development/email rendering
+# Risk: LOW - mjml only processes trusted email templates, not user input
+CVE-2022-37620

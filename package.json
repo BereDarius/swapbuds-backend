@@ -140,7 +140,8 @@
   },
   "resolutions": {
     "wrap-ansi": "^7.0.0",
-    "string-width": "^4.2.3"
+    "string-width": "^4.2.3",
+    "glob": "^10.5.0"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
