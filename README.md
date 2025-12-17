@@ -8,7 +8,7 @@ A production-ready NestJS backend with PostgreSQL, Redis, JWT authentication, an
 
 [![NestJS](https://img.shields.io/badge/NestJS-10-red.svg)](https://nestjs.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
-[![Prisma](https://img.shields.io/badge/Prisma-5.22-2D3748.svg)](https://www.prisma.io/)
+[![Prisma](https://img.shields.io/badge/Prisma-7.1-2D3748.svg)](https://www.prisma.io/)
 
 ---
 
@@ -92,7 +92,7 @@ Navigate to each functionality module:
 ## 🛠️ Tech Stack
 
 - **NestJS 10** - Progressive Node.js framework
-- **Prisma 5.22** - Next-generation ORM
+- **Prisma 7.1** - Next-generation ORM
 - **PostgreSQL 15** - Relational database
 - **Redis 7** - Caching layer
 - **JWT + Passport** - Authentication
