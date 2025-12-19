@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, develop]
     tags:
-      - "v*"
+      - 'v*'
   pull_request:
     branches: [main, develop]
 
@@ -63,9 +63,9 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
-          format: "sarif"
-          output: "trivy-image-results.sarif"
-          severity: "CRITICAL,HIGH,MEDIUM"
+          format: 'sarif'
+          output: 'trivy-image-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
 
       - name: Upload Trivy results to Security tab
         uses: github/codeql-action/upload-sarif@v4
@@ -78,16 +78,16 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
-          format: "table"
-          severity: "CRITICAL,HIGH"
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
 
       - name: Fail on critical vulnerabilities
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
-          format: "table"
-          exit-code: "1"
-          severity: "CRITICAL"
+          format: 'table'
+          exit-code: '1'
+          severity: 'CRITICAL'
 
       - name: Push Docker image
         if: github.event_name != 'pull_request'
