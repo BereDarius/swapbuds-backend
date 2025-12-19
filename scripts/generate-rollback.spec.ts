@@ -1,5 +1,10 @@
+import * as fs from 'fs';
 import {
+  generateForAll,
+  generateForMigration,
+  generateForMissing,
   generateRollbackSql,
+  main,
   parseAlterEnumAddValue,
   parseAlterTableAddColumn,
   parseAlterTableAddConstraint,
@@ -18,7 +23,18 @@ import {
   SchemaCatalog,
 } from './generate-rollback';
 
+// Mock fs module
+jest.mock('fs');
+
 describe('generate-rollback', () => {
+  beforeEach(() => {
+    // Setup default mocks for fs functions used by buildSchemaCatalog
+    (fs.readdirSync as jest.Mock).mockReturnValue([]);
+    (fs.statSync as jest.Mock).mockReturnValue({ isDirectory: () => true });
+    (fs.existsSync as jest.Mock).mockReturnValue(false);
+    (fs.readFileSync as jest.Mock).mockReturnValue('');
+  });
+
   // Helper to create an empty catalog
   const createEmptyCatalog = (): SchemaCatalog => ({
     columns: new Map(),
@@ -980,6 +996,689 @@ CREATE TABLE "test" (id TEXT);
       // Comment-only migrations just have the header, no rollback statements
       expect(result).toContain('Rollback SQL for migration');
       expect(result).not.toContain('DROP');
+    });
+
+    it('should handle complex migrations with multiple operations', () => {
+      const sql = `
+CREATE TABLE "test" (id TEXT);
+ALTER TABLE "test" ADD COLUMN "name" TEXT;
+CREATE INDEX "test_name_idx" ON "test"("name");
+`;
+      const result = generateRollbackSql(sql, '20251120000000_complex');
+
+      expect(result).toContain('DROP INDEX');
+      expect(result).toContain('DROP COLUMN');
+      expect(result).toContain('DROP TABLE');
+    });
+  });
+
+  describe('Additional statement types', () => {
+    describe('ALTER TYPE RENAME', () => {
+      it('should generate correct rollback for enum rename', () => {
+        const result = parseStatement(
+          'ALTER TYPE "OldStatus" RENAME TO "NewStatus"',
+        );
+        expect(result?.type).toBe('ALTER TYPE RENAME');
+        expect(result?.rollback).toBe(
+          'ALTER TYPE "NewStatus" RENAME TO "OldStatus";',
+        );
+      });
+    });
+
+    describe('Transaction control', () => {
+      it('should skip BEGIN statement', () => {
+        expect(parseStatement('BEGIN')).toBeNull();
+        expect(parseStatement('BEGIN;')).toBeNull();
+      });
+
+      it('should skip COMMIT statement', () => {
+        expect(parseStatement('COMMIT')).toBeNull();
+        expect(parseStatement('COMMIT;')).toBeNull();
+      });
+
+      it('should skip ROLLBACK statement', () => {
+        expect(parseStatement('ROLLBACK')).toBeNull();
+        expect(parseStatement('ROLLBACK;')).toBeNull();
+      });
+    });
+
+    describe('Data migration statements', () => {
+      it('should handle UPDATE statements', () => {
+        const result = parseStatement(
+          'UPDATE "users" SET "role" = \'USER\' WHERE "role" IS NULL',
+        );
+        expect(result?.type).toBe('UPDATE');
+        expect(result?.rollback).toContain('DATA MIGRATION');
+        expect(result?.rollback).toContain('Manual rollback');
+      });
+
+      it('should handle INSERT statements', () => {
+        const result = parseStatement(
+          'INSERT INTO "users" ("id", "email") VALUES (\'1\', \'test@test.com\')',
+        );
+        expect(result?.type).toBe('INSERT');
+        expect(result?.rollback).toContain('DATA MIGRATION');
+        expect(result?.rollback).toContain('DELETE');
+      });
+
+      it('should handle DELETE statements', () => {
+        const result = parseStatement(
+          'DELETE FROM "users" WHERE "email" LIKE \'%test%\'',
+        );
+        expect(result?.type).toBe('DELETE');
+        expect(result?.rollback).toContain('DATA MIGRATION');
+        expect(result?.rollback).toContain('Cannot automatically restore');
+      });
+
+      it('should handle TRUNCATE statements', () => {
+        const result = parseStatement('TRUNCATE TABLE "users"');
+        expect(result?.type).toBe('TRUNCATE');
+        expect(result?.rollback).toContain('DESTRUCTIVE');
+        expect(result?.rollback).toContain('users');
+      });
+    });
+
+    describe('Table rename', () => {
+      it('should handle ALTER TABLE RENAME TO', () => {
+        const result = parseStatement(
+          'ALTER TABLE "old_users" RENAME TO "users"',
+        );
+        expect(result?.type).toBe('ALTER TABLE RENAME');
+        expect(result?.rollback).toBe(
+          'ALTER TABLE "users" RENAME TO "old_users";',
+        );
+      });
+
+      it('should not confuse with RENAME COLUMN', () => {
+        const result = parseStatement(
+          'ALTER TABLE "users" RENAME COLUMN "name" TO "fullName"',
+        );
+        // Should be handled by parseCompoundAlterTable
+        expect(result?.type).not.toBe('ALTER TABLE RENAME');
+      });
+    });
+
+    describe('Sequence operations', () => {
+      it('should handle CREATE SEQUENCE', () => {
+        const result = parseStatement('CREATE SEQUENCE "user_id_seq"');
+        expect(result?.type).toBe('CREATE SEQUENCE');
+        expect(result?.rollback).toBe('DROP SEQUENCE IF EXISTS "user_id_seq";');
+      });
+
+      it('should handle DROP SEQUENCE', () => {
+        const result = parseStatement('DROP SEQUENCE "user_id_seq"');
+        expect(result?.type).toBe('DROP SEQUENCE');
+        expect(result?.rollback).toContain('MANUAL ROLLBACK REQUIRED');
+      });
+
+      it('should handle DROP SEQUENCE IF EXISTS', () => {
+        const result = parseStatement('DROP SEQUENCE IF EXISTS "user_id_seq"');
+        expect(result?.type).toBe('DROP SEQUENCE');
+        expect(result?.rollback).toContain('user_id_seq');
+      });
+
+      it('should handle ALTER SEQUENCE', () => {
+        const result = parseStatement(
+          'ALTER SEQUENCE "user_id_seq" RESTART WITH 100',
+        );
+        expect(result?.type).toBe('ALTER SEQUENCE');
+        expect(result?.rollback).toContain('MANUAL ROLLBACK REQUIRED');
+      });
+    });
+
+    describe('Extension operations', () => {
+      it('should handle CREATE EXTENSION', () => {
+        const result = parseStatement(
+          'CREATE EXTENSION IF NOT EXISTS "uuid-ossp"',
+        );
+        expect(result?.type).toBe('CREATE EXTENSION');
+        expect(result?.rollback).toBe('DROP EXTENSION IF EXISTS "uuid-ossp";');
+      });
+
+      it('should handle DROP EXTENSION', () => {
+        const result = parseStatement('DROP EXTENSION "uuid-ossp"');
+        expect(result?.type).toBe('DROP EXTENSION');
+        expect(result?.rollback).toBe(
+          'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";',
+        );
+      });
+    });
+
+    describe('View operations', () => {
+      it('should handle CREATE VIEW', () => {
+        const result = parseStatement(
+          'CREATE VIEW "active_users" AS SELECT * FROM "users" WHERE "status" = \'ACTIVE\'',
+        );
+        expect(result?.type).toBe('CREATE VIEW');
+        expect(result?.rollback).toBe('DROP VIEW IF EXISTS "active_users";');
+      });
+
+      it('should handle CREATE OR REPLACE VIEW', () => {
+        const result = parseStatement(
+          'CREATE OR REPLACE VIEW "active_users" AS SELECT * FROM "users"',
+        );
+        expect(result?.type).toBe('CREATE VIEW');
+        expect(result?.rollback).toContain('DROP VIEW');
+      });
+
+      it('should handle DROP VIEW', () => {
+        const result = parseStatement('DROP VIEW IF EXISTS "active_users"');
+        expect(result?.type).toBe('DROP VIEW');
+        expect(result?.rollback).toContain('MANUAL ROLLBACK REQUIRED');
+      });
+
+      it('should handle CREATE MATERIALIZED VIEW', () => {
+        const result = parseStatement(
+          'CREATE MATERIALIZED VIEW "user_stats" AS SELECT COUNT(*) FROM "users"',
+        );
+        expect(result?.type).toBe('CREATE MATERIALIZED VIEW');
+        expect(result?.rollback).toBe(
+          'DROP MATERIALIZED VIEW IF EXISTS "user_stats";',
+        );
+      });
+
+      it('should handle DROP MATERIALIZED VIEW', () => {
+        const result = parseStatement('DROP MATERIALIZED VIEW "user_stats"');
+        expect(result?.type).toBe('DROP MATERIALIZED VIEW');
+        expect(result?.rollback).toContain('MANUAL ROLLBACK REQUIRED');
+      });
+    });
+
+    describe('Function operations', () => {
+      it('should handle CREATE FUNCTION', () => {
+        const result = parseStatement(
+          'CREATE FUNCTION "get_user_count"() RETURNS INTEGER',
+        );
+        expect(result?.type).toBe('CREATE FUNCTION');
+        expect(result?.rollback).toBe(
+          'DROP FUNCTION IF EXISTS "get_user_count";',
+        );
+      });
+
+      it('should handle CREATE OR REPLACE FUNCTION', () => {
+        const result = parseStatement(
+          'CREATE OR REPLACE FUNCTION "get_user_count"() RETURNS INTEGER',
+        );
+        expect(result?.type).toBe('CREATE FUNCTION');
+        expect(result?.rollback).toContain('DROP FUNCTION');
+      });
+
+      it('should handle DROP FUNCTION', () => {
+        const result = parseStatement('DROP FUNCTION "get_user_count"');
+        expect(result?.type).toBe('DROP FUNCTION');
+        expect(result?.rollback).toContain('MANUAL ROLLBACK REQUIRED');
+      });
+    });
+  });
+
+  describe('processMigrationForCatalog edge cases', () => {
+    it('should handle inline ADD COLUMN without overwriting existing', () => {
+      const catalog = createEmptyCatalog();
+
+      // First set via standard ADD COLUMN
+      catalog.columns.set('users.email', {
+        table: 'users',
+        column: 'email',
+        definition: 'TEXT NOT NULL',
+        addedIn: '20251120000000_initial',
+      });
+
+      // Now try inline ADD COLUMN (shouldn't overwrite because check exists)
+      const sql = 'ALTER TABLE "users" ADD COLUMN "name" TEXT';
+      processMigrationForCatalog(sql, '20251121000000_new_column', catalog);
+
+      // Original column should still be there
+      const col = catalog.columns.get('users.email');
+      expect(col?.addedIn).toBe('20251120000000_initial');
+
+      // New column should be added
+      const newCol = catalog.columns.get('users.name');
+      expect(newCol?.addedIn).toBe('20251121000000_new_column');
+    });
+
+    it('should extract ALTER COLUMN TYPE with USING clause', () => {
+      const catalog = createEmptyCatalog();
+
+      catalog.columns.set('users.age', {
+        table: 'users',
+        column: 'age',
+        definition: 'TEXT NOT NULL',
+        addedIn: '20251120000000_initial',
+      });
+
+      const sql =
+        'ALTER TABLE "users" ALTER COLUMN "age" TYPE INTEGER USING "age"::integer';
+      processMigrationForCatalog(sql, '20251121000000_age_int', catalog);
+
+      const col = catalog.columns.get('users.age');
+      expect(col?.definition).toBe('INTEGER');
+    });
+
+    it('should extract column definition with commas in type', () => {
+      const catalog = createEmptyCatalog();
+
+      catalog.columns.set('items.price', {
+        table: 'items',
+        column: 'price',
+        definition: 'INTEGER',
+        addedIn: '20251120000000_initial',
+      });
+
+      const sql = 'ALTER TABLE "items" ALTER COLUMN "price" TYPE DECIMAL(10,2)';
+      processMigrationForCatalog(sql, '20251121000000_decimal_price', catalog);
+
+      const col = catalog.columns.get('items.price');
+      expect(col?.definition).toBe('DECIMAL(10,2)');
+    });
+
+    it('should track foreign keys but not remove them on DROP', () => {
+      const catalog = createEmptyCatalog();
+
+      catalog.foreignKeys.set('items_userId_fkey', {
+        name: 'items_userId_fkey',
+        table: 'items',
+        createStatement:
+          'ALTER TABLE "items" ADD CONSTRAINT "items_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id");',
+        addedIn: '20251120000000_initial',
+      });
+
+      const sql = 'ALTER TABLE "items" DROP CONSTRAINT "items_userId_fkey"';
+      processMigrationForCatalog(sql, '20251121000000_cleanup', catalog);
+
+      // Foreign keys are not removed from catalog in current implementation
+      // This preserves history for potential rollbacks
+      expect(catalog.foreignKeys.has('items_userId_fkey')).toBe(true);
+    });
+
+    it('should track enums but not remove them on DROP TYPE', () => {
+      const catalog = createEmptyCatalog();
+
+      catalog.enums.set('OldStatus', {
+        name: 'OldStatus',
+        values: ['ACTIVE', 'INACTIVE'],
+        addedIn: '20251120000000_initial',
+      });
+
+      const sql = 'DROP TYPE "OldStatus"';
+      processMigrationForCatalog(sql, '20251121000000_cleanup', catalog);
+
+      // Enums are not removed from catalog in current implementation
+      // This preserves history for potential rollbacks
+      expect(catalog.enums.has('OldStatus')).toBe(true);
+    });
+  });
+
+  describe('parseCompoundAlterTable additional cases', () => {
+    it('should handle SET DEFAULT without catalog', () => {
+      const result = parseCompoundAlterTable(
+        'ALTER TABLE "users" ALTER COLUMN "status" SET DEFAULT \'ACTIVE\'',
+      );
+      expect(result).toBe(
+        'ALTER TABLE "users" ALTER COLUMN "status" DROP DEFAULT;',
+      );
+    });
+
+    it('should handle DROP DEFAULT when column not in catalog', () => {
+      const catalog = createEmptyCatalog();
+      const result = parseCompoundAlterTable(
+        'ALTER TABLE "users" ALTER COLUMN "unknown" DROP DEFAULT',
+        catalog,
+      );
+      expect(result).toContain('⚠️');
+      expect(result).toContain('not found');
+    });
+
+    it('should handle DROP DEFAULT when column has no previous default', () => {
+      const catalog = createEmptyCatalog();
+      catalog.columns.set('users.bio', {
+        table: 'users',
+        column: 'bio',
+        definition: 'TEXT NOT NULL',
+        addedIn: '20251120000000_initial',
+      });
+
+      const result = parseCompoundAlterTable(
+        'ALTER TABLE "users" ALTER COLUMN "bio" DROP DEFAULT',
+        catalog,
+      );
+      expect(result).toContain('⚠️');
+      expect(result).toContain('not found');
+    });
+
+    it('should handle ALTER COLUMN TYPE without catalog', () => {
+      const result = parseCompoundAlterTable(
+        'ALTER TABLE "items" ALTER COLUMN "price" TYPE DECIMAL(10,2)',
+      );
+      expect(result).toContain('⚠️');
+      expect(result).toContain('Previous type');
+    });
+  });
+
+  describe('generateForMigration', () => {
+    let consoleLogSpy: jest.SpyInstance;
+    let consoleErrorSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+      consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+    });
+
+    afterEach(() => {
+      consoleLogSpy.mockRestore();
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should return false if migration directory does not exist', () => {
+      (fs.existsSync as jest.Mock).mockReturnValue(false);
+
+      const result = generateForMigration('nonexistent_migration');
+
+      expect(result).toBe(false);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Migration directory not found'),
+      );
+    });
+
+    it('should return false if migration.sql does not exist', () => {
+      (fs.existsSync as jest.Mock)
+        .mockReturnValueOnce(true) // migration dir exists
+        .mockReturnValueOnce(false); // migration.sql doesn't exist
+
+      const result = generateForMigration('test_migration');
+
+      expect(result).toBe(false);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('migration.sql not found'),
+      );
+    });
+
+    it('should skip if rollback.sql exists and overwrite is false', () => {
+      (fs.existsSync as jest.Mock)
+        .mockReturnValueOnce(true) // migration dir exists
+        .mockReturnValueOnce(true) // migration.sql exists
+        .mockReturnValueOnce(true); // rollback.sql exists
+
+      const result = generateForMigration('test_migration', false);
+
+      expect(result).toBe(true);
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Skipping'),
+      );
+    });
+
+    it('should generate rollback.sql for migration', () => {
+      (fs.existsSync as jest.Mock)
+        .mockReturnValueOnce(true) // migration dir exists
+        .mockReturnValueOnce(true) // migration.sql exists
+        .mockReturnValueOnce(false); // rollback.sql doesn't exist
+      (fs.readFileSync as jest.Mock).mockReturnValue(
+        'CREATE TABLE "test" (id TEXT);',
+      );
+      (fs.writeFileSync as jest.Mock).mockImplementation(() => {});
+
+      const result = generateForMigration('20251120000000_test');
+
+      expect(result).toBe(true);
+      expect(fs.readFileSync).toHaveBeenCalled();
+      expect(fs.writeFileSync).toHaveBeenCalled();
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Generated rollback.sql'),
+      );
+    });
+
+    it('should overwrite rollback.sql if overwrite is true', () => {
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (fs.readFileSync as jest.Mock).mockReturnValue(
+        'CREATE TABLE "test" (id TEXT);',
+      );
+      (fs.writeFileSync as jest.Mock).mockImplementation(() => {});
+
+      const result = generateForMigration('20251120000000_test', true);
+
+      expect(result).toBe(true);
+      expect(fs.writeFileSync).toHaveBeenCalled();
+    });
+  });
+
+  describe('generateForAll', () => {
+    let consoleLogSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+    });
+
+    afterEach(() => {
+      consoleLogSpy.mockRestore();
+    });
+
+    it('should generate rollbacks for all migrations', () => {
+      (fs.readdirSync as jest.Mock) = jest
+        .fn()
+        .mockReturnValue([
+          '20251120000000_a',
+          '20251121000000_b',
+          'migration_lock.toml',
+        ]);
+      (fs.statSync as jest.Mock) = jest
+        .fn()
+        .mockImplementation((path: string) => ({
+          isDirectory: () => !path.includes('migration_lock'),
+        }));
+      (fs.existsSync as jest.Mock) = jest.fn().mockReturnValue(true);
+      (fs.readFileSync as jest.Mock) = jest
+        .fn()
+        .mockReturnValue('CREATE TABLE "test" (id TEXT);');
+      (fs.writeFileSync as jest.Mock) = jest.fn();
+
+      generateForAll(false);
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Generating rollback files for all migrations'),
+      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Results:'),
+      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining('2 generated'),
+      );
+    });
+
+    it('should count failed migrations', () => {
+      (fs.readdirSync as jest.Mock) = jest
+        .fn()
+        .mockReturnValue(['20251120000000_a']);
+      (fs.statSync as jest.Mock) = jest
+        .fn()
+        .mockReturnValue({ isDirectory: () => true });
+      (fs.existsSync as jest.Mock) = jest
+        .fn()
+        .mockReturnValueOnce(true) // migration dir
+        .mockReturnValueOnce(false); // migration.sql doesn't exist
+
+      generateForAll(false);
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining('0 generated, 1 failed'),
+      );
+    });
+  });
+
+  describe('generateForMissing', () => {
+    let consoleLogSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+    });
+
+    afterEach(() => {
+      consoleLogSpy.mockRestore();
+    });
+
+    it('should only generate for migrations without rollback.sql', () => {
+      (fs.readdirSync as jest.Mock) = jest
+        .fn()
+        .mockReturnValue(['20251120000000_a', '20251121000000_b']);
+      (fs.statSync as jest.Mock) = jest
+        .fn()
+        .mockReturnValue({ isDirectory: () => true });
+      (fs.existsSync as jest.Mock) = jest
+        .fn()
+        .mockReturnValueOnce(true) // first migration rollback exists (skip)
+        .mockReturnValueOnce(false) // second migration rollback doesn't exist
+        .mockReturnValueOnce(true) // second migration dir exists
+        .mockReturnValueOnce(true) // second migration.sql exists
+        .mockReturnValueOnce(false); // second rollback check again in generateForMigration
+      (fs.readFileSync as jest.Mock) = jest
+        .fn()
+        .mockReturnValue('CREATE TABLE "test" (id TEXT);');
+      (fs.writeFileSync as jest.Mock) = jest.fn().mockImplementation(() => {});
+
+      generateForMissing();
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'Generating rollback files for migrations without one',
+        ),
+      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining('1 generated, 1 already existed'),
+      );
+    });
+
+    it('should skip all migrations if all have rollback.sql', () => {
+      (fs.readdirSync as jest.Mock) = jest
+        .fn()
+        .mockReturnValue(['20251120000000_a', '20251121000000_b']);
+      (fs.statSync as jest.Mock) = jest
+        .fn()
+        .mockReturnValue({ isDirectory: () => true });
+      (fs.existsSync as jest.Mock) = jest.fn().mockReturnValue(true); // all rollbacks exist
+
+      generateForMissing();
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining('0 generated, 2 already existed'),
+      );
+    });
+  });
+
+  describe('main', () => {
+    let consoleLogSpy: jest.SpyInstance;
+    let processExitSpy: jest.SpyInstance;
+    let originalArgv: string[];
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+      processExitSpy = jest.spyOn(process, 'exit').mockImplementation(() => {
+        throw new Error('process.exit called');
+      });
+      originalArgv = process.argv;
+    });
+
+    afterEach(() => {
+      consoleLogSpy.mockRestore();
+      processExitSpy.mockRestore();
+      process.argv = originalArgv;
+    });
+
+    it('should display help when no arguments provided', () => {
+      process.argv = ['node', 'generate-rollback.ts'];
+
+      expect(() => main()).toThrow('process.exit called');
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Prisma Rollback SQL Generator'),
+      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Usage:'),
+      );
+      expect(processExitSpy).toHaveBeenCalledWith(0);
+    });
+
+    it('should call generateForAll with --all', () => {
+      process.argv = ['node', 'generate-rollback.ts', '--all'];
+      (fs.readdirSync as jest.Mock) = jest.fn().mockReturnValue([]);
+      (fs.statSync as jest.Mock) = jest
+        .fn()
+        .mockReturnValue({ isDirectory: () => true });
+
+      main();
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Generating rollback files for all migrations'),
+      );
+    });
+
+    it('should call generateForMissing with --missing', () => {
+      process.argv = ['node', 'generate-rollback.ts', '--missing'];
+      (fs.readdirSync as jest.Mock) = jest.fn().mockReturnValue([]);
+      (fs.statSync as jest.Mock) = jest
+        .fn()
+        .mockReturnValue({ isDirectory: () => true });
+
+      main();
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'Generating rollback files for migrations without one',
+        ),
+      );
+    });
+
+    it('should call generateForAll with overwrite=true for --overwrite', () => {
+      process.argv = ['node', 'generate-rollback.ts', '--overwrite'];
+      (fs.readdirSync as jest.Mock) = jest.fn().mockReturnValue([]);
+      (fs.statSync as jest.Mock) = jest
+        .fn()
+        .mockReturnValue({ isDirectory: () => true });
+
+      main();
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Generating rollback files for all migrations'),
+      );
+    });
+
+    it('should call generateForMigration for specific migration name', () => {
+      process.argv = ['node', 'generate-rollback.ts', '20251120000000_test'];
+      (fs.existsSync as jest.Mock) = jest
+        .fn()
+        .mockReturnValueOnce(true)
+        .mockReturnValueOnce(true)
+        .mockReturnValueOnce(false);
+      (fs.readFileSync as jest.Mock) = jest
+        .fn()
+        .mockReturnValue('CREATE TABLE "test" (id TEXT);');
+      (fs.writeFileSync as jest.Mock) = jest.fn();
+
+      main();
+
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'Generated rollback.sql for: 20251120000000_test',
+        ),
+      );
+    });
+
+    it('should handle --force flag for specific migration', () => {
+      process.argv = [
+        'node',
+        'generate-rollback.ts',
+        '20251120000000_test',
+        '--force',
+      ];
+      (fs.existsSync as jest.Mock) = jest.fn().mockReturnValue(true);
+      (fs.readFileSync as jest.Mock) = jest
+        .fn()
+        .mockReturnValue('CREATE TABLE "test" (id TEXT);');
+      (fs.writeFileSync as jest.Mock) = jest.fn();
+
+      main();
+
+      expect(fs.writeFileSync).toHaveBeenCalled();
     });
   });
 });

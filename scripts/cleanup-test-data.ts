@@ -1,8 +1,8 @@
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+export async function cleanupTestData(prismaClient?: PrismaClient) {
+  const prisma = prismaClient || new PrismaClient();
 
-async function cleanupTestData() {
   console.log('🧹 Cleaning up test data...');
 
   // Delete test users and all related data (cascades)
@@ -18,14 +18,21 @@ async function cleanupTestData() {
 
   console.log(`✅ Deleted ${result.count} test users and their related data`);
 
-  await prisma.$disconnect();
+  if (!prismaClient) {
+    await prisma.$disconnect();
+  }
+
+  return result;
 }
 
-cleanupTestData()
-  .catch((error) => {
-    console.error('❌ Error cleaning up test data:', error);
-    process.exit(1);
-  })
-  .finally(() => {
-    process.exit(0);
-  });
+// Only run if executed directly
+if (require.main === module) {
+  cleanupTestData()
+    .catch((error) => {
+      console.error('❌ Error cleaning up test data:', error);
+      process.exit(1);
+    })
+    .finally(() => {
+      process.exit(0);
+    });
+}
