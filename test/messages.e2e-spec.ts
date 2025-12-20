@@ -3,7 +3,7 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { io, Socket } from 'socket.io-client';
-import { resetDatabase } from './helpers/db-reset.helper';
+import { truncateAndReseed } from './helpers/truncate-and-seed.helper';
 import request = require('supertest');
 
 /**
@@ -21,8 +21,9 @@ describe('Messages E2E', () => {
   let socketClient: Socket;
 
   beforeAll(async () => {
-    // Reset database for test isolation
-    await resetDatabase();
+    // Truncate and reseed for test isolation
+    await truncateAndReseed();
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();

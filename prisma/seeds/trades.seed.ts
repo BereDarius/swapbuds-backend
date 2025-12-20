@@ -17,67 +17,80 @@ export async function seedTrades(
 ) {
   console.log('🤝 Seeding trades...');
 
-  const regularUsers = users.filter((u) => u.role === 'USER');
+  // Get users by email for predictable seeding
+  const john = users.find((u) => u.email === 'john.doe@example.com');
+  const jane = users.find((u) => u.email === 'jane.smith@example.com');
+  const alex = users.find((u) => u.email === 'alex.trader@example.com');
+  const maria = users.find((u) => u.email === 'maria.garcia@example.com');
+  const mike = users.find((u) => u.email === 'mike.collector@example.com');
+  const lighthouseUser = users.find(
+    (u) => u.email === 'lighthouse.user@test.com',
+  );
 
-  if (regularUsers.length < 2 || items.length < 4) {
+  if (
+    !john ||
+    !jane ||
+    !alex ||
+    !maria ||
+    !mike ||
+    !lighthouseUser ||
+    items.length < 14
+  ) {
     console.log('   ⚠️  Not enough users or items, skipping trades seed');
     return [];
   }
 
   const tradesData = [
-    // Pending trade: John wants Jane's Harry Potter books for his PS4
+    // Pending trade: Lighthouse user → John
     {
-      proposerId: regularUsers[0].id, // John
-      responderId: regularUsers[1].id, // Jane
-      itemOfferedId: items[0]?.id, // PS4 Pro
-      itemRequestedId: items[3]?.id, // Harry Potter books
+      proposerId: lighthouseUser.id,
+      responderId: john.id,
       status: TradeStatus.PENDING,
       deliveryMethod: DeliveryMethod.PHYSICAL,
-      message:
-        'Hi! I love Harry Potter and would be willing to trade my PS4 Pro for your complete book set. Let me know!',
+      message: 'Hi! Interested in trading?',
     },
-    // Accepted trade: Jane accepted Alex's offer
+    // Accepted trade: Jane → John
     {
-      proposerId: regularUsers[2].id, // Alex
-      responderId: regularUsers[1].id, // Jane
-      itemOfferedId: items[6]?.id, // Tennis Racket
-      itemRequestedId: items[5]?.id, // LOTR Illustrated Edition
+      proposerId: jane.id,
+      responderId: john.id,
       status: TradeStatus.ACCEPTED,
       deliveryMethod: DeliveryMethod.PHYSICAL,
-      message:
-        "I'm interested in your LOTR illustrated edition. Would you trade for my tennis racket?",
+      message: "I'm interested in your item. Would you trade?",
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
     },
-    // Completed trade: John and Mike completed a trade (both verified users)
+    // Completed trade: Lighthouse user → Maria (both verified)
     {
-      proposerId: regularUsers[0].id, // John (verified)
-      responderId: regularUsers[4].id, // Mike (verified)
-      itemOfferedId: items[1]?.id, // Nintendo Switch
-      itemRequestedId: items[11]?.id, // Marvel Legends figures
+      proposerId: lighthouseUser.id,
+      responderId: maria.id,
       status: TradeStatus.COMPLETED,
       deliveryMethod: DeliveryMethod.MAIL,
-      message:
-        'Would you be interested in trading some of your Marvel figures for my Nintendo Switch?',
+      message: 'Trade completed successfully!',
       completedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
     },
-    // Rejected trade: John's offer was declined
+    // COMPLETED trade: John → Mike (NEEDED FOR DISPUTE TESTS)
     {
-      proposerId: regularUsers[0].id, // John
-      responderId: regularUsers[4].id, // Mike
-      itemOfferedId: items[2]?.id, // Game Boy Collection
-      itemRequestedId: items[13]?.id, // LEGO Millennium Falcon
+      proposerId: john.id,
+      responderId: mike.id,
+      status: TradeStatus.COMPLETED,
+      deliveryMethod: DeliveryMethod.MAIL,
+      message: 'Would you be interested in trading?',
+      completedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
+    },
+    // Rejected trade: Lighthouse user → Maria
+    {
+      proposerId: lighthouseUser.id,
+      responderId: maria.id,
       status: TradeStatus.REJECTED,
       deliveryMethod: DeliveryMethod.PHYSICAL,
-      message: 'Would you trade your LEGO Falcon for my Game Boy collection?',
+      message: 'Would you trade?',
     },
-    // Multi-item trade: Alex offering multiple sports items for vinyl collection
+    // Pending trade: Jane → John (another pending for testing)
     {
-      proposerId: regularUsers[2].id, // Alex
-      responderId: regularUsers[1].id, // Jane
+      proposerId: jane.id,
+      responderId: john.id,
       status: TradeStatus.PENDING,
       deliveryMethod: DeliveryMethod.PHYSICAL,
-      message:
-        "I'm really interested in your vinyl collection! Would you consider multiple items?",
+      message: "I'm really interested in your item!",
       tradeItems: {
         create: [
           {

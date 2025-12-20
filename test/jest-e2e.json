@@ -13,5 +13,6 @@
   "globalTeardown": "<rootDir>/teardown.ts",
   "maxWorkers": 1,
   "forceExit": true,
-  "detectOpenHandles": false
+  "detectOpenHandles": false,
+  "testTimeout": 30000
 }

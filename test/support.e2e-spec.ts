@@ -1,12 +1,12 @@
 import { AppModule } from '@/app.module';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { resetDatabase } from './helpers/db-reset.helper';
+import { truncateAndReseed } from './helpers/truncate-and-seed.helper';
 import request = require('supertest');
 
 /**
  * E2E Tests for Support System
- * Tests support ticket creation and chat functionality
+ * Tests support chat creation, messages, and ticket management
  */
 describe('Support E2E', () => {
   let app: INestApplication;
@@ -15,8 +15,8 @@ describe('Support E2E', () => {
   let chatId: string;
 
   beforeAll(async () => {
-    // Reset database for test isolation
-    await resetDatabase();
+    // Truncate and reseed for test isolation
+    await truncateAndReseed();
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();

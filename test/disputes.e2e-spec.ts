@@ -2,7 +2,7 @@ import { AppModule } from '@/app.module';
 import { PrismaService } from '@/prisma/prisma.service';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { resetDatabase } from './helpers/db-reset.helper';
+import { truncateAndReseed } from './helpers/truncate-and-seed.helper';
 import request = require('supertest');
 
 /**
@@ -18,8 +18,8 @@ describe('Disputes E2E', () => {
   let disputeId: string;
 
   beforeAll(async () => {
-    // Reset database for test isolation
-    await resetDatabase();
+    // Truncate and reseed for test isolation
+    await truncateAndReseed();
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -90,10 +90,16 @@ describe('Disputes E2E', () => {
     });
 
     it('should create a dispute for a completed trade', async () => {
-      // Seed has a completed trade between John and Mike (both verified)
+      // Get John's user ID first
+      const johnUser = await prisma.user.findUnique({
+        where: { email: 'john.doe@example.com' },
+      });
+
+      // Find a completed trade where John is a participant
       const completedTrade = await prisma.trade.findFirst({
         where: {
           status: 'COMPLETED',
+          OR: [{ proposerId: johnUser?.id }, { responderId: johnUser?.id }],
         },
         include: {
           proposer: true,
@@ -102,14 +108,9 @@ describe('Disputes E2E', () => {
       });
 
       if (!completedTrade) {
-        console.warn('⚠️  No completed trade found in seed, skipping test');
+        console.warn('⚠️  No completed trade found for John, skipping test');
         return;
       }
-
-      // Get John's user ID to determine who to report
-      const johnUser = await prisma.user.findUnique({
-        where: { email: 'john.doe@example.com' },
-      });
 
       // John reports the other party in the trade (Mike)
       const reportedUserId =

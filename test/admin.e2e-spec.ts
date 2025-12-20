@@ -1,7 +1,7 @@
 import { AppModule } from '@/app.module';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { resetDatabase } from './helpers/db-reset.helper';
+import { truncateAndReseed } from './helpers/truncate-and-seed.helper';
 import request = require('supertest');
 
 /**
@@ -15,8 +15,8 @@ describe('Admin E2E', () => {
   let userToken: string;
 
   beforeAll(async () => {
-    // Reset database for test isolation
-    await resetDatabase();
+    // Truncate and reseed for test isolation
+    await truncateAndReseed();
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();

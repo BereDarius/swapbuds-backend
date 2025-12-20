@@ -3,7 +3,7 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
-import { resetDatabase } from './helpers/db-reset.helper';
+import { truncateAndReseed } from './helpers/truncate-and-seed.helper';
 import request = require('supertest');
 
 describe('SwapBuds API (e2e)', () => {
@@ -11,8 +11,8 @@ describe('SwapBuds API (e2e)', () => {
   let prisma: PrismaService;
 
   beforeAll(async () => {
-    // Reset database for test isolation
-    await resetDatabase();
+    // Truncate and reseed for test isolation
+    await truncateAndReseed();
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
