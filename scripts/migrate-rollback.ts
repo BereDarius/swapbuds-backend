@@ -207,4 +207,16 @@ Examples:
   }
 }
 
-main();
+// Export functions for testing
+export {
+  getAppliedMigrations,
+  getMigrationDirs,
+  listMigrations,
+  rollbackLast,
+  rollbackMigration,
+};
+
+// Only run if executed directly
+if (require.main === module) {
+  main();
+}

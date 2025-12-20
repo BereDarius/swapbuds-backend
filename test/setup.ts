@@ -1,4 +1,8 @@
+import { config } from 'dotenv';
 import { resetDatabase } from './helpers/db-reset.helper';
+
+// Load environment variables from .env file
+config();
 
 /**
  * Global test setup - runs once before all E2E tests

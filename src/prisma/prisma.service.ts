@@ -1,5 +1,7 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
+import { Pool } from 'pg';
 
 /**
  * Prisma Service
@@ -12,6 +14,7 @@ import { PrismaClient } from '@prisma/client';
  * - Automatic cleanup on module destruction
  * - Query logging in development mode
  * - Database cleaning utility for testing
+ * - Prisma 7 PostgreSQL adapter support
  */
 @Injectable()
 export class PrismaService
@@ -19,7 +22,12 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   constructor() {
+    // Create PostgreSQL connection pool for Prisma 7 adapter
+    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const adapter = new PrismaPg(pool);
+
     super({
+      adapter, // Prisma 7 requires adapter for PostgreSQL
       // Configure logging based on environment
       log:
         process.env.NODE_ENV === 'development'

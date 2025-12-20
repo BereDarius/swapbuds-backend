@@ -1,4 +1,7 @@
+import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
+import { config } from 'dotenv';
+import { Pool } from 'pg';
 import { seedDisputes } from './seeds/disputes.seed';
 import { seedEngagement } from './seeds/engagement.seed';
 import { seedItems } from './seeds/items.seed';
@@ -12,7 +15,14 @@ import { seedTrades } from './seeds/trades.seed';
 import { seedUsers } from './seeds/users.seed';
 import { seedVerifications } from './seeds/verification.seed';
 
-const prisma = new PrismaClient();
+// Load environment variables for Prisma 7
+config();
+
+// Prisma 7 with PostgreSQL adapter
+const connectionString = process.env.DATABASE_URL;
+const pool = new Pool({ connectionString });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 /**
  * Main seed script for SwapBuds backend
@@ -92,4 +102,5 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
+    await pool.end(); // Close the connection pool
   });

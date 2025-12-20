@@ -68,4 +68,10 @@ function main(): void {
   console.log('   Some operations may require manual adjustments.\n');
 }
 
-main();
+// Export functions for testing
+export { getMigrationsWithoutRollback, main as postMigrate };
+
+// Only run if executed directly
+if (require.main === module) {
+  main();
+}
