@@ -112,10 +112,10 @@ export class AdminAuthService {
    * MFA is mandatory for all admins.
    *
    * @param adminRegisterDto - Admin registration data
-   * @param createdBy - ID of admin creating this account
+   * @param _createdBy - ID of admin creating this account (for audit logging)
    * @returns Created admin user info
    */
-  async register(adminRegisterDto: AdminRegisterDto, createdBy: string) {
+  async register(adminRegisterDto: AdminRegisterDto, _createdBy: string) {
     const { email, username, password, role } = adminRegisterDto;
 
     // Check if email already exists
