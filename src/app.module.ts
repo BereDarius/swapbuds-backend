@@ -10,6 +10,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { redisStore } from 'cache-manager-redis-yet';
 import Redis from 'ioredis';
+import { AdminAuthModule } from './admin-auth/admin-auth.module';
 import { AdminModule } from './admin/admin.module';
 import { CacheModule as AppCacheModule } from './cache/cache.module';
 import { CommentsModule } from './comments/comments.module';
@@ -119,6 +120,7 @@ import { WaitlistModule } from './waitlist/waitlist.module';
     VerificationModule,
 
     AdminModule,
+    AdminAuthModule,
 
     ModerationModule,
 
