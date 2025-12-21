@@ -85,7 +85,7 @@ export class SupportChatService {
     await this.prisma.supportMessage.create({
       data: {
         chatId: chat.id,
-        senderId: userId,
+        userSenderId: userId,
         message: dto.initialMessage,
       },
     });
@@ -265,11 +265,11 @@ export class SupportChatService {
     const message = await this.prisma.supportMessage.create({
       data: {
         chatId,
-        senderId: userId,
+        userSenderId: userId,
         message: dto.message,
       },
       include: {
-        sender: {
+        userSender: {
           select: {
             id: true,
             username: true,
@@ -325,7 +325,7 @@ export class SupportChatService {
       await this.prisma.supportMessage.create({
         data: {
           chatId,
-          senderId: agentId,
+          adminSenderId: agentId,
           message: `Chat resolved: ${dto.resolution}`,
           isSystem: true,
         },
