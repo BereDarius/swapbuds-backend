@@ -8,7 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import * as speakeasy from 'speakeasy';
+import { authenticator } from 'otplib';
 import { AdminLoginDto } from './dto/admin-login.dto';
 import { AdminRegisterDto } from './dto/admin-register.dto';
 import { AdminJwtPayload } from './strategies/admin-jwt.strategy';
@@ -61,11 +61,9 @@ export class AdminAuthService {
         throw new BadRequestException('MFA code is required');
       }
 
-      const isMfaValid = speakeasy.totp.verify({
-        secret: adminUser.mfaSecret.secret,
-        encoding: 'base32',
+      const isMfaValid = authenticator.verify({
         token: mfaCode,
-        window: 2, // Allow 2 time steps before/after
+        secret: adminUser.mfaSecret.secret,
       });
 
       if (!isMfaValid) {
@@ -188,23 +186,27 @@ export class AdminAuthService {
       throw new ConflictException('MFA already set up for this admin');
     }
 
-    // Generate MFA secret
-    const secret = speakeasy.generateSecret({
-      name: `SwapBuds Admin (${adminUser.email})`,
-      issuer: 'SwapBuds',
-    });
+    // Generate MFA secret using otplib (same as regular users)
+    const secret = authenticator.generateSecret();
 
-    // Store encrypted secret
+    // Generate OTP auth URL
+    const otpauthUrl = authenticator.keyuri(
+      adminUser.email,
+      'SwapBuds Admin',
+      secret,
+    );
+
+    // Store secret (TODO: Encrypt this like regular users)
     await this.prisma.adminMFASecret.create({
       data: {
         adminUserId: adminId,
-        secret: secret.base32, // TODO: Encrypt this
+        secret: secret,
       },
     });
 
     return {
-      secret: secret.base32,
-      qrCodeUri: secret.otpauth_url,
+      secret: secret,
+      qrCodeUri: otpauthUrl,
     };
   }
 
@@ -226,12 +228,10 @@ export class AdminAuthService {
       throw new BadRequestException('MFA not set up');
     }
 
-    // Verify MFA code
-    const isValid = speakeasy.totp.verify({
-      secret: adminUser.mfaSecret.secret,
-      encoding: 'base32',
+    // Verify MFA code using otplib (same as regular users)
+    const isValid = authenticator.verify({
       token: mfaCode,
-      window: 2,
+      secret: adminUser.mfaSecret.secret,
     });
 
     if (!isValid) {

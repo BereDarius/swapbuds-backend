@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { SupportChatStatus, SupportPriority, UserRole } from '@prisma/client';
+import { SupportChatStatus, SupportPriority } from '@prisma/client';
 import { SupportQueueService } from './support-queue.service';
 
 export interface CreateChatDto {
@@ -337,7 +337,7 @@ export class SupportChatService {
   /**
    * Close a chat (by user or agent)
    */
-  async closeChat(chatId: string, userId: string, userRole: UserRole) {
+  async closeChat(chatId: string, userId: string) {
     const chat = await this.prisma.supportChat.findUnique({
       where: { id: chatId },
       select: {
