@@ -216,10 +216,7 @@ export class AdminService {
       throw new NotFoundException('User not found');
     }
 
-    if (user.role === UserRole.ADMIN) {
-      throw new BadRequestException('Cannot ban an admin user');
-    }
-
+    // Regular users can be banned (admins are in separate table)
     await this.prisma.user.update({
       where: { id: userId },
       data: { isActive: false },

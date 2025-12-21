@@ -104,8 +104,9 @@ export class SupportChatService {
 
   /**
    * Get chat details
+   * Access: User who created chat or assigned agent
    */
-  async getChat(chatId: string, userId: string, userRole: UserRole) {
+  async getChat(chatId: string, userId: string) {
     const chat = await this.prisma.supportChat.findUnique({
       where: { id: chatId },
       include: {
@@ -127,7 +128,13 @@ export class SupportChatService {
         messages: {
           orderBy: { createdAt: 'asc' },
           include: {
-            sender: {
+            userSender: {
+              select: {
+                id: true,
+                username: true,
+              },
+            },
+            adminSender: {
               select: {
                 id: true,
                 username: true,
@@ -143,13 +150,11 @@ export class SupportChatService {
       throw new NotFoundException('Chat not found');
     }
 
-    // Check access permissions
+    // Check access permissions: user or assigned agent
     const isUser = chat.userId === userId;
     const isAgent = chat.agentId === userId;
-    const isAdmin =
-      userRole === UserRole.ADMIN || userRole === UserRole.SUPPORT;
 
-    if (!isUser && !isAgent && !isAdmin) {
+    if (!isUser && !isAgent) {
       throw new ForbiddenException('You do not have access to this chat');
     }
 
@@ -223,13 +228,9 @@ export class SupportChatService {
 
   /**
    * Send a message in a chat
+   * Access: User who created chat or assigned agent
    */
-  async sendMessage(
-    chatId: string,
-    userId: string,
-    dto: SendMessageDto,
-    userRole: UserRole,
-  ) {
+  async sendMessage(chatId: string, userId: string, dto: SendMessageDto) {
     const chat = await this.prisma.supportChat.findUnique({
       where: { id: chatId },
       select: {
@@ -247,10 +248,8 @@ export class SupportChatService {
     // Check if user has access to this chat
     const isUser = chat.userId === userId;
     const isAgent = chat.agentId === userId;
-    const isAdmin =
-      userRole === UserRole.ADMIN || userRole === UserRole.SUPPORT;
 
-    if (!isUser && !isAgent && !isAdmin) {
+    if (!isUser && !isAgent) {
       throw new ForbiddenException('You do not have access to this chat');
     }
 
@@ -353,13 +352,11 @@ export class SupportChatService {
       throw new NotFoundException('Chat not found');
     }
 
-    // Check permissions
+    // Check permissions: user or assigned agent
     const isUser = chat.userId === userId;
     const isAgent = chat.agentId === userId;
-    const isAdmin =
-      userRole === UserRole.ADMIN || userRole === UserRole.SUPPORT;
 
-    if (!isUser && !isAgent && !isAdmin) {
+    if (!isUser && !isAgent) {
       throw new ForbiddenException('You do not have access to this chat');
     }
 

@@ -107,7 +107,7 @@ export class SupportChatController {
   @ApiResponse({ status: 404, description: 'Chat not found' })
   @ApiResponse({ status: 403, description: 'Access denied' })
   async getChat(@Param('id') chatId: string, @Request() req) {
-    return this.supportChatService.getChat(chatId, req.user.id, req.user.role);
+    return this.supportChatService.getChat(chatId, req.user.id);
   }
 
   /**
@@ -139,7 +139,6 @@ export class SupportChatController {
       chatId,
       req.user.id,
       dto,
-      req.user.role,
     );
 
     // Emit via WebSocket
@@ -160,11 +159,7 @@ export class SupportChatController {
   @ApiResponse({ status: 404, description: 'Chat not found' })
   @ApiResponse({ status: 403, description: 'Access denied' })
   async closeChat(@Param('id') chatId: string, @Request() req) {
-    const chat = await this.supportChatService.closeChat(
-      chatId,
-      req.user.id,
-      req.user.role,
-    );
+    const chat = await this.supportChatService.closeChat(chatId, req.user.id);
 
     // Emit via WebSocket
     this.supportChatGateway.emitChatClosed(chatId);
