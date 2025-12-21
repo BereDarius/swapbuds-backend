@@ -1,7 +1,7 @@
 import { PrismaService } from '@/prisma/prisma.service';
 import { mockPrismaService } from '@/test/mocks/prisma.mock';
 import { Test, TestingModule } from '@nestjs/testing';
-import { SupportChatStatus, SupportPriority, UserRole } from '@prisma/client';
+import { SupportChatStatus, SupportPriority } from '@prisma/client';
 import { SupportQueueService } from './support-queue.service';
 
 describe('SupportQueueService', () => {
@@ -191,7 +191,7 @@ describe('SupportQueueService', () => {
         { id: 'agent-3' },
       ];
 
-      mockPrismaService.user.findMany.mockResolvedValue(mockAgents);
+      mockPrismaService.adminUser.findMany.mockResolvedValue(mockAgents);
       mockPrismaService.supportChat.count
         .mockResolvedValueOnce(2) // agent-1: 2 chats
         .mockResolvedValueOnce(3) // agent-2: 3 chats (at limit)
@@ -203,7 +203,7 @@ describe('SupportQueueService', () => {
     });
 
     it('should return empty array if no agents available', async () => {
-      mockPrismaService.user.findMany.mockResolvedValue([]);
+      mockPrismaService.adminUser.findMany.mockResolvedValue([]);
 
       const result = await service.getAvailableAgents();
 
@@ -211,15 +211,15 @@ describe('SupportQueueService', () => {
     });
 
     it('should only include SUPPORT and ADMIN roles', async () => {
-      mockPrismaService.user.findMany.mockResolvedValue([]);
+      mockPrismaService.adminUser.findMany.mockResolvedValue([]);
 
       await service.getAvailableAgents();
 
-      expect(mockPrismaService.user.findMany).toHaveBeenCalledWith({
+      expect(mockPrismaService.adminUser.findMany).toHaveBeenCalledWith({
         where: {
           isActive: true,
           role: {
-            role: AdminRole.SUPPORT,
+            in: ['SUPPORT', 'MODERATOR', 'ADMIN'],
           },
         },
         select: { id: true },
@@ -229,7 +229,7 @@ describe('SupportQueueService', () => {
 
   describe('autoAssignChats', () => {
     it('should assign multiple chats to available agents', async () => {
-      mockPrismaService.user.findMany.mockResolvedValue([
+      mockPrismaService.adminUser.findMany.mockResolvedValue([
         { id: 'agent-1' },
         { id: 'agent-2' },
       ]);

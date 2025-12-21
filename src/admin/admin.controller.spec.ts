@@ -114,7 +114,6 @@ describe('AdminController', () => {
         page: 1,
         limit: 10,
         search: 'john',
-        role: UserRole.USER,
         isActive: true,
       });
     });

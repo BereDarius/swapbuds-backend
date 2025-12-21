@@ -135,7 +135,7 @@ describe('SupportChatService', () => {
       expect(mockPrismaService.supportMessage.create).toHaveBeenCalledWith({
         data: {
           chatId: 'chat-1',
-          senderId: 'user-1',
+          userSenderId: 'user-1',
           message: 'I have a problem',
         },
       });
@@ -158,14 +158,6 @@ describe('SupportChatService', () => {
       const result = await service.getChat('chat-1', 'agent-1');
 
       expect(result).toEqual(assignedChat);
-    });
-
-    it('should return chat for admin', async () => {
-      mockPrismaService.supportChat.findUnique.mockResolvedValue(mockChat);
-
-      const result = await service.getChat('chat-1', 'admin-1');
-
-      expect(result).toEqual(mockChat);
     });
 
     it('should throw error if chat not found', async () => {
@@ -263,11 +255,11 @@ describe('SupportChatService', () => {
       expect(mockPrismaService.supportMessage.create).toHaveBeenCalledWith({
         data: {
           chatId: 'chat-1',
-          senderId: 'user-1',
+          userSenderId: 'user-1',
           message: 'Test message',
         },
         include: {
-          sender: {
+          userSender: {
             select: {
               id: true,
               username: true,

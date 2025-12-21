@@ -163,7 +163,6 @@ describe('SupportChatController', () => {
       expect(mockSupportChatService.getChat).toHaveBeenCalledWith(
         'chat-1',
         'user-1',
-        UserRole.USER,
       );
     });
   });
@@ -191,7 +190,6 @@ describe('SupportChatController', () => {
         'chat-1',
         'user-1',
         messageDto,
-        UserRole.USER,
       );
       expect(mockSupportChatGateway.emitMessage).toHaveBeenCalledWith(
         'chat-1',
@@ -215,7 +213,6 @@ describe('SupportChatController', () => {
       expect(mockSupportChatService.closeChat).toHaveBeenCalledWith(
         'chat-1',
         'user-1',
-        UserRole.USER,
       );
       expect(mockSupportChatGateway.emitChatClosed).toHaveBeenCalledWith(
         'chat-1',
