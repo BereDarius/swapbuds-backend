@@ -23,9 +23,7 @@ import { AuditLogService } from './audit-log.service';
 import {
   BanUserDto,
   BulkBanUsersDto,
-  BulkChangeRoleDto,
   BulkUnbanUsersDto,
-  ChangeUserRoleDto,
   GetUsersQueryDto,
   UnbanUserDto,
 } from './dto/admin.dto';
@@ -69,11 +67,6 @@ export class AdminController {
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'search', required: false, type: String })
-  @ApiQuery({
-    name: 'role',
-    required: false,
-    enum: ['USER', 'MODERATOR', 'SUPPORT', 'ADMIN'],
-  })
   @ApiQuery({ name: 'isActive', required: false, type: Boolean })
   @ApiResponse({ status: 200, description: 'Users retrieved' })
   async getUsers(@Query() query: GetUsersQueryDto) {
@@ -81,7 +74,6 @@ export class AdminController {
       page: query.page ? Number(query.page) : undefined,
       limit: query.limit ? Number(query.limit) : undefined,
       search: query.search,
-      role: query.role,
       isActive:
         query.isActive !== undefined ? query.isActive === true : undefined,
     });
@@ -136,29 +128,6 @@ export class AdminController {
     @Body() dto: UnbanUserDto,
   ) {
     return this.adminService.unbanUser(userId, adminId, dto.reason);
-  }
-
-  /**
-   * Change user role
-   */
-  @Patch('users/:id/role')
-  @ApiOperation({
-    summary: '[Admin] Change user role',
-    description: "Change a user's role (USER, MODERATOR, SUPPORT, ADMIN)",
-  })
-  @ApiResponse({ status: 200, description: 'User role updated successfully' })
-  @ApiResponse({ status: 404, description: 'User not found' })
-  async changeUserRole(
-    @Param('id') userId: string,
-    @CurrentUser('id') adminId: string,
-    @Body() dto: ChangeUserRoleDto,
-  ) {
-    return this.adminService.changeUserRole(
-      userId,
-      dto.role,
-      adminId,
-      dto.reason,
-    );
   }
 
   /**
@@ -241,27 +210,5 @@ export class AdminController {
     @Body() dto: BulkUnbanUsersDto,
   ) {
     return this.adminService.bulkUnbanUsers(dto.userIds, adminId, dto.reason);
-  }
-
-  /**
-   * Bulk change user roles
-   */
-  @Patch('users/bulk-role')
-  @ApiOperation({
-    summary: '[Admin] Bulk change user roles',
-    description: 'Change role for multiple users at once',
-  })
-  @ApiResponse({ status: 200, description: 'User roles updated successfully' })
-  @ApiResponse({ status: 404, description: 'One or more users not found' })
-  async bulkChangeRole(
-    @CurrentUser('id') adminId: string,
-    @Body() dto: BulkChangeRoleDto,
-  ) {
-    return this.adminService.bulkChangeRole(
-      dto.userIds,
-      dto.role,
-      adminId,
-      dto.reason,
-    );
   }
 }
