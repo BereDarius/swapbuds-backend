@@ -140,6 +140,9 @@ model AdminUser {
   // Role & Permissions
   role AdminRole @default(SUPPORT)
 
+  // Audit tracking
+  createdBy String? // ID of admin who created this account
+
   // Timestamps
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
