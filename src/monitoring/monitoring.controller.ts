@@ -1,5 +1,5 @@
-import { AdminGuard } from '@/auth/guards/admin.guard';
-import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { AdminRoles } from '@/admin-auth/decorators/admin-roles.decorator';
+import { AdminJwtAuthGuard } from '@/admin-auth/guards/admin-jwt-auth.guard';
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -7,6 +7,7 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
+import { AdminRole } from '@prisma/client';
 import { MonitoringService } from './monitoring.service';
 
 /**
@@ -22,7 +23,8 @@ import { MonitoringService } from './monitoring.service';
 @ApiTags('Monitoring')
 @Controller('monitoring')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, AdminGuard)
+@UseGuards(AdminJwtAuthGuard)
+@AdminRoles(AdminRole.ADMIN)
 export class MonitoringController {
   constructor(private readonly monitoringService: MonitoringService) {}
 

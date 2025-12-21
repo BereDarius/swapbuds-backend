@@ -1,5 +1,5 @@
-import { AdminGuard } from '@/auth/guards/admin.guard';
-import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { AdminRoles } from '@/admin-auth/decorators/admin-roles.decorator';
+import { AdminJwtAuthGuard } from '@/admin-auth/guards/admin-jwt-auth.guard';
 import {
   Body,
   Controller,
@@ -20,6 +20,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { AdminRole } from '@prisma/client';
 import { CreateWaitlistDto } from './dto/create-waitlist.dto';
 import {
   WaitlistEmailsDto,
@@ -53,7 +54,8 @@ export class WaitlistController {
   }
 
   @Get('stats')
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get waitlist statistics (Admin only)' })
   @ApiResponse({
@@ -66,7 +68,8 @@ export class WaitlistController {
   }
 
   @Get('emails')
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Export all emails (Admin only)' })
   @ApiQuery({
@@ -88,7 +91,8 @@ export class WaitlistController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List waitlist entries (Admin only)' })
   @ApiQuery({ name: 'page', required: false, type: Number })
@@ -117,7 +121,8 @@ export class WaitlistController {
   }
 
   @Patch('notify')
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Mark entries as notified (Admin only)' })
   @ApiResponse({
@@ -129,7 +134,8 @@ export class WaitlistController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete waitlist entry (Admin only)' })
   @ApiResponse({

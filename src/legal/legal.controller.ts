@@ -1,3 +1,5 @@
+import { AdminRoles } from '@/admin-auth/decorators/admin-roles.decorator';
+import { AdminJwtAuthGuard } from '@/admin-auth/guards/admin-jwt-auth.guard';
 import {
   Body,
   Controller,
@@ -18,9 +20,8 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { LegalDocumentType } from '@prisma/client';
+import { AdminRole, LegalDocumentType } from '@prisma/client';
 import { Request } from 'express';
-import { AdminGuard } from '../auth/guards/admin.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import {
   AcceptLegalDocumentDto,
@@ -118,7 +119,8 @@ export class LegalController {
    * Create a new legal document version (admin only)
    */
   @Post('documents')
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Create new legal document version',
@@ -139,7 +141,8 @@ export class LegalController {
    * Set a document version as active (admin only)
    */
   @Put('documents/:type/version/:version/activate')
-  @UseGuards(JwtAuthGuard, AdminGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Set document version as active',

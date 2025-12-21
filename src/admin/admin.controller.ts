@@ -1,6 +1,6 @@
+import { AdminRoles } from '@/admin-auth/decorators/admin-roles.decorator';
+import { AdminJwtAuthGuard } from '@/admin-auth/guards/admin-jwt-auth.guard';
 import { CurrentUser } from '@/auth/decorators/auth.decorators';
-import { AdminGuard } from '@/auth/guards/admin.guard';
-import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 import {
   Body,
   Controller,
@@ -17,7 +17,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { AuditAction } from '@prisma/client';
+import { AdminRole, AuditAction } from '@prisma/client';
 import { AdminService } from './admin.service';
 import { AuditLogService } from './audit-log.service';
 import {
@@ -36,7 +36,8 @@ import {
  */
 @ApiTags('Admin')
 @Controller('admin')
-@UseGuards(JwtAuthGuard, AdminGuard)
+@UseGuards(AdminJwtAuthGuard)
+@AdminRoles(AdminRole.ADMIN)
 @ApiBearerAuth()
 export class AdminController {
   constructor(

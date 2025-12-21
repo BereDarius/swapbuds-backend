@@ -1,5 +1,4 @@
 import { CurrentUser } from '@/auth/decorators/auth.decorators';
-import { AdminGuard } from '@/auth/guards/admin.guard';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 import {
   Body,
@@ -19,6 +18,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { AdminRole } from '@prisma/client';
 import { VerificationResponseDto } from './dto/verification-response.dto';
 import {
   ReviewVerificationDto,
@@ -103,7 +103,8 @@ export class VerificationController {
    * Admin: Get all pending verifications
    */
   @Get('admin/pending')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({
     summary: '[Admin] Get pending verification requests',
@@ -130,7 +131,8 @@ export class VerificationController {
    * Admin: Get verification statistics
    */
   @Get('admin/stats')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({
     summary: '[Admin] Get verification statistics',
@@ -145,7 +147,8 @@ export class VerificationController {
    * Admin: Get specific verification by ID
    */
   @Get('admin/:id')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({
     summary: '[Admin] Get verification by ID',
@@ -161,7 +164,8 @@ export class VerificationController {
    * Admin: Get signed URL for viewing document
    */
   @Get('admin/:id/document-url')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({
     summary: '[Admin] Get signed document URL',
@@ -205,7 +209,8 @@ export class VerificationController {
    * Admin: Approve verification
    */
   @Patch('admin/:id/approve')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({
     summary: '[Admin] Approve verification',
@@ -230,7 +235,8 @@ export class VerificationController {
    * Admin: Reject verification
    */
   @Patch('admin/:id/reject')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({
     summary: '[Admin] Reject verification',
@@ -254,7 +260,8 @@ export class VerificationController {
    * Admin: Update internal notes
    */
   @Patch('admin/:id/notes')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({
     summary: '[Admin] Update internal notes',
