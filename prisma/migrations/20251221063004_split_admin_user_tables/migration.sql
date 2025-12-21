@@ -42,9 +42,9 @@ SELECT
     "password",
     "avatarUrl",
     CASE
-        WHEN "role" = 'ADMIN' THEN 'ADMIN'::\"AdminRole\"
-        WHEN "role" = 'MODERATOR' THEN 'MODERATOR'::\"AdminRole\"
-        WHEN "role" = 'SUPPORT' THEN 'SUPPORT'::\"AdminRole\"
+        WHEN "role" = 'ADMIN' THEN 'ADMIN'::"AdminRole"
+        WHEN "role" = 'MODERATOR' THEN 'MODERATOR'::"AdminRole"
+        WHEN "role" = 'SUPPORT' THEN 'SUPPORT'::"AdminRole"
     END as "role",
     "createdAt",
     "updatedAt",
