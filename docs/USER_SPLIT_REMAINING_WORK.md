@@ -2,32 +2,33 @@
 
 ## Critical Issues (Must Fix Before PR)
 
-### 1. UserRole References in Services
+### 1. ~~UserRole References in Services~~ ✅ FIXED
 
-**Files affected:**
+**Files fixed:**
 
-- `src/support/support-chat.service.ts` - Lines 150, 251, 360 (checking UserRole.ADMIN/SUPPORT for access)
-- `src/disputes/disputes.service.ts` - Line 146 (checking UserRole.ADMIN for access)
-- `src/notifications/notifications.service.ts` - Line 480 (querying users with UserRole.ADMIN)
-- `src/admin/admin.service.ts` - Line 219 (checking UserRole.ADMIN)
+- ✅ `src/support/support-chat.service.ts` - Removed UserRole parameters, updated access control
+- ✅ `src/support/support-chat.controller.ts` - Removed UserRole parameters from service calls
+- ✅ `src/disputes/disputes.service.ts` - Removed UserRole.ADMIN check, simplified access control
+- ✅ `src/notifications/notifications.service.ts` - Changed to query admin_users with AdminRole.ADMIN
 
-**Issue:** These services are checking `UserRole.ADMIN` but admins are now in a separate table with `AdminRole`.
+**Status:** COMPLETE
 
-**Solution:** Remove these checks or refactor to use AdminUser queries.
+### 2. ~~Controllers Using Old Guards~~ ✅ FIXED
 
-### 2. Verification Service
+**Files fixed:**
 
-**File:** `src/verification/verification.service.ts`
-**Issue:** Uses `adminId` and `reviewedBy` but reviewedBy is a string, not a relation to AdminUser.
+- ✅ `src/admin/admin.controller.ts` - Using AdminJwtAuthGuard + AdminRoles
+- ✅ `src/support/support-chat.controller.ts` - Replaced SupportGuard with AdminJwtAuthGuard
+- ✅ `src/disputes/disputes.controller.ts` - Replaced 4 AdminGuard usages
+- ✅ `sr~~Support Tests~~ ✅ FIXED
 
-**Solution:** Verify that `reviewedBy` field is being used correctly as adminId reference.
+**Files fixed:**
 
-### 3. Support Chat Access Control
+- ✅ `src/support/support-chat.service.spec.ts` - Removed UserRole parameters
+- ✅ `src/support/support-chat.controller.spec.ts` - Removed role from req.user mocks
+- ✅ `src/support/support-queue.service.spec.ts` - Updated to query admin_users
 
-**Files:**
-
-- `src/support/support-chat.service.ts`
-- `src/support/support-queue.service.ts`
+**Status:** COMPLETE
 
 **Issue:** Access control logic checks if user has UserRole.ADMIN/SUPPORT but admins are now separate.
 
@@ -42,65 +43,66 @@
 **File:** `src/notifications/notifications.service.ts` - Line 480
 **Code:** `where: { role: UserRole.ADMIN, isActive: true }`
 
-**Issue:** Trying to find admins in users table.
+\*\* Remaining Minor Issues
 
-**Solution:** Change to query `adminUser` table with AdminRole.ADMIN.
+### 1. Admin Service UserRole Check
 
-## Non-Critical Issues (Can defer to later PR)
+**File:** `src/admin/admin.service.ts` - Line 219
+**Issue:** Still checks UserRole.ADMIN (but this is for checking if REGULAR users can be banned)
+**Solution:** Review and potentially remove/refactor
 
-### 1. Test Files
-
-**Files affected:**
-
-- All `*.spec.ts` files referencing UserRole.ADMIN/MODERATOR/SUPPORT
-- Frontend test files (swapbuds-frontend)
-
-**Solution:** Update in separate PR after services are fixed.
-
-### 2. DTOs and Examples
+### 2. Old Guard Files
 
 **Files:**
 
-- `src/admin/dto/admin.dto.ts` - API documentation examples
+- `src/auth/guards/admin.guard.ts`
+- `src/auth/guards/moderator.guard.ts`
+- `src/auth/guards/support.guard.ts`
 
-**Solution:** Update examples to use AdminRole enum.
+**Status:** Deprecated but not yet removed (controllers now use AdminJwtAuthGuard)
+**Solution:** Can be safely deleted in next PR
 
-### 3. Controllers
+### 3. Test Files
 
-**Files:** All admin controllers need to use `AdminJwtAuthGuard` instead of `JwtAuthGuard`
+**Files affected:**
 
-**Solution:** Systematic controller update in next commit.
+- Admin tests (`src/admin/admin.controller.spec.ts`, etc.)
+- Frontend test files (swapbuds-frontend)
 
-## Recommended Fix Order
+**Status:** Tests reference UserRole.ADMIN/MODERATOR in examples
+**Solution:** Update in separate PR or ignore (non-breaking)e.ts** 3. **Fix notifications.service.ts admin query** 4. **Remove UserRole.ADMIN check from disputes.service.ts** 5. **Fix admin.service.ts UserRole check\*\* 6. Update controllers to use AdminJwtAuthGuard 7. Run migration on dev database 8. Write/update tests 9. Create PRNext Steps
 
-1. ✅ Support services (DONE)
-2. **Remove UserRole.ADMIN checks from support-chat.service.ts**
-3. **Fix notifications.service.ts admin query**
-4. **Remove UserRole.ADMIN check from disputes.service.ts**
-5. **Fix admin.service.ts UserRole check**
-6. Update controllers to use AdminJwtAuthGuard
-7. Run migration on dev database
-8. Write/update tests
-9. Create PR
+1. ✅ ~~Support services~~ (DONE)
+2. ✅ ~~Remove UserRole checks from services~~ (DONE)
+3. ✅ ~~Update controllers to use AdminJwtAuthGuard~~ (DONE)
+4. ✅ ~~Update support tests~~ (DONE)
+5. **Review admin.service.ts UserRole check (line 219)**
+6. **Run migration on database**
+7. **Test admin authentication flow**
+8. **Delete deprecated guard files**
+9. **Create PR**
 
 ## Current Status
 
-### Completed
+### Completed ✅
 
 - ✅ Prisma schema split
 - ✅ Migration created with data migration
-- ✅ AdminAuthModule with JWT strategy
+- ✅ AdminAuthModule with JWT strategy, guards, decorators
 - ✅ Support services updated for userSenderId/adminSenderId
 - ✅ SupportQueueService updated to query admin_users
+- ✅ SupportChatService UserRole parameters removed
+- ✅ NotificationsService admin query fixed
+- ✅ DisputesService UserRole check removed
+- ✅ ALL controllers updated to use AdminJwtAuthGuard
+- ✅ Support tests updated
 
-### In Progress
+### In Progress 🔄
 
-- 🔄 Removing UserRole.ADMIN/MODERATOR/SUPPORT checks
-- 🔄 Updating service access control logic
+- 🔄 Reviewing remaining minor issues
 
-### Not Started
+### Not Started ❌
 
-- ❌ Controller updates for AdminJwtAuthGuard
-- ❌ Test updates
-- ❌ Running migration
-- ❌ Frontend updates
+- ❌ Running migration on database
+- ❌ Testing admin authentication flow
+- ❌ Frontend updates (separate branch)
