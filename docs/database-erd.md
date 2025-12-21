@@ -272,6 +272,7 @@ COMMUNITY_GUIDELINES COMMUNITY_GUIDELINES
     String password 
     String avatarUrl "❓"
     AdminRole role 
+    String createdBy "❓"
     DateTime createdAt 
     DateTime updatedAt 
     DateTime lastLoginAt "❓"
