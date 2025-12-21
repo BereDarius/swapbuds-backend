@@ -88,12 +88,7 @@ FROM "users" u
 WHERE sm."senderId" = u."id" AND u."role" = 'USER' AND sm."adminSenderId" IS NULL;
 
 -- Drop old senderId column and index
-DROP INDEX "support_messages_senderId_idx";
-
-ALTER TABLE "support_messages" DROP COLUMN "senderId";
-
--- Drop old senderId column and index
-DROP INDEX "support_messages_senderId_idx";
+DROP INDEX IF EXISTS "support_messages_senderId_idx";
 
 ALTER TABLE "support_messages" DROP COLUMN "senderId";
 
