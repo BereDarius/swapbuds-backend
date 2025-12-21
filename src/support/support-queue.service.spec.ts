@@ -219,7 +219,7 @@ describe('SupportQueueService', () => {
         where: {
           isActive: true,
           role: {
-            in: [UserRole.SUPPORT, UserRole.ADMIN],
+            role: AdminRole.SUPPORT,
           },
         },
         select: { id: true },

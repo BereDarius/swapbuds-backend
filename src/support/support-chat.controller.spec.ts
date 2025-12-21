@@ -151,7 +151,7 @@ describe('SupportChatController', () => {
 
   describe('getChat', () => {
     const mockRequest = {
-      user: { id: 'user-1', role: UserRole.USER },
+      user: { id: 'user-1' },
     };
 
     it('should return chat details', async () => {
@@ -174,7 +174,7 @@ describe('SupportChatController', () => {
     };
 
     const mockRequest = {
-      user: { id: 'user-1', role: UserRole.USER },
+      user: { id: 'user-1' },
     };
 
     it('should send message and emit via WebSocket', async () => {
@@ -202,7 +202,7 @@ describe('SupportChatController', () => {
 
   describe('closeChat', () => {
     const mockRequest = {
-      user: { id: 'user-1', role: UserRole.USER },
+      user: { id: 'user-1' },
     };
 
     it('should close chat and emit via WebSocket', async () => {
@@ -225,7 +225,7 @@ describe('SupportChatController', () => {
 
   describe('getAgentChats', () => {
     const mockRequest = {
-      user: { id: 'agent-1', role: UserRole.SUPPORT },
+      user: { id: 'agent-1' },
     };
 
     it('should return agent chats', async () => {
@@ -247,7 +247,7 @@ describe('SupportChatController', () => {
     };
 
     const mockRequest = {
-      user: { id: 'agent-1', role: UserRole.SUPPORT },
+      user: { id: 'agent-1' },
     };
 
     it('should resolve chat and emit via WebSocket', async () => {
