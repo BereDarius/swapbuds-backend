@@ -7,7 +7,6 @@ import {
   SupportChat,
   SupportChatStatus,
   SupportPriority,
-  UserRole,
 } from '@prisma/client';
 import {
   CreateChatDto,
@@ -156,11 +155,7 @@ describe('SupportChatService', () => {
       const assignedChat = { ...mockChat, agentId: 'agent-1' };
       mockPrismaService.supportChat.findUnique.mockResolvedValue(assignedChat);
 
-      const result = await service.getChat(
-        'chat-1',
-        'agent-1',
-        UserRole.SUPPORT,
-      );
+      const result = await service.getChat('chat-1', 'agent-1');
 
       expect(result).toEqual(assignedChat);
     });
@@ -176,17 +171,17 @@ describe('SupportChatService', () => {
     it('should throw error if chat not found', async () => {
       mockPrismaService.supportChat.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.getChat('chat-1', 'user-1'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.getChat('chat-1', 'user-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw error if user is not owner or agent', async () => {
       mockPrismaService.supportChat.findUnique.mockResolvedValue(mockChat);
 
-      await expect(
-        service.getChat('chat-1', 'other-user'),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.getChat('chat-1', 'other-user')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -262,12 +257,7 @@ describe('SupportChatService', () => {
         createdAt: new Date(),
       });
 
-      const result = await service.sendMessage(
-        'chat-1',
-        'user-1',
-        messageDto,
-        UserRole.USER,
-      );
+      const result = await service.sendMessage('chat-1', 'user-1', messageDto);
 
       expect(result).toBeDefined();
       expect(mockPrismaService.supportMessage.create).toHaveBeenCalledWith({
@@ -386,9 +376,9 @@ describe('SupportChatService', () => {
     it('should throw error if user lacks permission', async () => {
       mockPrismaService.supportChat.findUnique.mockResolvedValue(mockChat);
 
-      await expect(
-        service.closeChat('chat-1', 'other-user'),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.closeChat('chat-1', 'other-user')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 

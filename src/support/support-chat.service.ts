@@ -378,7 +378,7 @@ export class SupportChatService {
     await this.prisma.supportMessage.create({
       data: {
         chatId,
-        senderId: userId,
+        userSenderId: userId,
         message: 'Chat closed',
         isSystem: true,
       },
