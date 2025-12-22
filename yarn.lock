@@ -1105,10 +1105,10 @@
   resolved "https://registry.yarnpkg.com/@floating-ui/utils/-/utils-0.2.10.tgz#a2a1e3812d14525f725d011a73eceb41fef5bc1c"
   integrity sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ==
 
-"@golevelup/ts-jest@^0.7.0":
-  version "0.7.0"
-  resolved "https://registry.yarnpkg.com/@golevelup/ts-jest/-/ts-jest-0.7.0.tgz#b16c6775a34fa424e5fb492bc45a20c6d8204e0b"
-  integrity sha512-b5Kf+NiEfWuMGUD5bl/Gm/RqojS4Sr/4Q0ySXN4xn3xlkhgPYG6nGLBeNjk3MiM2I3ztVVFfI7SB8ajqDy6Idw==
+"@golevelup/ts-jest@^1.1.1":
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/@golevelup/ts-jest/-/ts-jest-1.1.1.tgz#6cb4b902e4d3249112f3a3aa431328b5c9f39617"
+  integrity sha512-F5MKhEoNWDHK3YBTKnViBjWijHeDMS/5d4Pug/DCI5UWSqfCg5oGCve2W+/WM0x/hhUM9GedDT3ztHHwbIYjQA==
 
 "@headlessui/react@^2.2.1":
   version "2.2.9"
