@@ -1,5 +1,6 @@
 import { AdminRoles } from '@/admin-auth/decorators/admin-roles.decorator';
 import { AdminJwtAuthGuard } from '@/admin-auth/guards/admin-jwt-auth.guard';
+import { AdminRoleGuard } from '@/admin-auth/guards/admin-role.guard';
 import {
   CurrentUser,
   RequireVerified,
@@ -123,7 +124,7 @@ export class DisputesController {
    * @returns List of all disputes
    */
   @Get()
-  @UseGuards(AdminJwtAuthGuard)
+  @UseGuards(AdminJwtAuthGuard, AdminRoleGuard)
   @AdminRoles(AdminRole.ADMIN)
   @ApiOperation({
     summary: 'Get all disputes (Admin only)',

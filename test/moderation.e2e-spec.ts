@@ -63,13 +63,12 @@ describe('Moderation E2E', () => {
       itemId = itemResponse.body.id;
     }
 
-    // Login as moderator from seeded data
+    // Login as moderator using AdminUser authentication
     const modLogin = await request(app.getHttpServer())
-      .post('/api/auth/login')
+      .post('/api/admin/auth/login')
       .send({
         email: 'moderator@swapbuds.com',
         password: 'Password123!',
-        recaptchaToken: 'test-token',
       });
 
     expect(modLogin.status).toBe(200);
@@ -149,7 +148,8 @@ describe('Moderation E2E', () => {
       expect([200, 403]).toContain(response.status);
 
       if (response.status === 200) {
-        expect(Array.isArray(response.body)).toBe(true);
+        expect(response.body).toHaveProperty('items'); // Response is paginated object, not array
+        expect(Array.isArray(response.body.items || response.body)).toBe(true);
       }
     });
 

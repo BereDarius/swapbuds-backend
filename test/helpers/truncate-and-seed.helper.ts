@@ -50,6 +50,7 @@ export async function truncateAndReseed() {
       prisma.userSettings.deleteMany(),
       prisma.recaptchaLog.deleteMany(),
       prisma.user.deleteMany(),
+      prisma.adminUser.deleteMany(), // Delete admin users
       prisma.legalDocument.deleteMany(),
       prisma.waitlist.deleteMany(),
     ]);

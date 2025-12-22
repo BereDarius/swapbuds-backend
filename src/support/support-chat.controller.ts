@@ -1,5 +1,6 @@
 import { AdminRoles } from '@/admin-auth/decorators/admin-roles.decorator';
 import { AdminJwtAuthGuard } from '@/admin-auth/guards/admin-jwt-auth.guard';
+import { AdminRoleGuard } from '@/admin-auth/guards/admin-role.guard';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 import {
   Body,
@@ -172,7 +173,7 @@ export class SupportChatController {
    * Get agent's assigned chats (support agents only)
    */
   @Get('agent/chats')
-  @UseGuards(AdminJwtAuthGuard)
+  @UseGuards(AdminJwtAuthGuard, AdminRoleGuard)
   @AdminRoles(AdminRole.SUPPORT, AdminRole.MODERATOR, AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Get agent's assigned chats" })
@@ -185,7 +186,7 @@ export class SupportChatController {
    * Resolve a chat (support agents only)
    */
   @Patch('chats/:id/resolve')
-  @UseGuards(AdminJwtAuthGuard)
+  @UseGuards(AdminJwtAuthGuard, AdminRoleGuard)
   @AdminRoles(AdminRole.SUPPORT, AdminRole.MODERATOR, AdminRole.ADMIN)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)

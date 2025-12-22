@@ -1,5 +1,6 @@
 import { AdminRoles } from '@/admin-auth/decorators/admin-roles.decorator';
 import { AdminJwtAuthGuard } from '@/admin-auth/guards/admin-jwt-auth.guard';
+import { AdminRoleGuard } from '@/admin-auth/guards/admin-role.guard';
 import { CurrentUser } from '@/auth/decorators/auth.decorators';
 import {
   Body,
@@ -34,7 +35,7 @@ import {
  */
 @ApiTags('Admin')
 @Controller('admin')
-@UseGuards(AdminJwtAuthGuard)
+@UseGuards(AdminJwtAuthGuard, AdminRoleGuard)
 @AdminRoles(AdminRole.ADMIN)
 @ApiBearerAuth()
 export class AdminController {

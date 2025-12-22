@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
   Post,
   Request,
   UseGuards,
@@ -31,6 +33,7 @@ export class AdminAuthController {
    * Body: { email, password, mfaCode? }
    */
   @Post('login')
+  @HttpCode(HttpStatus.OK)
   async login(@Body() adminLoginDto: AdminLoginDto) {
     return this.adminAuthService.login(adminLoginDto);
   }

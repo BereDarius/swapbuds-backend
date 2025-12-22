@@ -1,4 +1,10 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MinLength,
+} from 'class-validator';
 
 /**
  * Admin Login DTO
@@ -19,6 +25,7 @@ export class AdminLoginDto {
   /**
    * Optional MFA code if admin has MFA enabled
    */
+  @IsOptional()
   @IsString()
   mfaCode?: string;
 }

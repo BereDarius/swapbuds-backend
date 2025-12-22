@@ -16,6 +16,8 @@ describe('Disputes E2E', () => {
   let mikeToken: string;
   let adminToken: string;
   let disputeId: string;
+  let verifiedUserId: string;
+  let verifiedUserToken: string;
 
   beforeAll(async () => {
     // Truncate and reseed for test isolation
@@ -37,6 +39,84 @@ describe('Disputes E2E', () => {
     );
 
     await app.init();
+
+    // Create a verified user for dispute testing
+    const verifiedUser = await prisma.user.create({
+      data: {
+        email: `verified-${Date.now()}@test.com`,
+        username: `verified${Date.now()}`,
+        password:
+          '$2b$10$rZH3P8LhQZvN3PqG5kS3.uGvQqJZ5.9YZH3P8LhQZvN3PqG5kS3.u', // Password123!
+        emailVerified: true,
+        isActive: true,
+      },
+    });
+    verifiedUserId = verifiedUser.id;
+
+    // Create APPROVED verification for this user
+    await prisma.userVerification.create({
+      data: {
+        userId: verifiedUser.id,
+        documentType: 'ID_CARD',
+        documentUrlFront: 'https://example.com/id.jpg',
+        documentUrlBack: 'https://example.com/id-back.jpg',
+        selfieUrl: 'https://example.com/selfie.jpg',
+        status: 'APPROVED',
+        submittedAt: new Date(),
+        reviewedAt: new Date(),
+      },
+    });
+
+    // Login as verified user
+    const verifiedLogin = await request(app.getHttpServer())
+      .post('/api/auth/login')
+      .send({
+        email: verifiedUser.email,
+        password: 'Password123!',
+        recaptchaToken: 'test-token',
+      });
+
+    expect(verifiedLogin.status).toBe(200);
+    verifiedUserToken = verifiedLogin.body.accessToken;
+
+    // Create items for verified user and Mike
+    const item1 = await prisma.item.create({
+      data: {
+        title: 'Test Item 1',
+        description: 'Item for dispute test',
+        userId: verifiedUser.id,
+        category: 'ELECTRONICS',
+        condition: 'USED_GOOD',
+        estimatedValue: 100,
+      },
+    });
+
+    const mikeUser = await prisma.user.findUnique({
+      where: { email: 'mike.collector@example.com' },
+    });
+
+    const item2 = await prisma.item.create({
+      data: {
+        title: 'Test Item 2',
+        description: 'Another item for dispute test',
+        userId: mikeUser!.id,
+        category: 'COLLECTIBLES',
+        condition: 'NEW',
+        estimatedValue: 150,
+      },
+    });
+
+    // Create a COMPLETED trade for dispute testing
+    await prisma.trade.create({
+      data: {
+        proposerId: verifiedUser.id,
+        responderId: mikeUser!.id,
+        status: 'COMPLETED',
+        proposerItems: { connect: [{ id: item1.id }] },
+        responderItems: { connect: [{ id: item2.id }] },
+        completedAt: new Date(),
+      },
+    });
 
     // Login as seeded users (verified, ready for disputes)
     const johnLogin = await request(app.getHttpServer())
@@ -61,12 +141,12 @@ describe('Disputes E2E', () => {
     expect(mikeLogin.status).toBe(200);
     mikeToken = mikeLogin.body.accessToken;
 
+    // Login as admin using AdminUser authentication
     const adminLogin = await request(app.getHttpServer())
-      .post('/api/auth/login')
+      .post('/api/admin/auth/login')
       .send({
         email: 'admin@swapbuds.com',
         password: 'Password123!',
-        recaptchaToken: 'test-token',
       });
 
     expect(adminLogin.status).toBe(200);
@@ -90,16 +170,11 @@ describe('Disputes E2E', () => {
     });
 
     it('should create a dispute for a completed trade', async () => {
-      // Get John's user ID first
-      const johnUser = await prisma.user.findUnique({
-        where: { email: 'john.doe@example.com' },
-      });
-
-      // Find a completed trade where John is a participant
+      // Find the completed trade we created for verified user
       const completedTrade = await prisma.trade.findFirst({
         where: {
           status: 'COMPLETED',
-          OR: [{ proposerId: johnUser?.id }, { responderId: johnUser?.id }],
+          proposerId: verifiedUserId,
         },
         include: {
           proposer: true,
@@ -107,23 +182,14 @@ describe('Disputes E2E', () => {
         },
       });
 
-      if (!completedTrade) {
-        console.warn('⚠️  No completed trade found for John, skipping test');
-        return;
-      }
-
-      // John reports the other party in the trade (Mike)
-      const reportedUserId =
-        completedTrade.proposerId === johnUser?.id
-          ? completedTrade.responderId
-          : completedTrade.proposerId;
+      expect(completedTrade).toBeDefined();
 
       const response = await request(app.getHttpServer())
         .post('/api/disputes')
-        .set('Authorization', `Bearer ${johnToken}`)
+        .set('Authorization', `Bearer ${verifiedUserToken}`)
         .send({
-          tradeId: completedTrade.id,
-          reportedUserId,
+          tradeId: completedTrade!.id,
+          reportedUserId: completedTrade!.responderId,
           reason: 'ITEM_NOT_RECEIVED',
           description: 'The item was never delivered to me',
         });
@@ -138,7 +204,7 @@ describe('Disputes E2E', () => {
     it('should validate required fields', async () => {
       const response = await request(app.getHttpServer())
         .post('/api/disputes')
-        .set('Authorization', `Bearer ${johnToken}`)
+        .set('Authorization', `Bearer ${verifiedUserToken}`)
         .send({
           tradeId: 'some-id',
           // Missing reason and description
@@ -150,9 +216,10 @@ describe('Disputes E2E', () => {
     it('should validate dispute reasons', async () => {
       const response = await request(app.getHttpServer())
         .post('/api/disputes')
-        .set('Authorization', `Bearer ${johnToken}`)
+        .set('Authorization', `Bearer ${verifiedUserToken}`)
         .send({
           tradeId: 'some-id',
+          reportedUserId: 'some-user',
           reason: 'INVALID_REASON',
           description: 'Test',
         });
@@ -283,7 +350,6 @@ describe('Disputes E2E', () => {
 
       expect(response.status).toBe(200);
       expect(Array.isArray(response.body)).toBe(true);
-      // Admin should see all disputes in the system
       expect(response.body.length).toBeGreaterThanOrEqual(0);
     });
 
@@ -292,7 +358,8 @@ describe('Disputes E2E', () => {
         .get('/api/disputes')
         .set('Authorization', `Bearer ${johnToken}`);
 
-      expect(response.status).toBe(403);
+      expect(response.status).toBe(401);
+      expect(response.body.message).toContain('User not found');
     });
 
     it('should update dispute status', async () => {

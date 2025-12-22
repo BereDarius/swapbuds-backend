@@ -1,17 +1,66 @@
-import { PrismaClient, UserRole } from '@prisma/client';
+import { AdminRole, PrismaClient, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 /**
  * Seed users with different roles and verification states
+ * Now handles both regular users (User table) and admin users (AdminUser table)
  */
 export async function seedUsers(prisma: PrismaClient) {
-  console.log('👥 Seeding users...');
+  console.log('👥 Seeding users and admin users...');
 
   const hashedPassword = await bcrypt.hash('Password123!', 10);
   const lighthousePassword = await bcrypt.hash('LighthouseTest123!', 10);
 
+  // Admin users data (separate authentication, AdminUser table)
+  // AdminUser schema only has: email, username, password, role, isActive
+  const adminUsers = [
+    {
+      email: 'lighthouse.admin@test.com',
+      username: 'lighthouse_admin',
+      password: lighthousePassword,
+      role: AdminRole.ADMIN,
+      isActive: true,
+    },
+    {
+      email: 'lighthouse.moderator@test.com',
+      username: 'lighthouse_moderator',
+      password: lighthousePassword,
+      role: AdminRole.MODERATOR,
+      isActive: true,
+    },
+    {
+      email: 'lighthouse.support@test.com',
+      username: 'lighthouse_support',
+      password: lighthousePassword,
+      role: AdminRole.SUPPORT,
+      isActive: true,
+    },
+    {
+      email: 'admin@swapbuds.com',
+      username: 'admin',
+      password: hashedPassword,
+      role: AdminRole.ADMIN,
+      isActive: true,
+    },
+    {
+      email: 'moderator@swapbuds.com',
+      username: 'moderator',
+      password: hashedPassword,
+      role: AdminRole.MODERATOR,
+      isActive: true,
+    },
+    {
+      email: 'support@swapbuds.com',
+      username: 'support',
+      password: hashedPassword,
+      role: AdminRole.SUPPORT,
+      isActive: true,
+    },
+  ];
+
+  // Regular users data (User table only, no admin roles)
   const users = [
-    // Lighthouse test users (for CI/CD performance testing)
+    // Lighthouse test user (regular user)
     {
       email: 'lighthouse.user@test.com',
       username: 'lighthouse_user',
@@ -23,106 +72,6 @@ export async function seedUsers(prisma: PrismaClient) {
       bio: 'Lighthouse test user for performance audits',
       location: 'Test City, TC',
       reputationScore: 100,
-      ageVerifiedAt: new Date(),
-      tosAcceptedAt: new Date(),
-      tosVersion: '1.0.0',
-      privacyAcceptedAt: new Date(),
-      privacyVersion: '1.0.0',
-    },
-    {
-      email: 'lighthouse.admin@test.com',
-      username: 'lighthouse_admin',
-      password: lighthousePassword,
-      role: UserRole.ADMIN,
-      isVerified: true,
-      emailVerified: true,
-      selfDeclaredAge18: true,
-      bio: 'Lighthouse admin user for testing admin pages',
-      location: 'Test City, TC',
-      reputationScore: 100,
-      ageVerifiedAt: new Date(),
-      tosAcceptedAt: new Date(),
-      tosVersion: '1.0.0',
-      privacyAcceptedAt: new Date(),
-      privacyVersion: '1.0.0',
-    },
-    {
-      email: 'lighthouse.moderator@test.com',
-      username: 'lighthouse_moderator',
-      password: lighthousePassword,
-      role: UserRole.MODERATOR,
-      isVerified: true,
-      emailVerified: true,
-      selfDeclaredAge18: true,
-      bio: 'Lighthouse moderator user for testing moderation tools',
-      location: 'Test City, TC',
-      reputationScore: 100,
-      ageVerifiedAt: new Date(),
-      tosAcceptedAt: new Date(),
-      tosVersion: '1.0.0',
-      privacyAcceptedAt: new Date(),
-      privacyVersion: '1.0.0',
-    },
-    {
-      email: 'lighthouse.support@test.com',
-      username: 'lighthouse_support',
-      password: lighthousePassword,
-      role: UserRole.SUPPORT,
-      isVerified: true,
-      emailVerified: true,
-      selfDeclaredAge18: true,
-      bio: 'Lighthouse support user for testing support features',
-      location: 'Test City, TC',
-      reputationScore: 100,
-      ageVerifiedAt: new Date(),
-      tosAcceptedAt: new Date(),
-      tosVersion: '1.0.0',
-      privacyAcceptedAt: new Date(),
-      privacyVersion: '1.0.0',
-    },
-    // Regular seed users
-    {
-      email: 'admin@swapbuds.com',
-      username: 'admin',
-      password: hashedPassword,
-      role: UserRole.ADMIN,
-      isVerified: true,
-      selfDeclaredAge18: true,
-      bio: 'SwapBuds Platform Administrator',
-      location: 'Bucharest, Romania',
-      reputationScore: 100,
-      ageVerifiedAt: new Date(),
-      tosAcceptedAt: new Date(),
-      tosVersion: '1.0.0',
-      privacyAcceptedAt: new Date(),
-      privacyVersion: '1.0.0',
-    },
-    {
-      email: 'moderator@swapbuds.com',
-      username: 'moderator',
-      password: hashedPassword,
-      role: UserRole.MODERATOR,
-      isVerified: true,
-      selfDeclaredAge18: true,
-      bio: 'Content Moderator - keeping SwapBuds safe',
-      location: 'Cluj-Napoca, Romania',
-      reputationScore: 95,
-      ageVerifiedAt: new Date(),
-      tosAcceptedAt: new Date(),
-      tosVersion: '1.0.0',
-      privacyAcceptedAt: new Date(),
-      privacyVersion: '1.0.0',
-    },
-    {
-      email: 'support@swapbuds.com',
-      username: 'support',
-      password: hashedPassword,
-      role: UserRole.SUPPORT,
-      isVerified: true,
-      selfDeclaredAge18: true,
-      bio: 'Support Agent - here to help!',
-      location: 'Timișoara, Romania',
-      reputationScore: 90,
       ageVerifiedAt: new Date(),
       tosAcceptedAt: new Date(),
       tosVersion: '1.0.0',
@@ -215,6 +164,32 @@ export async function seedUsers(prisma: PrismaClient) {
     },
   ];
 
+  // Seed admin users first
+  const createdAdminUsers = [];
+  for (const adminData of adminUsers) {
+    const existingAdmin = await prisma.adminUser.findUnique({
+      where: { email: adminData.email },
+    });
+
+    if (existingAdmin) {
+      console.log(
+        `   ⏭️  Admin ${adminData.username} already exists, skipping...`,
+      );
+      createdAdminUsers.push(existingAdmin);
+      continue;
+    }
+
+    const admin = await prisma.adminUser.create({
+      data: adminData,
+    });
+
+    console.log(`   ✅ Created admin: ${admin.username} (${admin.email})`);
+    createdAdminUsers.push(admin);
+  }
+
+  console.log(`✅ Seeded ${createdAdminUsers.length} admin users`);
+
+  // Seed regular users
   const createdUsers = [];
 
   for (const userData of users) {
@@ -238,6 +213,9 @@ export async function seedUsers(prisma: PrismaClient) {
     createdUsers.push(user);
   }
 
-  console.log(`✅ Seeded ${createdUsers.length} users`);
+  console.log(`✅ Seeded ${createdUsers.length} regular users`);
+  console.log(
+    `📊 Total: ${createdAdminUsers.length} admins + ${createdUsers.length} users`,
+  );
   return createdUsers;
 }
