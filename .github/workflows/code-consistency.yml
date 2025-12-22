@@ -19,7 +19,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Enable Corepack
         run: corepack enable
@@ -43,7 +43,7 @@ jobs:
   validate-branch-name:
     name: Validate Branch Name
     runs-on: ubuntu-latest
-    if: github.actor != 'dependabot[bot]'
+    if: ${{ !startsWith(github.head_ref, 'dependabot/') }}
     steps:
       - name: Check branch naming convention
         run: |
@@ -109,7 +109,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Enable Corepack
         run: corepack enable
