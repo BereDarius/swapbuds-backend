@@ -49,6 +49,23 @@ export class AdminAuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    // Check account status (block PENDING_APPROVAL, SUSPENDED, REVOKED)
+    if (adminUser.status !== 'ACTIVE') {
+      if (adminUser.status === 'PENDING_APPROVAL') {
+        throw new UnauthorizedException(
+          'Your account is pending approval. Please wait for an administrator to activate your account.',
+        );
+      }
+      if (adminUser.status === 'SUSPENDED') {
+        throw new UnauthorizedException(
+          'Your account has been suspended. Please contact an administrator.',
+        );
+      }
+      if (adminUser.status === 'REVOKED') {
+        throw new UnauthorizedException('Your account has been revoked.');
+      }
+    }
+
     // Verify password
     const isPasswordValid = await bcrypt.compare(password, adminUser.password);
     if (!isPasswordValid) {

@@ -27,6 +27,13 @@ enum AdminRole {
   ADMIN // Full admin access
 }
 
+enum AdminStatus {
+  PENDING_APPROVAL // Newly invited, awaiting approval
+  ACTIVE // Approved and can login
+  SUSPENDED // Temporarily disabled
+  REVOKED // Permanently disabled
+}
+
 // ============================================
 // USER ROLE ENUM (Deprecated - keeping for backward compatibility during migration)
 // ============================================
@@ -149,7 +156,8 @@ model AdminUser {
   lastLoginAt DateTime?
 
   // Status
-  isActive Boolean @default(true)
+  isActive Boolean     @default(true)
+  status   AdminStatus @default(ACTIVE)
 
   // Multi-Factor Authentication (REQUIRED for admins)
   mfaEnabled Boolean         @default(false)
@@ -157,6 +165,11 @@ model AdminUser {
 
   // Permissions
   permissions AdminUserPermission[]
+
+  // Invitations
+  invitesSent     AdminInvite[] @relation("InviteSender")
+  invitesReceived AdminInvite[] @relation("InviteRecipient")
+  invitesApproved AdminInvite[] @relation("InviteApprover")
 
   // Relations - Admin-only operations
   // Relations
@@ -239,6 +252,52 @@ model AdminUserPermission {
   @@index([adminUserId])
   @@index([permissionId])
   @@map("admin_user_permissions")
+}
+
+/// Admin invitation system with approval workflow
+enum AdminInviteStatus {
+  PENDING // Awaiting recipient action
+  ACCEPTED // Recipient accepted, awaiting approval
+  APPROVED // Approved by admin, account created
+  REJECTED // Rejected by approving admin
+  REVOKED // Revoked by sender
+  EXPIRED // Token expired
+}
+
+model AdminInvite {
+  id String @id @default(cuid())
+
+  // Recipient information
+  email    String
+  username String
+  role     AdminRole @default(SUPPORT)
+
+  // Invitation details
+  token     String            @unique @default(cuid())
+  status    AdminInviteStatus @default(PENDING)
+  expiresAt DateTime // 7 days from creation
+
+  // Audit trail
+  sentBy          String
+  sender          AdminUser  @relation("InviteSender", fields: [sentBy], references: [id], onDelete: Cascade)
+  sentAt          DateTime   @default(now())
+  acceptedAt      DateTime?
+  approvedBy      String?
+  approver        AdminUser? @relation("InviteApprover", fields: [approvedBy], references: [id], onDelete: SetNull)
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
+  revokedAt       DateTime?
+  rejectionReason String?
+
+  // Created admin user (if approved)
+  recipientId String?    @unique
+  recipient   AdminUser? @relation("InviteRecipient", fields: [recipientId], references: [id], onDelete: SetNull)
+
+  @@index([email])
+  @@index([token])
+  @@index([status])
+  @@index([sentBy])
+  @@map("admin_invites")
 }
 
 // ============================================

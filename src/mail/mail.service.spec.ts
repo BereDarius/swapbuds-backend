@@ -896,6 +896,261 @@ describe('MailService', () => {
     });
   });
 
+  describe('sendAdminInvite', () => {
+    it('should send admin invitation email successfully', async () => {
+      mockMailerService.sendMail.mockResolvedValue({ messageId: 'msg-123' });
+
+      await service.sendAdminInvite(
+        'newadmin@example.com',
+        'newadmin',
+        'invite-token-123',
+        'admin_sender',
+      );
+
+      expect(mockMailerService.sendMail).toHaveBeenCalledWith({
+        to: 'newadmin@example.com',
+        subject: 'You have been invited to join SwapBuds Admin Team',
+        template: './admin-invite',
+        context: {
+          username: 'newadmin',
+          invitedBy: 'admin_sender',
+          inviteUrl: expect.stringContaining('invite-token-123'),
+          expiresIn: '7 days',
+        },
+      });
+    });
+
+    it('should construct correct invite URL', async () => {
+      mockMailerService.sendMail.mockResolvedValue({ messageId: 'msg-123' });
+
+      await service.sendAdminInvite(
+        'test@example.com',
+        'testuser',
+        'token-abc',
+        'sender',
+      );
+
+      const callArgs = mockMailerService.sendMail.mock.calls[0][0];
+      expect(callArgs.context.inviteUrl).toBe(
+        'undefined/invite/accept?token=token-abc',
+      );
+    });
+
+    it('should handle errors gracefully', async () => {
+      mockMailerService.sendMail.mockRejectedValue(new Error('Send failed'));
+      const errorSpy = jest.spyOn(service['logger'], 'error');
+
+      await service.sendAdminInvite(
+        'test@example.com',
+        'testuser',
+        'token',
+        'sender',
+      );
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Failed to send admin invitation email to test@example.com',
+        expect.any(String),
+      );
+    });
+
+    it('should handle missing config gracefully', async () => {
+      const mockConfigWithoutCreds = {
+        get: jest.fn().mockReturnValue(undefined),
+      };
+
+      const module = await Test.createTestingModule({
+        providers: [
+          MailService,
+          {
+            provide: MailerService,
+            useValue: mockMailerService,
+          },
+          {
+            provide: ConfigService,
+            useValue: mockConfigWithoutCreds,
+          },
+        ],
+      }).compile();
+
+      const disabledService = module.get<MailService>(MailService);
+      mockMailerService.sendMail.mockResolvedValue({ messageId: 'msg-123' });
+
+      await disabledService.sendAdminInvite(
+        'test@example.com',
+        'testuser',
+        'token',
+        'sender',
+      );
+
+      // Email is still sent even with missing config (try-catch handles errors)
+      expect(mockMailerService.sendMail).toHaveBeenCalled();
+    });
+  });
+
+  describe('sendAdminApproval', () => {
+    it('should send admin approval email successfully', async () => {
+      mockMailerService.sendMail.mockResolvedValue({ messageId: 'msg-123' });
+
+      await service.sendAdminApproval('approved@example.com', 'approveduser');
+
+      expect(mockMailerService.sendMail).toHaveBeenCalledWith({
+        to: 'approved@example.com',
+        subject: 'Your SwapBuds Admin Account Has Been Approved',
+        template: './admin-approval',
+        context: {
+          username: 'approveduser',
+          loginUrl: expect.stringContaining('/login'),
+        },
+      });
+    });
+
+    it('should construct correct login URL', async () => {
+      mockMailerService.sendMail.mockResolvedValue({ messageId: 'msg-123' });
+
+      await service.sendAdminApproval('test@example.com', 'testuser');
+
+      const callArgs = mockMailerService.sendMail.mock.calls[0][0];
+      expect(callArgs.context.loginUrl).toBe('undefined/login');
+    });
+
+    it('should handle errors gracefully', async () => {
+      mockMailerService.sendMail.mockRejectedValue(new Error('Send failed'));
+      const errorSpy = jest.spyOn(service['logger'], 'error');
+
+      await service.sendAdminApproval('test@example.com', 'testuser');
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Failed to send admin approval email to test@example.com',
+        expect.any(String),
+      );
+    });
+
+    it('should handle missing config gracefully', async () => {
+      const mockConfigWithoutCreds = {
+        get: jest.fn().mockReturnValue(undefined),
+      };
+
+      const module = await Test.createTestingModule({
+        providers: [
+          MailService,
+          {
+            provide: MailerService,
+            useValue: mockMailerService,
+          },
+          {
+            provide: ConfigService,
+            useValue: mockConfigWithoutCreds,
+          },
+        ],
+      }).compile();
+
+      const disabledService = module.get<MailService>(MailService);
+      mockMailerService.sendMail.mockResolvedValue({ messageId: 'msg-123' });
+
+      await disabledService.sendAdminApproval('test@example.com', 'testuser');
+
+      expect(mockMailerService.sendMail).toHaveBeenCalled();
+    });
+  });
+
+  describe('sendAdminRejection', () => {
+    it('should send admin rejection email with reason', async () => {
+      mockMailerService.sendMail.mockResolvedValue({ messageId: 'msg-123' });
+
+      await service.sendAdminRejection(
+        'rejected@example.com',
+        'rejecteduser',
+        'Not qualified',
+      );
+
+      expect(mockMailerService.sendMail).toHaveBeenCalledWith({
+        to: 'rejected@example.com',
+        subject: 'SwapBuds Admin Application Update',
+        template: './admin-rejection',
+        context: {
+          username: 'rejecteduser',
+          reason: 'Not qualified',
+        },
+      });
+    });
+
+    it('should send rejection email without reason', async () => {
+      mockMailerService.sendMail.mockResolvedValue({ messageId: 'msg-123' });
+
+      await service.sendAdminRejection('rejected@example.com', 'rejecteduser');
+
+      expect(mockMailerService.sendMail).toHaveBeenCalledWith({
+        to: 'rejected@example.com',
+        subject: 'SwapBuds Admin Application Update',
+        template: './admin-rejection',
+        context: {
+          username: 'rejecteduser',
+          reason: 'No specific reason provided',
+        },
+      });
+    });
+
+    it('should provide default reason when undefined', async () => {
+      mockMailerService.sendMail.mockResolvedValue({ messageId: 'msg-123' });
+
+      await service.sendAdminRejection(
+        'test@example.com',
+        'testuser',
+        undefined,
+      );
+
+      const callArgs = mockMailerService.sendMail.mock.calls[0][0];
+      expect(callArgs.context.reason).toBe('No specific reason provided');
+    });
+
+    it('should handle errors gracefully', async () => {
+      mockMailerService.sendMail.mockRejectedValue(new Error('Send failed'));
+      const errorSpy = jest.spyOn(service['logger'], 'error');
+
+      await service.sendAdminRejection(
+        'test@example.com',
+        'testuser',
+        'reason',
+      );
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Failed to send admin rejection email to test@example.com',
+        expect.any(String),
+      );
+    });
+
+    it('should handle missing config gracefully', async () => {
+      const mockConfigWithoutCreds = {
+        get: jest.fn().mockReturnValue(undefined),
+      };
+
+      const module = await Test.createTestingModule({
+        providers: [
+          MailService,
+          {
+            provide: MailerService,
+            useValue: mockMailerService,
+          },
+          {
+            provide: ConfigService,
+            useValue: mockConfigWithoutCreds,
+          },
+        ],
+      }).compile();
+
+      const disabledService = module.get<MailService>(MailService);
+      mockMailerService.sendMail.mockResolvedValue({ messageId: 'msg-123' });
+
+      await disabledService.sendAdminRejection(
+        'test@example.com',
+        'testuser',
+        'reason',
+      );
+
+      expect(mockMailerService.sendMail).toHaveBeenCalled();
+    });
+  });
+
   describe('error handling', () => {
     it('should not throw errors when email fails', async () => {
       mockMailerService.sendMail.mockRejectedValue(
