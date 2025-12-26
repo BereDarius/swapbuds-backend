@@ -1,5 +1,6 @@
 import { AdminRoles } from '@/admin-auth/decorators/admin-roles.decorator';
 import { AdminJwtAuthGuard } from '@/admin-auth/guards/admin-jwt-auth.guard';
+import { AdminRoleGuard } from '@/admin-auth/guards/admin-role.guard';
 import { CurrentUser } from '@/auth/decorators/auth.decorators';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 import {
@@ -33,7 +34,6 @@ import { VerificationService } from './verification.service';
  */
 @ApiTags('Verification')
 @Controller('verification')
-@UseGuards(JwtAuthGuard)
 export class VerificationController {
   constructor(private readonly verificationService: VerificationService) {}
 
@@ -41,6 +41,7 @@ export class VerificationController {
    * Submit ID verification request
    */
   @Post()
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Submit ID verification request',
@@ -68,6 +69,7 @@ export class VerificationController {
    * Get user's own verification status
    */
   @Get('me')
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get own verification status',
@@ -87,6 +89,7 @@ export class VerificationController {
    * Cancel pending verification request
    */
   @Delete('me')
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Cancel pending verification request',
@@ -105,7 +108,7 @@ export class VerificationController {
    * Admin: Get all pending verifications
    */
   @Get('admin/pending')
-  @UseGuards(AdminJwtAuthGuard)
+  @UseGuards(AdminJwtAuthGuard, AdminRoleGuard)
   @AdminRoles(AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({

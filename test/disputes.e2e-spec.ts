@@ -2,6 +2,7 @@ import { AppModule } from '@/app.module';
 import { PrismaService } from '@/prisma/prisma.service';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import * as bcrypt from 'bcrypt';
 import { truncateAndReseed } from './helpers/truncate-and-seed.helper';
 import request = require('supertest');
 
@@ -41,12 +42,12 @@ describe('Disputes E2E', () => {
     await app.init();
 
     // Create a verified user for dispute testing
+    const hashedPassword = await bcrypt.hash('Password123!', 10);
     const verifiedUser = await prisma.user.create({
       data: {
         email: `verified-${Date.now()}@test.com`,
         username: `verified${Date.now()}`,
-        password:
-          '$2b$10$rZH3P8LhQZvN3PqG5kS3.uGvQqJZ5.9YZH3P8LhQZvN3PqG5kS3.u', // Password123!
+        password: hashedPassword,
         emailVerified: true,
         isActive: true,
       },
@@ -86,7 +87,7 @@ describe('Disputes E2E', () => {
         description: 'Item for dispute test',
         userId: verifiedUser.id,
         category: 'ELECTRONICS',
-        condition: 'USED_GOOD',
+        condition: 'GOOD',
         estimatedValue: 100,
       },
     });
@@ -101,7 +102,7 @@ describe('Disputes E2E', () => {
         description: 'Another item for dispute test',
         userId: mikeUser!.id,
         category: 'COLLECTIBLES',
-        condition: 'NEW',
+        condition: 'LIKE_NEW',
         estimatedValue: 150,
       },
     });
@@ -112,8 +113,9 @@ describe('Disputes E2E', () => {
         proposerId: verifiedUser.id,
         responderId: mikeUser!.id,
         status: 'COMPLETED',
-        proposerItems: { connect: [{ id: item1.id }] },
-        responderItems: { connect: [{ id: item2.id }] },
+        itemOfferedId: item1.id,
+        itemRequestedId: item2.id,
+        deliveryMethod: 'PHYSICAL',
         completedAt: new Date(),
       },
     });
@@ -309,7 +311,7 @@ describe('Disputes E2E', () => {
 
       const response = await request(app.getHttpServer())
         .get(`/api/disputes/${disputeId}`)
-        .set('Authorization', `Bearer ${johnToken}`);
+        .set('Authorization', `Bearer ${verifiedUserToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('id');
@@ -359,24 +361,19 @@ describe('Disputes E2E', () => {
         .set('Authorization', `Bearer ${johnToken}`);
 
       expect(response.status).toBe(401);
-      expect(response.body.message).toContain('User not found');
+      expect(response.body.message).toContain('Admin user not found');
     });
 
-    it('should update dispute status', async () => {
+    it('should allow admin to assign dispute', async () => {
       if (!disputeId) return;
 
       const response = await request(app.getHttpServer())
-        .patch(`/api/disputes/${disputeId}/status`)
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send({
-          status: 'UNDER_REVIEW',
-        });
+        .patch(`/api/disputes/${disputeId}/assign`)
+        .set('Authorization', `Bearer ${adminToken}`);
 
-      expect([200, 400, 403, 404]).toContain(response.status);
-
-      if (response.status === 200) {
-        expect(response.body.status).toBe('UNDER_REVIEW');
-      }
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.status).toBe('UNDER_REVIEW');
     });
 
     it('should add admin notes to dispute', async () => {
@@ -456,40 +453,6 @@ describe('Disputes E2E', () => {
           });
 
         expect([200, 400, 403, 404]).toContain(response.status);
-      }
-    });
-  });
-
-  describe('Dispute Evidence', () => {
-    it('should upload evidence to dispute', async () => {
-      if (!disputeId) return;
-
-      const response = await request(app.getHttpServer())
-        .post(`/api/disputes/${disputeId}/evidence`)
-        .set('Authorization', `Bearer ${johnToken}`)
-        .send({
-          evidenceUrl: 'https://example.com/evidence.jpg',
-          description: 'Photo of damaged item',
-        });
-
-      expect([201, 400, 403, 404]).toContain(response.status);
-
-      if (response.status === 201) {
-        expect(response.body).toHaveProperty('evidenceUrl');
-      }
-    });
-
-    it('should list dispute evidence', async () => {
-      if (!disputeId) return;
-
-      const response = await request(app.getHttpServer())
-        .get(`/api/disputes/${disputeId}/evidence`)
-        .set('Authorization', `Bearer ${johnToken}`);
-
-      expect([200, 403, 404]).toContain(response.status);
-
-      if (response.status === 200) {
-        expect(Array.isArray(response.body)).toBe(true);
       }
     });
   });

@@ -104,15 +104,26 @@ describe('Verification E2E', () => {
     });
 
     it('should prevent duplicate submissions', async () => {
-      // Maria already has PENDING verification from seed
-      const response = await request(app.getHttpServer())
+      // First submit a verification for Maria
+      await request(app.getHttpServer())
         .post('/api/verification')
         .set('Authorization', `Bearer ${userToken}`)
         .send({
           documentType: 'ID_CARD',
-          documentUrlFront: 'https://example.com/id-front.jpg',
-          documentUrlBack: 'https://example.com/id-back.jpg',
-          selfieUrl: 'https://example.com/selfie.jpg',
+          documentUrlFront: 'https://example.com/id-front-maria.jpg',
+          documentUrlBack: 'https://example.com/id-back-maria.jpg',
+          selfieUrl: 'https://example.com/selfie-maria.jpg',
+        });
+
+      // Now try to submit again - should be rejected
+      const response = await request(app.getHttpServer())
+        .post('/api/verification')
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({
+          documentType: 'PASSPORT',
+          documentUrlFront: 'https://example.com/passport.jpg',
+          documentUrlBack: 'https://example.com/passport-back.jpg',
+          selfieUrl: 'https://example.com/selfie2.jpg',
         });
 
       expect(response.status).toBe(400);
@@ -198,6 +209,7 @@ describe('Verification E2E', () => {
         .get('/api/verification/admin/pending')
         .set('Authorization', `Bearer ${adminToken}`);
 
+      // AdminJwtAuthGuard requires ADMIN role
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('verifications');
       expect(Array.isArray(response.body.verifications)).toBe(true);
