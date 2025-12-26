@@ -36,8 +36,13 @@ export default () => ({
 
   // CORS (Cross-Origin Resource Sharing) settings
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000', // Allowed origin for requests
-    credentials: true, // Allow cookies and authorization headers
+    // Support multiple frontend origins (user frontend + admin frontend)
+    // In production: https://app.swapbuds.com,https://admin.swapbuds.com
+    // In development: localhost:5173 (SvelteKit), localhost:4200 (Angular), localhost:3000 (Next.js legacy)
+    origin:
+      process.env.CORS_ORIGINS ||
+      'http://localhost:3000,http://localhost:5173,http://localhost:4200',
+    credentials: true, // Allow cookies and authorization headers (required for HTTP-only cookies)
   },
 
   // Rate limiting settings (prevents API abuse)

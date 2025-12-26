@@ -57,8 +57,8 @@ async function bootstrap() {
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-  // Global prefix
-  app.setGlobalPrefix('api');
+  // Global prefix - API versioning v1
+  app.setGlobalPrefix('api/v1');
 
   // Security - Helmet with enhanced configuration
   app.use(
@@ -140,9 +140,14 @@ async function bootstrap() {
   // Swagger Documentation
   if (nodeEnv !== 'production') {
     const config = new DocumentBuilder()
-      .setTitle('SWAPBUDS API')
-      .setDescription('Trading platform API documentation')
-      .setVersion('1.1.3')
+      .setTitle('SWAPBUDS API v1')
+      .setDescription(
+        'Trading platform API documentation\n\n' +
+          '**API Version:** v1.6.0\n' +
+          '**Base URL:** /api/v1\n\n' +
+          'All endpoints are now versioned under `/api/v1/*`',
+      )
+      .setVersion('1.6.0')
       .addBearerAuth(
         {
           type: 'http',
@@ -154,7 +159,8 @@ async function bootstrap() {
         },
         'access-token',
       )
-      .addTag('Auth', 'Authentication and authorization endpoints')
+      .addTag('Auth', 'User authentication and authorization')
+      .addTag('Admin Auth', 'Admin authentication and authorization')
       .addTag('Users', 'User profile and account management')
       .addTag('Items', 'Item listing and management')
       .addTag('Likes', 'Like and favorite items')
