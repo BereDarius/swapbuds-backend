@@ -31,11 +31,12 @@ describe('MessagesGateway', () => {
 
   describe('handleSubscribe', () => {
     it('should allow a user to subscribe to their room', () => {
+      const userId = 'user-123';
       const mockClient: any = {
         id: 'socket-123',
         join: jest.fn(),
+        data: { userId }, // Mock WsJwtGuard setting userId
       };
-      const userId = 'user-123';
 
       const result = gateway.handleSubscribe(mockClient, userId);
 
@@ -44,18 +45,36 @@ describe('MessagesGateway', () => {
         success: true,
         message: 'Subscribed to messages',
       });
-      expect((mockClient as any).userId).toBe(userId);
+    });
+
+    it('should reject subscription to another user', () => {
+      const authenticatedUserId = 'user-123';
+      const attemptedUserId = 'user-456';
+      const mockClient: any = {
+        id: 'socket-123',
+        join: jest.fn(),
+        data: { userId: authenticatedUserId }, // Authenticated as user-123
+      };
+
+      const result = gateway.handleSubscribe(mockClient, attemptedUserId);
+
+      expect(mockClient.join).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        success: false,
+        message: 'Cannot subscribe to another user',
+      });
     });
   });
 
   describe('handleUnsubscribe', () => {
     it('should allow a user to unsubscribe from their room', () => {
+      const userId = 'user-123';
       const mockClient: any = {
         id: 'socket-123',
         join: jest.fn(),
         leave: jest.fn(),
+        data: { userId }, // Mock WsJwtGuard setting userId
       };
-      const userId = 'user-123';
 
       // First subscribe
       gateway.handleSubscribe(mockClient, userId);
@@ -73,9 +92,10 @@ describe('MessagesGateway', () => {
 
   describe('handleTyping', () => {
     it('should broadcast typing status to conversation', () => {
+      const userId = 'user-123';
       const mockClient: any = {
         id: 'socket-123',
-        userId: 'user-123',
+        data: { userId }, // Mock WsJwtGuard setting userId
         to: jest.fn().mockReturnThis(),
         emit: jest.fn(),
       };
@@ -136,12 +156,14 @@ describe('MessagesGateway', () => {
     });
 
     it('should return true for online users', () => {
+      const userId = 'user-123';
       const mockClient: any = {
         id: 'socket-123',
         join: jest.fn(),
+        data: { userId }, // Mock WsJwtGuard setting userId
       };
 
-      gateway.handleSubscribe(mockClient, 'user-123');
+      gateway.handleSubscribe(mockClient, userId);
       expect(gateway.isUserOnline('user-123')).toBe(true);
     });
   });
@@ -152,40 +174,45 @@ describe('MessagesGateway', () => {
     });
 
     it('should return correct count for users with connections', () => {
+      const userId = 'user-123';
       const mockClient1: any = {
         id: 'socket-123',
         join: jest.fn(),
+        data: { userId }, // Mock WsJwtGuard setting userId
       };
       const mockClient2: any = {
         id: 'socket-456',
         join: jest.fn(),
+        data: { userId }, // Mock WsJwtGuard setting userId
       };
 
-      gateway.handleSubscribe(mockClient1, 'user-123');
-      gateway.handleSubscribe(mockClient2, 'user-123');
+      gateway.handleSubscribe(mockClient1, userId);
+      gateway.handleSubscribe(mockClient2, userId);
 
-      expect(gateway.getUserConnectionCount('user-123')).toBe(2);
+      expect(gateway.getUserConnectionCount(userId)).toBe(2);
     });
   });
 
   describe('handleDisconnect', () => {
     it('should clean up user socket mappings on disconnect', () => {
+      const userId = 'user-123';
       const mockClient: any = {
         id: 'socket-123',
         join: jest.fn(),
-        userId: 'user-123',
+        data: { userId }, // Mock WsJwtGuard setting userId
       };
 
-      gateway.handleSubscribe(mockClient, 'user-123');
-      expect(gateway.isUserOnline('user-123')).toBe(true);
+      gateway.handleSubscribe(mockClient, userId);
+      expect(gateway.isUserOnline(userId)).toBe(true);
 
       gateway.handleDisconnect(mockClient);
-      expect(gateway.isUserOnline('user-123')).toBe(false);
+      expect(gateway.isUserOnline(userId)).toBe(false);
     });
 
     it('should handle disconnect for client without userId', () => {
       const mockClient: any = {
         id: 'socket-123',
+        data: {}, // Empty data object
       };
 
       expect(() => gateway.handleDisconnect(mockClient)).not.toThrow();
@@ -309,6 +336,7 @@ describe('MessagesGateway', () => {
     it('should return error for invalid data (missing userId)', () => {
       const mockClient: any = {
         id: 'socket-123',
+        data: {}, // No userId set
         to: jest.fn().mockReturnThis(),
         emit: jest.fn(),
       };
@@ -325,9 +353,10 @@ describe('MessagesGateway', () => {
     });
 
     it('should return error for missing conversationId', () => {
+      const userId = 'user-123';
       const mockClient: any = {
         id: 'socket-123',
-        userId: 'user-123',
+        data: { userId }, // Mock WsJwtGuard setting userId
         to: jest.fn().mockReturnThis(),
         emit: jest.fn(),
       };

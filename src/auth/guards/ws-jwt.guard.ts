@@ -6,6 +6,7 @@ import { Socket } from 'socket.io';
 /**
  * WebSocket JWT authentication guard
  * Validates JWT token from socket handshake
+ * Supports both user and admin user tokens based on namespace
  */
 @Injectable()
 export class WsJwtGuard implements CanActivate {
@@ -20,16 +21,45 @@ export class WsJwtGuard implements CanActivate {
         throw new WsException('Unauthorized: No token provided');
       }
 
-      const payload = await this.jwtService.verifyAsync(token, {
-        secret: process.env.JWT_SECRET,
-      });
+      // Determine expected token type based on namespace
+      const namespace = client.nsp.name;
+      const isAdminNamespace =
+        namespace === '/admin' || namespace.startsWith('/admin/');
+      const isUserNamespace =
+        namespace === '/user' ||
+        namespace.startsWith('/user/') ||
+        namespace === '/';
 
-      // Attach user to socket for later use
-      (client as any).user = payload;
-      (client as any).userId = payload.sub;
+      // Verify token with appropriate secret
+      const secret = isAdminNamespace
+        ? process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET
+        : process.env.JWT_SECRET;
+
+      const payload = await this.jwtService.verifyAsync(token, { secret });
+
+      // Attach payload to socket data for later use
+      client.data.user = payload;
+
+      // Set appropriate ID field based on namespace
+      if (isAdminNamespace) {
+        // Admin namespace: payload.role should exist
+        if (!payload.role) {
+          throw new WsException(
+            'Unauthorized: Admin token required for this namespace',
+          );
+        }
+        client.data.adminUserId = payload.sub;
+        client.data.role = payload.role;
+      } else if (isUserNamespace) {
+        // User namespace: regular user token
+        client.data.userId = payload.sub;
+      }
 
       return true;
     } catch (error) {
+      if (error instanceof WsException) {
+        throw error;
+      }
       throw new WsException('Unauthorized: Invalid token');
     }
   }

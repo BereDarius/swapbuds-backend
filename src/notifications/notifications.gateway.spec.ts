@@ -65,7 +65,7 @@ describe('NotificationsGateway', () => {
 
     it('should remove socket from user socket set', () => {
       const userId = 'user-123';
-      (mockSocket as any).userId = userId;
+      mockSocket.data.userId = userId; // Use data.userId instead of direct userId
 
       // Add socket to user's set
       gateway['userSockets'].set(userId, new Set(['socket-123']));
@@ -78,7 +78,7 @@ describe('NotificationsGateway', () => {
 
     it('should clean up user sockets map when last socket disconnects', () => {
       const userId = 'user-123';
-      (mockSocket as any).userId = userId;
+      mockSocket.data.userId = userId; // Use data.userId instead of direct userId
 
       // Add multiple sockets for the user
       gateway['userSockets'].set(userId, new Set(['socket-123', 'socket-456']));
@@ -103,6 +103,7 @@ describe('NotificationsGateway', () => {
 
   describe('handleSubscribe', () => {
     it('should subscribe client to user room', () => {
+      mockSocket.data.userId = 'user-123'; // Mock WsJwtGuard setting userId
       const result = gateway.handleSubscribe(mockSocket as Socket, 'user-123');
 
       expect(mockSocket.join).toHaveBeenCalledWith('user:user-123');
@@ -112,13 +113,19 @@ describe('NotificationsGateway', () => {
       });
     });
 
-    it('should store userId on socket', () => {
-      gateway.handleSubscribe(mockSocket as Socket, 'user-123');
+    it('should reject subscription to another user', () => {
+      mockSocket.data.userId = 'user-123'; // Authenticated as user-123
+      const result = gateway.handleSubscribe(mockSocket as Socket, 'user-456'); // Try to subscribe to user-456
 
-      expect((mockSocket as any).userId).toBe('user-123');
+      expect(mockSocket.join).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        success: false,
+        message: 'Cannot subscribe to another user',
+      });
     });
 
     it('should add socket to user sockets map', () => {
+      mockSocket.data.userId = 'user-123';
       gateway.handleSubscribe(mockSocket as Socket, 'user-123');
 
       const userSockets = gateway['userSockets'].get('user-123');
@@ -130,9 +137,10 @@ describe('NotificationsGateway', () => {
       const mockSocket2: Partial<Socket> = {
         id: 'socket-456',
         join: jest.fn(),
-        data: {},
+        data: { userId: 'user-123' }, // Mock WsJwtGuard setting userId
       };
 
+      mockSocket.data.userId = 'user-123';
       gateway.handleSubscribe(mockSocket as Socket, 'user-123');
       gateway.handleSubscribe(mockSocket2 as Socket, 'user-123');
 
@@ -145,6 +153,7 @@ describe('NotificationsGateway', () => {
     it('should log subscription', () => {
       const logSpy = jest.spyOn(gateway['logger'], 'log');
 
+      mockSocket.data.userId = 'user-123';
       gateway.handleSubscribe(mockSocket as Socket, 'user-123');
 
       expect(logSpy).toHaveBeenCalledWith(
@@ -156,6 +165,7 @@ describe('NotificationsGateway', () => {
   describe('handleUnsubscribe', () => {
     it('should unsubscribe client from user room', () => {
       // First subscribe
+      mockSocket.data.userId = 'user-123';
       gateway.handleSubscribe(mockSocket as Socket, 'user-123');
 
       const result = gateway.handleUnsubscribe(
@@ -172,6 +182,7 @@ describe('NotificationsGateway', () => {
 
     it('should remove socket from user sockets map', () => {
       // First subscribe
+      mockSocket.data.userId = 'user-123';
       gateway.handleSubscribe(mockSocket as Socket, 'user-123');
       expect(gateway['userSockets'].get('user-123')?.has('socket-123')).toBe(
         true,
@@ -183,6 +194,7 @@ describe('NotificationsGateway', () => {
     });
 
     it('should log unsubscription', () => {
+      mockSocket.data.userId = 'user-123';
       gateway.handleSubscribe(mockSocket as Socket, 'user-123');
       const logSpy = jest.spyOn(gateway['logger'], 'log');
 
@@ -342,22 +354,18 @@ describe('NotificationsGateway', () => {
       const user1Socket1: Partial<Socket> = {
         id: 'socket-1',
         join: jest.fn(),
-        data: {},
+        data: { userId: 'user-1' }, // Mock WsJwtGuard setting userId
       };
       const user1Socket2: Partial<Socket> = {
         id: 'socket-2',
         join: jest.fn(),
-        data: {},
+        data: { userId: 'user-1' }, // Mock WsJwtGuard setting userId
       };
       const user2Socket1: Partial<Socket> = {
         id: 'socket-3',
         join: jest.fn(),
-        data: {},
+        data: { userId: 'user-2' }, // Mock WsJwtGuard setting userId
       };
-
-      (user1Socket1 as any).userId = 'user-1';
-      (user1Socket2 as any).userId = 'user-1';
-      (user2Socket1 as any).userId = 'user-2';
 
       gateway.handleSubscribe(user1Socket1 as Socket, 'user-1');
       gateway.handleSubscribe(user1Socket2 as Socket, 'user-1');

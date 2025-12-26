@@ -11,6 +11,7 @@ describe('SupportChatGateway', () => {
   const mockSocket = {
     id: 'socket-1',
     user: { sub: 'user-1', username: 'testuser' },
+    data: {}, // Add data object for socket.data pattern
     join: jest.fn(),
     leave: jest.fn(),
     to: jest.fn().mockReturnThis(),
@@ -70,15 +71,28 @@ describe('SupportChatGateway', () => {
 
   describe('handleJoin', () => {
     it('should add user to userSockets map', async () => {
+      mockSocket.data.userId = 'user-1'; // Mock WsJwtGuard setting userId
       await gateway.handleJoin(mockSocket, { userId: 'user-1' });
 
       expect(mockSocket.join).toHaveBeenCalledWith('user:user-1');
     });
 
     it('should return success', async () => {
+      mockSocket.data.userId = 'user-1'; // Mock WsJwtGuard setting userId
       const result = await gateway.handleJoin(mockSocket, { userId: 'user-1' });
 
       expect(result).toEqual({ success: true });
+    });
+
+    it('should reject joining as another user', async () => {
+      mockSocket.data.userId = 'user-1'; // Authenticated as user-1
+      const result = await gateway.handleJoin(mockSocket, { userId: 'user-2' }); // Try to join as user-2
+
+      expect(mockSocket.join).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        success: false,
+        message: 'Cannot join as another user',
+      });
     });
   });
 

@@ -14,10 +14,15 @@ import { Server, Socket } from 'socket.io';
 /**
  * WebSocket Gateway for real-time messaging
  * Handles direct messages between users with typing indicators and real-time delivery
+ * Namespace: /user - User-facing events only
  */
 @WebSocketGateway({
+  namespace: '/user',
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: (
+      process.env.CORS_ORIGINS ||
+      'http://localhost:3000,http://localhost:5173,http://localhost:4200'
+    ).split(','),
     credentials: true,
   },
 })
@@ -44,7 +49,7 @@ export class MessagesGateway
     this.logger.log(`Client disconnected: ${client.id}`);
 
     // Remove socket from user's socket set
-    const userId = (client as any).userId;
+    const userId = client.data.userId;
     if (userId) {
       const sockets = this.userSockets.get(userId);
       if (sockets) {
@@ -66,8 +71,19 @@ export class MessagesGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() userId: string,
   ) {
-    // Store userId on socket for disconnection cleanup
-    (client as any).userId = userId;
+    // userId is already set by WsJwtGuard in client.data.userId
+    const authenticatedUserId = client.data.userId;
+
+    // Ensure user can only subscribe to their own messages
+    if (userId !== authenticatedUserId) {
+      this.logger.warn(
+        `User ${authenticatedUserId} attempted to subscribe to ${userId}'s messages`,
+      );
+      return {
+        success: false,
+        message: 'Cannot subscribe to another user',
+      };
+    }
 
     // Join user's room
     client.join(`user:${userId}`);
@@ -117,7 +133,7 @@ export class MessagesGateway
     @MessageBody()
     data: { conversationId: string; isTyping: boolean; username: string },
   ) {
-    const userId = (client as any).userId;
+    const userId = client.data.userId;
 
     if (!userId || !data.conversationId) {
       return { success: false, message: 'Invalid data' };

@@ -12,10 +12,18 @@ import {
 import { Server, Socket } from 'socket.io';
 import { SupportChatService } from './support-chat.service';
 
+/**
+ * WebSocket Gateway for support chat
+ * Handles real-time support conversations between users and support staff
+ * Namespace: /user/support - User-facing support events only
+ */
 @WebSocketGateway({
-  namespace: 'support',
+  namespace: '/user/support',
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: (
+      process.env.CORS_ORIGINS ||
+      'http://localhost:3000,http://localhost:5173,http://localhost:4200'
+    ).split(','),
     credentials: true,
   },
 })
@@ -55,6 +63,20 @@ export class SupportChatGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { userId: string },
   ) {
+    // userId is already set by WsJwtGuard in client.data.userId
+    const authenticatedUserId = client.data.userId;
+
+    // Ensure user can only join with their own ID
+    if (data.userId !== authenticatedUserId) {
+      this.logger.warn(
+        `User ${authenticatedUserId} attempted to join as ${data.userId}`,
+      );
+      return {
+        success: false,
+        message: 'Cannot join as another user',
+      };
+    }
+
     this.userSockets.set(data.userId, client.id);
     client.join(`user:${data.userId}`);
 
