@@ -9,6 +9,15 @@ ADMIN ADMIN
     
 
 
+        AdminStatus {
+            PENDING_APPROVAL PENDING_APPROVAL
+ACTIVE ACTIVE
+SUSPENDED SUSPENDED
+REVOKED REVOKED
+        }
+    
+
+
         UserRole {
             USER USER
 MODERATOR MODERATOR
@@ -26,6 +35,17 @@ DISPUTES DISPUTES
 ADMIN_MANAGEMENT ADMIN_MANAGEMENT
 STATS STATS
 SYSTEM SYSTEM
+        }
+    
+
+
+        AdminInviteStatus {
+            PENDING PENDING
+ACCEPTED ACCEPTED
+APPROVED APPROVED
+REJECTED REJECTED
+REVOKED REVOKED
+EXPIRED EXPIRED
         }
     
 
@@ -289,6 +309,7 @@ COMMUNITY_GUIDELINES COMMUNITY_GUIDELINES
     DateTime updatedAt 
     DateTime lastLoginAt "❓"
     Boolean isActive 
+    AdminStatus status 
     Boolean mfaEnabled 
     }
   
@@ -313,6 +334,23 @@ COMMUNITY_GUIDELINES COMMUNITY_GUIDELINES
     String id "🗝️"
     String grantedBy 
     DateTime grantedAt 
+    }
+  
+
+  "admin_invites" {
+    String id "🗝️"
+    String email 
+    String username 
+    AdminRole role 
+    String token 
+    AdminInviteStatus status 
+    DateTime expiresAt 
+    DateTime sentAt 
+    DateTime acceptedAt "❓"
+    DateTime approvedAt "❓"
+    DateTime rejectedAt "❓"
+    DateTime revokedAt "❓"
+    String rejectionReason "❓"
     }
   
 
@@ -685,10 +723,16 @@ COMMUNITY_GUIDELINES COMMUNITY_GUIDELINES
   
     "users" |o--|| "UserRole" : "enum:role"
     "admin_users" |o--|| "AdminRole" : "enum:role"
+    "admin_users" |o--|| "AdminStatus" : "enum:status"
     "admin_mfa_secrets" |o--|| admin_users : "adminUser"
     "admin_permissions" |o--|| "PermissionCategory" : "enum:category"
     "admin_user_permissions" }o--|| admin_users : "adminUser"
     "admin_user_permissions" }o--|| admin_permissions : "permission"
+    "admin_invites" |o--|| "AdminRole" : "enum:role"
+    "admin_invites" |o--|| "AdminInviteStatus" : "enum:status"
+    "admin_invites" }o--|| admin_users : "sender"
+    "admin_invites" }o--|o admin_users : "approver"
+    "admin_invites" }o--|o admin_users : "recipient"
     "items" |o--|| "ItemCondition" : "enum:condition"
     "items" |o--|| "ItemCategory" : "enum:category"
     "items" |o--|| "ItemStatus" : "enum:status"

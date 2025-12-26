@@ -34,6 +34,15 @@ export default () => ({
     url: process.env.REDIS_URL || 'redis://localhost:6379', // Redis connection URL
   },
 
+  // API URL (this backend's public URL, used for OAuth callbacks, webhooks, etc.)
+  apiUrl: process.env.API_URL || 'http://localhost:3001',
+
+  // Frontend URLs (used in emails, redirects, etc.)
+  frontendUrls: {
+    user: process.env.USER_FRONTEND_URL || 'http://localhost:3000', // Main user-facing app
+    admin: process.env.ADMIN_FRONTEND_URL || 'http://localhost:3001', // Admin panel
+  },
+
   // CORS (Cross-Origin Resource Sharing) settings
   cors: {
     // Support multiple frontend origins (user frontend + admin frontend)

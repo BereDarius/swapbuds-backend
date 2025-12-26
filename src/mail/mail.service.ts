@@ -511,4 +511,91 @@ export class MailService {
       );
     }
   }
+
+  /**
+   * Send admin invitation email
+   */
+  async sendAdminInvite(
+    email: string,
+    username: string,
+    token: string,
+    invitedBy: string,
+  ): Promise<void> {
+    try {
+      const inviteUrl = `${this.configService.get('frontendUrls.admin')}/invite/accept?token=${token}`;
+
+      await this.mailerService.sendMail({
+        to: email,
+        subject: 'You have been invited to join SwapBuds Admin Team',
+        template: './admin-invite',
+        context: {
+          username,
+          invitedBy,
+          inviteUrl,
+          expiresIn: '7 days',
+        },
+      });
+
+      this.logger.log(`Admin invitation email sent to ${email}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to send admin invitation email to ${email}`,
+        error.stack,
+      );
+    }
+  }
+
+  /**
+   * Send admin approval notification
+   */
+  async sendAdminApproval(email: string, username: string): Promise<void> {
+    try {
+      const loginUrl = `${this.configService.get('frontendUrls.admin')}/login`;
+
+      await this.mailerService.sendMail({
+        to: email,
+        subject: 'Your SwapBuds Admin Account Has Been Approved',
+        template: './admin-approval',
+        context: {
+          username,
+          loginUrl,
+        },
+      });
+
+      this.logger.log(`Admin approval email sent to ${email}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to send admin approval email to ${email}`,
+        error.stack,
+      );
+    }
+  }
+
+  /**
+   * Send admin rejection notification
+   */
+  async sendAdminRejection(
+    email: string,
+    username: string,
+    reason?: string,
+  ): Promise<void> {
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: 'SwapBuds Admin Application Update',
+        template: './admin-rejection',
+        context: {
+          username,
+          reason: reason || 'No specific reason provided',
+        },
+      });
+
+      this.logger.log(`Admin rejection email sent to ${email}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to send admin rejection email to ${email}`,
+        error.stack,
+      );
+    }
+  }
 }
