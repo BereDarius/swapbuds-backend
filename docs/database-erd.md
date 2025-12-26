@@ -18,6 +18,18 @@ ADMIN ADMIN
     
 
 
+        PermissionCategory {
+            TICKETS TICKETS
+MODERATION MODERATION
+USERS USERS
+DISPUTES DISPUTES
+ADMIN_MANAGEMENT ADMIN_MANAGEMENT
+STATS STATS
+SYSTEM SYSTEM
+        }
+    
+
+
         ItemCondition {
             NEW NEW
 LIKE_NEW LIKE_NEW
@@ -285,6 +297,22 @@ COMMUNITY_GUIDELINES COMMUNITY_GUIDELINES
     String id "🗝️"
     String secret 
     DateTime createdAt 
+    }
+  
+
+  "admin_permissions" {
+    String id "🗝️"
+    String name 
+    String description 
+    PermissionCategory category 
+    DateTime createdAt 
+    }
+  
+
+  "admin_user_permissions" {
+    String id "🗝️"
+    String grantedBy 
+    DateTime grantedAt 
     }
   
 
@@ -658,6 +686,9 @@ COMMUNITY_GUIDELINES COMMUNITY_GUIDELINES
     "users" |o--|| "UserRole" : "enum:role"
     "admin_users" |o--|| "AdminRole" : "enum:role"
     "admin_mfa_secrets" |o--|| admin_users : "adminUser"
+    "admin_permissions" |o--|| "PermissionCategory" : "enum:category"
+    "admin_user_permissions" }o--|| admin_users : "adminUser"
+    "admin_user_permissions" }o--|| admin_permissions : "permission"
     "items" |o--|| "ItemCondition" : "enum:condition"
     "items" |o--|| "ItemCategory" : "enum:category"
     "items" |o--|| "ItemStatus" : "enum:status"

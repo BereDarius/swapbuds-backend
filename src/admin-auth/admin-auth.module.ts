@@ -5,12 +5,15 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AdminAuthController } from './admin-auth.controller';
 import { AdminAuthService } from './admin-auth.service';
+import { PermissionsController } from './permissions.controller';
+import { PermissionsService } from './permissions.service';
 import { AdminJwtStrategy } from './strategies/admin-jwt.strategy';
 
 /**
  * Admin Authentication Module
  *
  * Provides admin-specific authentication with separate JWT strategy.
+ * Includes granular permissions system for MODERATOR and SUPPORT roles.
  * Completely isolated from regular user authentication.
  */
 @Module({
@@ -30,8 +33,8 @@ import { AdminJwtStrategy } from './strategies/admin-jwt.strategy';
       }),
     }),
   ],
-  controllers: [AdminAuthController],
-  providers: [AdminAuthService, AdminJwtStrategy],
-  exports: [AdminAuthService],
+  controllers: [AdminAuthController, PermissionsController],
+  providers: [AdminAuthService, AdminJwtStrategy, PermissionsService],
+  exports: [AdminAuthService, PermissionsService],
 })
 export class AdminAuthModule {}

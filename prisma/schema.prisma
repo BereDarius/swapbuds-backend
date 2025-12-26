@@ -155,6 +155,9 @@ model AdminUser {
   mfaEnabled Boolean         @default(false)
   mfaSecret  AdminMFASecret?
 
+  // Permissions
+  permissions AdminUserPermission[]
+
   // Relations - Admin-only operations
   // Relations
   auditLogsPerformed      AuditLog[]       @relation("AdminAuditLogs")
@@ -184,6 +187,58 @@ model AdminMFASecret {
   adminUser AdminUser @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
 
   @@map("admin_mfa_secrets")
+}
+
+// ============================================
+// ADMIN PERMISSIONS SYSTEM
+// ============================================
+
+/// Permission categories for organizing permissions
+enum PermissionCategory {
+  TICKETS // Ticketing system permissions
+  MODERATION // Content moderation permissions
+  USERS // User management permissions
+  DISPUTES // Dispute resolution permissions
+  ADMIN_MANAGEMENT // Admin user management permissions
+  STATS // Statistics and analytics permissions
+  SYSTEM // System configuration permissions
+}
+
+/// Individual permission that can be granted to admin users
+model AdminPermission {
+  id          String             @id @default(cuid())
+  name        String             @unique // e.g., "tickets:view", "tickets:assign", "tickets:close"
+  description String // Human-readable description
+  category    PermissionCategory
+  createdAt   DateTime           @default(now())
+
+  // Relations
+  adminUsers AdminUserPermission[]
+
+  @@index([category])
+  @@index([name])
+  @@map("admin_permissions")
+}
+
+/// Junction table linking admin users to their permissions
+model AdminUserPermission {
+  id String @id @default(cuid())
+
+  adminUserId  String
+  permissionId String
+
+  // Who granted this permission and when
+  grantedBy String
+  grantedAt DateTime @default(now())
+
+  // Relations
+  adminUser  AdminUser       @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+  permission AdminPermission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([adminUserId, permissionId])
+  @@index([adminUserId])
+  @@index([permissionId])
+  @@map("admin_user_permissions")
 }
 
 // ============================================
