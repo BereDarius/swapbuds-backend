@@ -1,5 +1,7 @@
+import { AdminRoles } from '@/admin-auth/decorators/admin-roles.decorator';
+import { AdminJwtAuthGuard } from '@/admin-auth/guards/admin-jwt-auth.guard';
+import { AdminRoleGuard } from '@/admin-auth/guards/admin-role.guard';
 import { CurrentUser } from '@/auth/decorators/auth.decorators';
-import { AdminGuard } from '@/auth/guards/admin.guard';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 import {
   Body,
@@ -19,6 +21,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { AdminRole } from '@prisma/client';
 import { VerificationResponseDto } from './dto/verification-response.dto';
 import {
   ReviewVerificationDto,
@@ -31,7 +34,6 @@ import { VerificationService } from './verification.service';
  */
 @ApiTags('Verification')
 @Controller('verification')
-@UseGuards(JwtAuthGuard)
 export class VerificationController {
   constructor(private readonly verificationService: VerificationService) {}
 
@@ -39,6 +41,7 @@ export class VerificationController {
    * Submit ID verification request
    */
   @Post()
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Submit ID verification request',
@@ -66,6 +69,7 @@ export class VerificationController {
    * Get user's own verification status
    */
   @Get('me')
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get own verification status',
@@ -85,6 +89,7 @@ export class VerificationController {
    * Cancel pending verification request
    */
   @Delete('me')
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Cancel pending verification request',
@@ -103,7 +108,8 @@ export class VerificationController {
    * Admin: Get all pending verifications
    */
   @Get('admin/pending')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminJwtAuthGuard, AdminRoleGuard)
+  @AdminRoles(AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({
     summary: '[Admin] Get pending verification requests',
@@ -130,7 +136,8 @@ export class VerificationController {
    * Admin: Get verification statistics
    */
   @Get('admin/stats')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({
     summary: '[Admin] Get verification statistics',
@@ -145,7 +152,8 @@ export class VerificationController {
    * Admin: Get specific verification by ID
    */
   @Get('admin/:id')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({
     summary: '[Admin] Get verification by ID',
@@ -161,7 +169,8 @@ export class VerificationController {
    * Admin: Get signed URL for viewing document
    */
   @Get('admin/:id/document-url')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({
     summary: '[Admin] Get signed document URL',
@@ -205,7 +214,8 @@ export class VerificationController {
    * Admin: Approve verification
    */
   @Patch('admin/:id/approve')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({
     summary: '[Admin] Approve verification',
@@ -230,7 +240,8 @@ export class VerificationController {
    * Admin: Reject verification
    */
   @Patch('admin/:id/reject')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({
     summary: '[Admin] Reject verification',
@@ -254,7 +265,8 @@ export class VerificationController {
    * Admin: Update internal notes
    */
   @Patch('admin/:id/notes')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({
     summary: '[Admin] Update internal notes',

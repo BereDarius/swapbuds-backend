@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { SupportChatStatus, SupportPriority, UserRole } from '@prisma/client';
+import { SupportChatStatus, SupportPriority } from '@prisma/client';
 import { SupportQueueService } from './support-queue.service';
 
 export interface CreateChatDto {
@@ -85,7 +85,7 @@ export class SupportChatService {
     await this.prisma.supportMessage.create({
       data: {
         chatId: chat.id,
-        senderId: userId,
+        userSenderId: userId,
         message: dto.initialMessage,
       },
     });
@@ -104,8 +104,9 @@ export class SupportChatService {
 
   /**
    * Get chat details
+   * Access: User who created chat or assigned agent
    */
-  async getChat(chatId: string, userId: string, userRole: UserRole) {
+  async getChat(chatId: string, userId: string) {
     const chat = await this.prisma.supportChat.findUnique({
       where: { id: chatId },
       include: {
@@ -127,7 +128,13 @@ export class SupportChatService {
         messages: {
           orderBy: { createdAt: 'asc' },
           include: {
-            sender: {
+            userSender: {
+              select: {
+                id: true,
+                username: true,
+              },
+            },
+            adminSender: {
               select: {
                 id: true,
                 username: true,
@@ -143,13 +150,11 @@ export class SupportChatService {
       throw new NotFoundException('Chat not found');
     }
 
-    // Check access permissions
+    // Check access permissions: user or assigned agent
     const isUser = chat.userId === userId;
     const isAgent = chat.agentId === userId;
-    const isAdmin =
-      userRole === UserRole.ADMIN || userRole === UserRole.SUPPORT;
 
-    if (!isUser && !isAgent && !isAdmin) {
+    if (!isUser && !isAgent) {
       throw new ForbiddenException('You do not have access to this chat');
     }
 
@@ -223,13 +228,9 @@ export class SupportChatService {
 
   /**
    * Send a message in a chat
+   * Access: User who created chat or assigned agent
    */
-  async sendMessage(
-    chatId: string,
-    userId: string,
-    dto: SendMessageDto,
-    userRole: UserRole,
-  ) {
+  async sendMessage(chatId: string, userId: string, dto: SendMessageDto) {
     const chat = await this.prisma.supportChat.findUnique({
       where: { id: chatId },
       select: {
@@ -247,10 +248,8 @@ export class SupportChatService {
     // Check if user has access to this chat
     const isUser = chat.userId === userId;
     const isAgent = chat.agentId === userId;
-    const isAdmin =
-      userRole === UserRole.ADMIN || userRole === UserRole.SUPPORT;
 
-    if (!isUser && !isAgent && !isAdmin) {
+    if (!isUser && !isAgent) {
       throw new ForbiddenException('You do not have access to this chat');
     }
 
@@ -265,11 +264,11 @@ export class SupportChatService {
     const message = await this.prisma.supportMessage.create({
       data: {
         chatId,
-        senderId: userId,
+        userSenderId: userId,
         message: dto.message,
       },
       include: {
-        sender: {
+        userSender: {
           select: {
             id: true,
             username: true,
@@ -325,7 +324,7 @@ export class SupportChatService {
       await this.prisma.supportMessage.create({
         data: {
           chatId,
-          senderId: agentId,
+          adminSenderId: agentId,
           message: `Chat resolved: ${dto.resolution}`,
           isSystem: true,
         },
@@ -338,7 +337,7 @@ export class SupportChatService {
   /**
    * Close a chat (by user or agent)
    */
-  async closeChat(chatId: string, userId: string, userRole: UserRole) {
+  async closeChat(chatId: string, userId: string) {
     const chat = await this.prisma.supportChat.findUnique({
       where: { id: chatId },
       select: {
@@ -353,13 +352,11 @@ export class SupportChatService {
       throw new NotFoundException('Chat not found');
     }
 
-    // Check permissions
+    // Check permissions: user or assigned agent
     const isUser = chat.userId === userId;
     const isAgent = chat.agentId === userId;
-    const isAdmin =
-      userRole === UserRole.ADMIN || userRole === UserRole.SUPPORT;
 
-    if (!isUser && !isAgent && !isAdmin) {
+    if (!isUser && !isAgent) {
       throw new ForbiddenException('You do not have access to this chat');
     }
 
@@ -381,7 +378,7 @@ export class SupportChatService {
     await this.prisma.supportMessage.create({
       data: {
         chatId,
-        senderId: userId,
+        userSenderId: userId,
         message: 'Chat closed',
         isSystem: true,
       },

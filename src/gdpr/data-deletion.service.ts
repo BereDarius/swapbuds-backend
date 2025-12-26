@@ -194,7 +194,7 @@ export class DataDeletionService {
 
       // Delete support chat messages
       this.prisma.supportMessage.deleteMany({
-        where: { senderId: userId },
+        where: { userSenderId: userId },
       }),
 
       // Delete support chats as user

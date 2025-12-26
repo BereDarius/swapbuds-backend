@@ -114,7 +114,6 @@ describe('AdminController', () => {
         page: 1,
         limit: 10,
         search: 'john',
-        role: UserRole.USER,
         isActive: true,
       });
     });
@@ -203,32 +202,6 @@ describe('AdminController', () => {
         'user-1',
         'admin-1',
         'Appeal accepted',
-      );
-    });
-  });
-
-  describe('changeUserRole', () => {
-    it('should change user role', async () => {
-      const mockUpdatedUser = {
-        id: 'user-1',
-        username: 'john_doe',
-        role: UserRole.MODERATOR,
-        isAdmin: false,
-      };
-
-      mockAdminService.changeUserRole.mockResolvedValue(mockUpdatedUser);
-
-      const result = await controller.changeUserRole('user-1', 'admin-1', {
-        role: UserRole.MODERATOR,
-        reason: 'Promoted',
-      });
-
-      expect(result).toEqual(mockUpdatedUser);
-      expect(mockAdminService.changeUserRole).toHaveBeenCalledWith(
-        'user-1',
-        UserRole.MODERATOR,
-        'admin-1',
-        'Promoted',
       );
     });
   });
@@ -364,45 +337,6 @@ describe('AdminController', () => {
         ['user-1', 'user-2'],
         'admin-1',
         'Appeals accepted',
-      );
-    });
-  });
-
-  describe('bulkChangeRole', () => {
-    it('should change roles for multiple users at once', async () => {
-      const mockResponse = {
-        success: true,
-        updatedCount: 2,
-        updatedUsers: [
-          {
-            id: 'user-1',
-            username: 'john_doe',
-            oldRole: UserRole.USER,
-            newRole: UserRole.MODERATOR,
-          },
-          {
-            id: 'user-2',
-            username: 'jane_doe',
-            oldRole: UserRole.USER,
-            newRole: UserRole.MODERATOR,
-          },
-        ],
-      };
-
-      mockAdminService.bulkChangeRole.mockResolvedValue(mockResponse);
-
-      const result = await controller.bulkChangeRole('admin-1', {
-        userIds: ['user-1', 'user-2'],
-        role: UserRole.MODERATOR,
-        reason: 'Promoted to moderators',
-      });
-
-      expect(result).toEqual(mockResponse);
-      expect(mockAdminService.bulkChangeRole).toHaveBeenCalledWith(
-        ['user-1', 'user-2'],
-        UserRole.MODERATOR,
-        'admin-1',
-        'Promoted to moderators',
       );
     });
   });

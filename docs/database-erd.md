@@ -1,13 +1,21 @@
 ```mermaid
 erDiagram
 
+        AdminRole {
+            SUPPORT SUPPORT
+MODERATOR MODERATOR
+ADMIN ADMIN
+        }
+    
+
+
         UserRole {
             USER USER
 MODERATOR MODERATOR
 SUPPORT SUPPORT
 ADMIN ADMIN
         }
-
+    
 
 
         ItemCondition {
@@ -18,7 +26,7 @@ GOOD GOOD
 FAIR FAIR
 POOR POOR
         }
-
+    
 
 
         ItemStatus {
@@ -27,7 +35,7 @@ IN_TRADE IN_TRADE
 TRADED TRADED
 REMOVED REMOVED
         }
-
+    
 
 
         ItemCategory {
@@ -40,21 +48,21 @@ COLLECTIBLES COLLECTIBLES
 HOME HOME
 OTHER OTHER
         }
-
+    
 
 
         DeliveryMethod {
             PHYSICAL PHYSICAL
 MAIL MAIL
         }
-
+    
 
 
         DeliveryScope {
             NATIONAL NATIONAL
 INTERNATIONAL INTERNATIONAL
         }
-
+    
 
 
         TradeStatus {
@@ -65,14 +73,14 @@ COMPLETED COMPLETED
 CANCELLED CANCELLED
 EXPIRED EXPIRED
         }
-
+    
 
 
         TradeItemSide {
             OFFERED OFFERED
 REQUESTED REQUESTED
         }
-
+    
 
 
         CounterOfferStatus {
@@ -81,7 +89,7 @@ ACCEPTED ACCEPTED
 REJECTED REJECTED
 EXPIRED EXPIRED
         }
-
+    
 
 
         NotificationType {
@@ -96,7 +104,7 @@ NEW_LIKE NEW_LIKE
 NEW_REVIEW NEW_REVIEW
 VERIFICATION_SUBMITTED VERIFICATION_SUBMITTED
         }
-
+    
 
 
         Theme {
@@ -104,14 +112,14 @@ VERIFICATION_SUBMITTED VERIFICATION_SUBMITTED
 DARK DARK
 AUTO AUTO
         }
-
+    
 
 
         Language {
             EN EN
 RO RO
         }
-
+    
 
 
         DisputeStatus {
@@ -120,7 +128,7 @@ UNDER_REVIEW UNDER_REVIEW
 RESOLVED RESOLVED
 CLOSED CLOSED
         }
-
+    
 
 
         DisputeReason {
@@ -131,7 +139,7 @@ COMMUNICATION_ISSUE COMMUNICATION_ISSUE
 SCAM_ATTEMPT SCAM_ATTEMPT
 OTHER OTHER
         }
-
+    
 
 
         VerificationStatus {
@@ -141,7 +149,7 @@ REJECTED REJECTED
 UNDERAGE UNDERAGE
 CANCELLED CANCELLED
         }
-
+    
 
 
         DocumentType {
@@ -149,7 +157,7 @@ CANCELLED CANCELLED
 PASSPORT PASSPORT
 DRIVERS_LICENSE DRIVERS_LICENSE
         }
-
+    
 
 
         AuditAction {
@@ -167,7 +175,7 @@ MODERATION_APPROVE MODERATION_APPROVE
 MODERATION_REMOVE MODERATION_REMOVE
 OTHER OTHER
         }
-
+    
 
 
         FlagReason {
@@ -180,7 +188,7 @@ MISLEADING MISLEADING
 COPYRIGHT COPYRIGHT
 OTHER OTHER
         }
-
+    
 
 
         ModerationStatus {
@@ -188,7 +196,7 @@ OTHER OTHER
 APPROVED APPROVED
 REMOVED REMOVED
         }
-
+    
 
 
         SupportChatStatus {
@@ -197,7 +205,7 @@ ACTIVE ACTIVE
 RESOLVED RESOLVED
 CLOSED CLOSED
         }
-
+    
 
 
         SupportPriority {
@@ -206,7 +214,7 @@ MEDIUM MEDIUM
 HIGH HIGH
 CRITICAL CRITICAL
         }
-
+    
 
 
         OAuthProvider {
@@ -214,7 +222,7 @@ CRITICAL CRITICAL
 FACEBOOK FACEBOOK
 APPLE APPLE
         }
-
+    
 
 
         LegalDocumentType {
@@ -223,31 +231,31 @@ PRIVACY_POLICY PRIVACY_POLICY
 COOKIE_POLICY COOKIE_POLICY
 COMMUNITY_GUIDELINES COMMUNITY_GUIDELINES
         }
-
+    
   "users" {
     String id "🗝️"
-    String email
-    String username
-    String password
+    String email 
+    String username 
+    String password 
     String avatarUrl "❓"
     String bio "❓"
     String location "❓"
-    Float reputationScore
-    UserRole role
-    DateTime createdAt
-    DateTime updatedAt
+    Float reputationScore 
+    UserRole role 
+    DateTime createdAt 
+    DateTime updatedAt 
     DateTime lastLoginAt "❓"
-    Boolean isActive
-    Boolean isVerified
-    Boolean emailVerified
+    Boolean isActive 
+    Boolean isVerified 
+    Boolean emailVerified 
     String emailVerificationToken "❓"
     DateTime emailVerificationExpires "❓"
     DateTime emailVerificationSentAt "❓"
-    Boolean mfaEnabled
+    Boolean mfaEnabled 
     DateTime deletionRequestedAt "❓"
     DateTime scheduledDeletionAt "❓"
     DateTime dateOfBirth "❓"
-    Boolean selfDeclaredAge18
+    Boolean selfDeclaredAge18 
     DateTime ageVerifiedAt "❓"
     DateTime tosAcceptedAt "❓"
     String tosVersion "❓"
@@ -255,325 +263,348 @@ COMMUNITY_GUIDELINES COMMUNITY_GUIDELINES
     String privacyVersion "❓"
     Json cookieConsent "❓"
     }
+  
 
+  "admin_users" {
+    String id "🗝️"
+    String email 
+    String username 
+    String password 
+    String avatarUrl "❓"
+    AdminRole role 
+    String createdBy "❓"
+    DateTime createdAt 
+    DateTime updatedAt 
+    DateTime lastLoginAt "❓"
+    Boolean isActive 
+    Boolean mfaEnabled 
+    }
+  
+
+  "admin_mfa_secrets" {
+    String id "🗝️"
+    String secret 
+    DateTime createdAt 
+    }
+  
 
   "items" {
     String id "🗝️"
-    String title
-    String description
-    ItemCondition condition
-    ItemCategory category
-    ItemStatus status
-    DeliveryMethod deliveryMethods
-    DeliveryScope deliveryScope
+    String title 
+    String description 
+    ItemCondition condition 
+    ItemCategory category 
+    ItemStatus status 
+    DeliveryMethod deliveryMethods 
+    DeliveryScope deliveryScope 
     Decimal estimatedValue "❓"
-    String currency
-    Int viewCount
-    DateTime createdAt
-    DateTime updatedAt
+    String currency 
+    Int viewCount 
+    DateTime createdAt 
+    DateTime updatedAt 
     }
-
+  
 
   "item_images" {
     String id "🗝️"
-    String url
-    String publicId
-    Int order
-    DateTime createdAt
+    String url 
+    String publicId 
+    Int order 
+    DateTime createdAt 
     }
-
+  
 
   "trades" {
     String id "🗝️"
-    TradeStatus status
-    DeliveryMethod deliveryMethod
+    TradeStatus status 
+    DeliveryMethod deliveryMethod 
     String message "❓"
-    DateTime createdAt
-    DateTime updatedAt
+    DateTime createdAt 
+    DateTime updatedAt 
     DateTime completedAt "❓"
     DateTime expiresAt "❓"
     }
-
+  
 
   "trade_items" {
     String id "🗝️"
-    TradeItemSide side
-    Int order
-    DateTime createdAt
+    TradeItemSide side 
+    Int order 
+    DateTime createdAt 
     }
-
+  
 
   "counter_offers" {
     String id "🗝️"
-    CounterOfferStatus status
+    CounterOfferStatus status 
     String message "❓"
-    DateTime createdAt
-    DateTime updatedAt
+    DateTime createdAt 
+    DateTime updatedAt 
     DateTime expiresAt "❓"
     }
-
+  
 
   "conversations" {
     String id "🗝️"
     DateTime lastMessageAt "❓"
     String lastMessageContent "❓"
     String lastMessageSender "❓"
-    DateTime createdAt
-    DateTime updatedAt
+    DateTime createdAt 
+    DateTime updatedAt 
     }
-
+  
 
   "messages" {
     String id "🗝️"
-    String content
-    String type
-    Boolean isRead
+    String content 
+    String type 
+    Boolean isRead 
     DateTime readAt "❓"
-    Boolean isEdited
+    Boolean isEdited 
     DateTime editedAt "❓"
-    Boolean isDeleted
+    Boolean isDeleted 
     DateTime deletedAt "❓"
     String deleteReason "❓"
-    DateTime createdAt
-    DateTime updatedAt
+    DateTime createdAt 
+    DateTime updatedAt 
     }
-
+  
 
   "message_versions" {
     String id "🗝️"
-    String content
-    String editedBy
-    DateTime createdAt
+    String content 
+    String editedBy 
+    DateTime createdAt 
     }
-
+  
 
   "reviews" {
     String id "🗝️"
-    Int rating
+    Int rating 
     String comment "❓"
-    DateTime createdAt
-    DateTime updatedAt
+    DateTime createdAt 
+    DateTime updatedAt 
     }
-
+  
 
   "likes" {
     String id "🗝️"
-    DateTime createdAt
+    DateTime createdAt 
     }
-
+  
 
   "comments" {
     String id "🗝️"
-    String content
-    Boolean isEdited
+    String content 
+    Boolean isEdited 
     DateTime editedAt "❓"
-    Boolean isDeleted
+    Boolean isDeleted 
     DateTime deletedAt "❓"
     String deleteReason "❓"
-    DateTime createdAt
-    DateTime updatedAt
+    DateTime createdAt 
+    DateTime updatedAt 
     }
-
+  
 
   "comment_versions" {
     String id "🗝️"
-    String content
-    String editedBy
-    DateTime createdAt
+    String content 
+    String editedBy 
+    DateTime createdAt 
     }
-
+  
 
   "comment_likes" {
     String id "🗝️"
-    DateTime createdAt
+    DateTime createdAt 
     }
-
+  
 
   "notifications" {
     String id "🗝️"
-    NotificationType type
-    String title
-    String message
+    NotificationType type 
+    String title 
+    String message 
     Json metadata "❓"
-    Boolean isRead
-    DateTime createdAt
+    Boolean isRead 
+    DateTime createdAt 
     }
-
+  
 
   "notification_preferences" {
     String id "🗝️"
-    Boolean emailTradeProposal
-    Boolean emailTradeAccepted
-    Boolean emailTradeRejected
-    Boolean emailTradeCancelled
-    Boolean emailNewMessage
-    Boolean emailNewComment
-    Boolean emailNewLike
-    Boolean emailNewReview
-    Boolean pushTradeProposal
-    Boolean pushTradeAccepted
-    Boolean pushTradeRejected
-    Boolean pushTradeCancelled
-    Boolean pushNewMessage
-    Boolean pushNewComment
-    Boolean pushNewLike
-    Boolean pushNewReview
-    DateTime createdAt
-    DateTime updatedAt
+    Boolean emailTradeProposal 
+    Boolean emailTradeAccepted 
+    Boolean emailTradeRejected 
+    Boolean emailTradeCancelled 
+    Boolean emailNewMessage 
+    Boolean emailNewComment 
+    Boolean emailNewLike 
+    Boolean emailNewReview 
+    Boolean pushTradeProposal 
+    Boolean pushTradeAccepted 
+    Boolean pushTradeRejected 
+    Boolean pushTradeCancelled 
+    Boolean pushNewMessage 
+    Boolean pushNewComment 
+    Boolean pushNewLike 
+    Boolean pushNewReview 
+    DateTime createdAt 
+    DateTime updatedAt 
     }
-
+  
 
   "user_settings" {
     String id "🗝️"
-    Boolean displayEmail
-    Boolean displayLocation
-    Boolean allowMessages
-    String profileVisibility
-    Boolean showTradeHistory
-    Boolean showReviews
-    Boolean showStatistics
-    Boolean autoDeclineExpiredTrades
-    Boolean allowCounterOffers
-    Boolean requireTradeMessage
-    DeliveryMethod preferredDeliveryMethod
-    String emailDigestFrequency
-    String pushDigestFrequency
-    Theme theme
-    Language language
-    Int itemsPerPage
-    String defaultSortBy
-    Boolean compactView
-    Boolean saveSearchHistory
-    Boolean showSimilarItems
-    Boolean enableRecommendations
-    Boolean highContrast
-    Boolean largeText
-    Boolean reduceMotion
-    Boolean screenReaderMode
-    Boolean marketingEmails
-    Boolean productUpdates
-    Boolean communityNewsletter
-    Boolean twoFactorEnabled
-    Int sessionTimeout
-    DateTime createdAt
-    DateTime updatedAt
+    Boolean displayEmail 
+    Boolean displayLocation 
+    Boolean allowMessages 
+    String profileVisibility 
+    Boolean showTradeHistory 
+    Boolean showReviews 
+    Boolean showStatistics 
+    Boolean autoDeclineExpiredTrades 
+    Boolean allowCounterOffers 
+    Boolean requireTradeMessage 
+    DeliveryMethod preferredDeliveryMethod 
+    String emailDigestFrequency 
+    String pushDigestFrequency 
+    Theme theme 
+    Language language 
+    Int itemsPerPage 
+    String defaultSortBy 
+    Boolean compactView 
+    Boolean saveSearchHistory 
+    Boolean showSimilarItems 
+    Boolean enableRecommendations 
+    Boolean highContrast 
+    Boolean largeText 
+    Boolean reduceMotion 
+    Boolean screenReaderMode 
+    Boolean marketingEmails 
+    Boolean productUpdates 
+    Boolean communityNewsletter 
+    Boolean twoFactorEnabled 
+    Int sessionTimeout 
+    DateTime createdAt 
+    DateTime updatedAt 
     }
-
+  
 
   "disputes" {
     String id "🗝️"
-    DisputeReason reason
-    String description
-    DisputeStatus status
+    DisputeReason reason 
+    String description 
+    DisputeStatus status 
     String adminNotes "❓"
     String resolution "❓"
     DateTime resolvedAt "❓"
-    DateTime createdAt
-    DateTime updatedAt
+    DateTime createdAt 
+    DateTime updatedAt 
     }
-
+  
 
   "user_verifications" {
     String id "🗝️"
-    VerificationStatus status
-    DocumentType documentType
-    String documentUrlFront
+    VerificationStatus status 
+    DocumentType documentType 
+    String documentUrlFront 
     String documentUrlBack "❓"
-    String selfieUrl
+    String selfieUrl 
     DateTime dateOfBirth "❓"
     Boolean isOver18 "❓"
-    DateTime submittedAt
+    DateTime submittedAt 
     DateTime reviewedAt "❓"
     String reviewedBy "❓"
     String rejectionReason "❓"
     String notes "❓"
-    DateTime createdAt
-    DateTime updatedAt
+    DateTime createdAt 
+    DateTime updatedAt 
     }
-
+  
 
   "audit_logs" {
     String id "🗝️"
-    AuditAction action
-    String description
+    AuditAction action 
+    String description 
     String targetType "❓"
     String targetId "❓"
     Json metadata "❓"
     String ipAddress "❓"
-    DateTime createdAt
+    DateTime createdAt 
     }
-
+  
 
   "flagged_items" {
     String id "🗝️"
-    FlagReason reason
+    FlagReason reason 
     String description "❓"
-    ModerationStatus status
+    ModerationStatus status 
     DateTime reviewedAt "❓"
     String reviewNotes "❓"
-    DateTime createdAt
-    DateTime updatedAt
+    DateTime createdAt 
+    DateTime updatedAt 
     }
-
+  
 
   "flagged_comments" {
     String id "🗝️"
-    FlagReason reason
+    FlagReason reason 
     String description "❓"
-    ModerationStatus status
+    ModerationStatus status 
     DateTime reviewedAt "❓"
     String reviewNotes "❓"
-    DateTime createdAt
-    DateTime updatedAt
+    DateTime createdAt 
+    DateTime updatedAt 
     }
-
+  
 
   "recaptcha_logs" {
     String id "🗝️"
-    String action
-    Float score
+    String action 
+    Float score 
     String ip "❓"
-    Boolean success
-    DateTime timestamp
+    Boolean success 
+    DateTime timestamp 
     }
-
+  
 
   "support_chats" {
     String id "🗝️"
-    SupportChatStatus status
-    SupportPriority priority
-    String subject
+    SupportChatStatus status 
+    SupportPriority priority 
+    String subject 
     Int queuePosition "❓"
-    DateTime createdAt
+    DateTime createdAt 
     DateTime startedAt "❓"
     DateTime resolvedAt "❓"
     DateTime closedAt "❓"
-    DateTime updatedAt
+    DateTime updatedAt 
     }
-
+  
 
   "support_messages" {
     String id "🗝️"
-    String message
-    Boolean isSystem
-    DateTime createdAt
+    String message 
+    Boolean isSystem 
+    DateTime createdAt 
     }
-
+  
 
   "mfa_secrets" {
     String id "🗝️"
-    String secret
+    String secret 
     String backupCodes "❓"
     String recoveryEmail "❓"
-    DateTime createdAt
-    DateTime updatedAt
+    DateTime createdAt 
+    DateTime updatedAt 
     }
-
+  
 
   "oauth_accounts" {
     String id "🗝️"
-    OAuthProvider provider
-    String providerId
+    OAuthProvider provider 
+    String providerId 
     String email "❓"
     String name "❓"
     String picture "❓"
@@ -581,50 +612,52 @@ COMMUNITY_GUIDELINES COMMUNITY_GUIDELINES
     String refreshToken "❓"
     DateTime tokenExpiry "❓"
     Json profileData "❓"
-    DateTime createdAt
-    DateTime updatedAt
+    DateTime createdAt 
+    DateTime updatedAt 
     }
-
+  
 
   "legal_documents" {
     String id "🗝️"
-    LegalDocumentType type
-    String version
-    String contentEn
-    String contentRo
-    String title
+    LegalDocumentType type 
+    String version 
+    String contentEn 
+    String contentRo 
+    String title 
     String summary "❓"
-    DateTime effectiveAt
-    Boolean isActive
-    DateTime createdAt
-    DateTime updatedAt
+    DateTime effectiveAt 
+    Boolean isActive 
+    DateTime createdAt 
+    DateTime updatedAt 
     }
-
+  
 
   "legal_consents" {
     String id "🗝️"
-    LegalDocumentType documentType
-    String documentVersion
-    DateTime acceptedAt
+    LegalDocumentType documentType 
+    String documentVersion 
+    DateTime acceptedAt 
     String ipAddress "❓"
     String userAgent "❓"
     Json metadata "❓"
     }
-
+  
 
   "waitlist" {
     String id "🗝️"
-    String email
-    Boolean notified
+    String email 
+    Boolean notified 
     String source "❓"
     String referralCode "❓"
     String userAgent "❓"
     String ipAddress "❓"
-    DateTime createdAt
+    DateTime createdAt 
     DateTime notifiedAt "❓"
     }
-
+  
     "users" |o--|| "UserRole" : "enum:role"
+    "admin_users" |o--|| "AdminRole" : "enum:role"
+    "admin_mfa_secrets" |o--|| admin_users : "adminUser"
     "items" |o--|| "ItemCondition" : "enum:condition"
     "items" |o--|| "ItemCategory" : "enum:category"
     "items" |o--|| "ItemStatus" : "enum:status"
@@ -676,28 +709,33 @@ COMMUNITY_GUIDELINES COMMUNITY_GUIDELINES
     "disputes" }o--|| users : "reportedUser"
     "disputes" |o--|| "DisputeReason" : "enum:reason"
     "disputes" |o--|| "DisputeStatus" : "enum:status"
-    "disputes" }o--|o users : "admin"
+    "disputes" }o--|o admin_users : "admin"
+    "disputes" }o--|o users : "user"
+    "disputes" }o--|o admin_users : "adminUser"
     "user_verifications" |o--|| users : "user"
     "user_verifications" |o--|| "VerificationStatus" : "enum:status"
     "user_verifications" |o--|| "DocumentType" : "enum:documentType"
-    "audit_logs" }o--|| users : "performedBy"
+    "audit_logs" }o--|| admin_users : "performedBy"
     "audit_logs" |o--|| "AuditAction" : "enum:action"
+    "audit_logs" }o--|o users : "user"
+    "audit_logs" }o--|o admin_users : "adminUser"
     "flagged_items" }o--|| items : "item"
     "flagged_items" }o--|| users : "reportedBy"
     "flagged_items" |o--|| "FlagReason" : "enum:reason"
     "flagged_items" |o--|| "ModerationStatus" : "enum:status"
-    "flagged_items" }o--|o users : "reviewedBy"
+    "flagged_items" }o--|o admin_users : "reviewedBy"
     "flagged_comments" }o--|| comments : "comment"
     "flagged_comments" }o--|| users : "reportedBy"
     "flagged_comments" |o--|| "FlagReason" : "enum:reason"
     "flagged_comments" |o--|| "ModerationStatus" : "enum:status"
-    "flagged_comments" }o--|o users : "reviewedBy"
+    "flagged_comments" }o--|o admin_users : "reviewedBy"
     "support_chats" }o--|| users : "user"
-    "support_chats" }o--|o users : "agent"
+    "support_chats" }o--|o admin_users : "agent"
     "support_chats" |o--|| "SupportChatStatus" : "enum:status"
     "support_chats" |o--|| "SupportPriority" : "enum:priority"
     "support_messages" }o--|| support_chats : "chat"
-    "support_messages" }o--|| users : "sender"
+    "support_messages" }o--|o users : "userSender"
+    "support_messages" }o--|o admin_users : "adminSender"
     "mfa_secrets" |o--|| users : "user"
     "oauth_accounts" }o--|| users : "user"
     "oauth_accounts" |o--|| "OAuthProvider" : "enum:provider"

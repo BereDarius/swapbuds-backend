@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { DisputeStatus, TradeStatus, UserRole } from '@prisma/client';
+import { DisputeStatus, TradeStatus } from '@prisma/client';
 import { CreateDisputeDto } from './dto/create-dispute.dto';
 import { DisputeResponseDto } from './dto/dispute-response.dto';
 import { ResolveDisputeDto } from './dto/resolve-dispute.dto';
@@ -134,17 +134,8 @@ export class DisputesService {
       throw new NotFoundException('Dispute not found');
     }
 
-    // Verify user is involved in the dispute or is admin
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { role: true },
-    });
-
-    if (
-      dispute.reporterId !== userId &&
-      dispute.reportedUserId !== userId &&
-      user?.role !== UserRole.ADMIN
-    ) {
+    // Verify user is involved in the dispute (reporter or reported user)
+    if (dispute.reporterId !== userId && dispute.reportedUserId !== userId) {
       throw new ForbiddenException('You do not have access to this dispute');
     }
 

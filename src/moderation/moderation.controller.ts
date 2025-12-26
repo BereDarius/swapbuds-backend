@@ -1,5 +1,6 @@
+import { AdminRoles } from '@/admin-auth/decorators/admin-roles.decorator';
+import { AdminJwtAuthGuard } from '@/admin-auth/guards/admin-jwt-auth.guard';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
-import { ModeratorGuard } from '@/auth/guards/moderator.guard';
 import {
   Body,
   Controller,
@@ -22,7 +23,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { FlagReason, ModerationStatus } from '@prisma/client';
+import { AdminRole, FlagReason, ModerationStatus } from '@prisma/client';
 import {
   BulkApproveFlagsDto,
   BulkRejectFlagsDto,
@@ -89,7 +90,8 @@ export class ModerationController {
    * Get all flagged items (moderators only)
    */
   @Get('items/flagged')
-  @UseGuards(JwtAuthGuard, ModeratorGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.MODERATOR, AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all flagged items' })
   @ApiResponse({ status: 200, description: 'Returns paginated flagged items' })
@@ -132,7 +134,8 @@ export class ModerationController {
    * Get a single flagged item by ID (moderators only)
    */
   @Get('items/flagged/:id')
-  @UseGuards(JwtAuthGuard, ModeratorGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.MODERATOR, AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get a single flagged item' })
   @ApiResponse({ status: 200, description: 'Returns flagged item details' })
@@ -145,7 +148,8 @@ export class ModerationController {
    * Approve a flagged item (dismiss the flag) (moderators only)
    */
   @Patch('items/flagged/:id/approve')
-  @UseGuards(JwtAuthGuard, ModeratorGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.MODERATOR, AdminRole.ADMIN)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Approve a flagged item (dismiss flag)' })
@@ -178,7 +182,8 @@ export class ModerationController {
    * Remove a flagged item (moderators only)
    */
   @Delete('items/flagged/:id')
-  @UseGuards(JwtAuthGuard, ModeratorGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.MODERATOR, AdminRole.ADMIN)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Remove a flagged item' })
@@ -213,7 +218,8 @@ export class ModerationController {
    * Get moderation statistics (moderators only)
    */
   @Get('stats')
-  @UseGuards(JwtAuthGuard, ModeratorGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.MODERATOR, AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get moderation statistics' })
   @ApiResponse({
@@ -228,7 +234,8 @@ export class ModerationController {
    * Bulk approve flagged items (moderators only)
    */
   @Patch('items/flagged/bulk-approve')
-  @UseGuards(JwtAuthGuard, ModeratorGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.MODERATOR, AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Bulk approve flagged items' })
   @ApiResponse({
@@ -251,7 +258,8 @@ export class ModerationController {
    * Bulk reject flagged items (moderators only)
    */
   @Patch('items/flagged/bulk-reject')
-  @UseGuards(JwtAuthGuard, ModeratorGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.MODERATOR, AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Bulk reject flagged items' })
   @ApiResponse({
@@ -274,7 +282,8 @@ export class ModerationController {
    * Bulk remove flagged items (moderators only)
    */
   @Delete('items/flagged/bulk-remove')
-  @UseGuards(JwtAuthGuard, ModeratorGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.MODERATOR, AdminRole.ADMIN)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Bulk remove flagged items' })
@@ -350,7 +359,8 @@ export class ModerationController {
    * Get all flagged comments (moderators only)
    */
   @Get('comments/flagged')
-  @UseGuards(JwtAuthGuard, ModeratorGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.MODERATOR, AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all flagged comments' })
   @ApiResponse({
@@ -396,7 +406,8 @@ export class ModerationController {
    * Approve a flagged comment (dismiss the flag) - moderators only
    */
   @Patch('comments/flagged/:id/approve')
-  @UseGuards(JwtAuthGuard, ModeratorGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.MODERATOR, AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Approve a flagged comment (dismiss flag)' })
   @ApiResponse({ status: 200, description: 'Comment approved successfully' })
@@ -429,7 +440,8 @@ export class ModerationController {
    * Remove a flagged comment (soft delete) - moderators only
    */
   @Delete('comments/flagged/:id/remove')
-  @UseGuards(JwtAuthGuard, ModeratorGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.MODERATOR, AdminRole.ADMIN)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Remove a flagged comment (soft delete)' })

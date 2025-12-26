@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { AuditAction, UserRole } from '@prisma/client';
+import { AuditAction } from '@prisma/client';
 import { AuditLogService } from './audit-log.service';
 
 /**
@@ -94,7 +94,6 @@ export class AdminService {
     page?: number;
     limit?: number;
     search?: string;
-    role?: UserRole;
     isActive?: boolean;
   }) {
     const page = params.page || 1;
@@ -110,10 +109,6 @@ export class AdminService {
       ];
     }
 
-    if (params.role) {
-      where.role = params.role;
-    }
-
     if (params.isActive !== undefined) {
       where.isActive = params.isActive;
     }
@@ -125,7 +120,6 @@ export class AdminService {
           id: true,
           username: true,
           email: true,
-          role: true,
           isActive: true,
           isVerified: true,
           reputationScore: true,
@@ -216,10 +210,7 @@ export class AdminService {
       throw new NotFoundException('User not found');
     }
 
-    if (user.role === UserRole.ADMIN) {
-      throw new BadRequestException('Cannot ban an admin user');
-    }
-
+    // Regular users can be banned (admins are in separate table)
     await this.prisma.user.update({
       where: { id: userId },
       data: { isActive: false },
@@ -264,45 +255,6 @@ export class AdminService {
     });
 
     return { message: 'User unbanned successfully' };
-  }
-
-  /**
-   * Change user role
-   */
-  async changeUserRole(
-    userId: string,
-    newRole: UserRole,
-    adminId: string,
-    reason: string,
-  ) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, username: true, role: true },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    const oldRole = user.role;
-
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        role: newRole,
-      },
-    });
-
-    await this.auditLog.log({
-      performedById: adminId,
-      action: AuditAction.ROLE_CHANGE,
-      description: `User ${user.username} role changed from ${oldRole} to ${newRole}. Reason: ${reason}`,
-      targetType: 'User',
-      targetId: userId,
-      metadata: { oldRole, newRole, reason },
-    });
-
-    return { message: 'User role updated successfully' };
   }
 
   /**
@@ -432,73 +384,6 @@ export class AdminService {
       success: true,
       unbannedCount: users.length,
       unbannedUsers: users.map((u) => ({ id: u.id, username: u.username })),
-    };
-  }
-
-  /**
-   * Bulk change user roles
-   */
-  async bulkChangeRole(
-    userIds: string[],
-    newRole: UserRole,
-    adminId: string,
-    reason: string,
-    ipAddress?: string,
-  ) {
-    // Validate all users exist
-    const users = await this.prisma.user.findMany({
-      where: {
-        id: { in: userIds },
-      },
-      select: {
-        id: true,
-        username: true,
-        role: true,
-      },
-    });
-
-    if (users.length !== userIds.length) {
-      throw new NotFoundException('One or more users not found');
-    }
-
-    // Update all users' roles
-    await this.prisma.user.updateMany({
-      where: {
-        id: { in: userIds },
-      },
-      data: {
-        role: newRole,
-      },
-    });
-
-    // Create audit logs
-    await Promise.all(
-      users.map((user) =>
-        this.auditLog.log({
-          performedById: adminId,
-          action: AuditAction.ROLE_CHANGE,
-          description: `User ${user.username} role changed from ${user.role} to ${newRole}. Reason: ${reason}`,
-          targetType: 'User',
-          targetId: user.id,
-          metadata: {
-            oldRole: user.role,
-            newRole,
-            reason,
-            ipAddress,
-          },
-        }),
-      ),
-    );
-
-    return {
-      success: true,
-      updatedCount: users.length,
-      updatedUsers: users.map((u) => ({
-        id: u.id,
-        username: u.username,
-        oldRole: u.role,
-        newRole,
-      })),
     };
   }
 }

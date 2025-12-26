@@ -19,13 +19,22 @@ datasource db {
 }
 
 // ============================================
-// USER ROLE ENUM
+// ADMIN ROLE ENUM
+// ============================================
+enum AdminRole {
+  SUPPORT // Can handle support tickets
+  MODERATOR // Can moderate content
+  ADMIN // Full admin access
+}
+
+// ============================================
+// USER ROLE ENUM (Deprecated - keeping for backward compatibility during migration)
 // ============================================
 enum UserRole {
-  USER // Regular user
-  MODERATOR // Can moderate content
-  SUPPORT // Can handle support tickets
-  ADMIN // Full admin access
+  USER // Regular user only
+  MODERATOR // Deprecated - use AdminUser
+  SUPPORT // Deprecated - use AdminUser
+  ADMIN // Deprecated - use AdminUser
 }
 
 // ============================================
@@ -102,23 +111,79 @@ model User {
   counterOffers           CounterOffer[]
   disputesReported        Dispute[]                @relation("DisputeReporter")
   disputesAgainst         Dispute[]                @relation("DisputeReportedUser")
-  disputesAdministered    Dispute[]                @relation("DisputeAdmin")
   verification            UserVerification?        @relation("UserVerification")
-  auditLogs               AuditLog[]               @relation("AuditLogPerformedBy")
   flaggedItemsReported    FlaggedItem[]            @relation("FlagReporter")
-  flaggedItemsReviewed    FlaggedItem[]            @relation("FlagReviewer")
   flaggedCommentsReported FlaggedComment[]         @relation("CommentFlagReporter")
-  flaggedCommentsReviewed FlaggedComment[]         @relation("CommentFlagReviewer")
   supportChatsAsUser      SupportChat[]            @relation("SupportChatUser")
-  supportChatsAsAgent     SupportChat[]            @relation("SupportChatAgent")
-  supportMessages         SupportMessage[]         @relation("SupportMessageSender")
   oauthAccounts           OAuthAccount[]
+  supportMessages         SupportMessage[]         @relation("UserSupportMessages")
+  disputes                Dispute[]
+  auditLogs               AuditLog[]
 
   @@index([email])
   @@index([username])
   @@index([createdAt])
   @@index([role])
   @@map("users")
+}
+
+// ============================================
+// ADMIN USER MODEL
+// ============================================
+model AdminUser {
+  id        String  @id @default(cuid())
+  email     String  @unique
+  username  String  @unique
+  password  String // Hashed
+  avatarUrl String?
+
+  // Role & Permissions
+  role AdminRole @default(SUPPORT)
+
+  // Audit tracking
+  createdBy String? // ID of admin who created this account
+
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLoginAt DateTime?
+
+  // Status
+  isActive Boolean @default(true)
+
+  // Multi-Factor Authentication (REQUIRED for admins)
+  mfaEnabled Boolean         @default(false)
+  mfaSecret  AdminMFASecret?
+
+  // Relations - Admin-only operations
+  // Relations
+  auditLogsPerformed      AuditLog[]       @relation("AdminAuditLogs")
+  flaggedItemsReviewed    FlaggedItem[]    @relation("AdminFlaggedItemReviews")
+  flaggedCommentsReviewed FlaggedComment[] @relation("AdminFlaggedCommentReviews")
+  disputesAdministered    Dispute[]        @relation("AdminDisputes")
+  supportChatsAsAgent     SupportChat[]    @relation("AdminSupportChats")
+  supportMessages         SupportMessage[] @relation("AdminSupportMessages")
+  disputes                Dispute[]
+  auditLogs               AuditLog[]
+
+  @@index([email])
+  @@index([username])
+  @@index([role])
+  @@map("admin_users")
+}
+
+// ============================================
+// ADMIN MFA SECRET
+// ============================================
+model AdminMFASecret {
+  id          String   @id @default(cuid())
+  adminUserId String   @unique
+  secret      String // Encrypted
+  createdAt   DateTime @default(now())
+
+  adminUser AdminUser @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+
+  @@map("admin_mfa_secrets")
 }
 
 // ============================================
@@ -783,14 +848,18 @@ model Dispute {
 
   // Admin handling
   adminId    String?
-  admin      User?     @relation("DisputeAdmin", fields: [adminId], references: [id], onDelete: SetNull)
+  admin      AdminUser? @relation("AdminDisputes", fields: [adminId], references: [id], onDelete: SetNull)
   adminNotes String?
   resolution String?
   resolvedAt DateTime?
 
   // Timestamps
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  user        User?      @relation(fields: [userId], references: [id])
+  userId      String?
+  adminUser   AdminUser? @relation(fields: [adminUserId], references: [id])
+  adminUserId String?
 
   @@index([tradeId])
   @@index([reporterId])
@@ -877,9 +946,9 @@ enum AuditAction {
 model AuditLog {
   id String @id @default(cuid())
 
-  // Who performed the action
+  // Who performed the action (admin only)
   performedById String
-  performedBy   User   @relation("AuditLogPerformedBy", fields: [performedById], references: [id])
+  performedBy   AdminUser @relation("AdminAuditLogs", fields: [performedById], references: [id])
 
   // What action
   action      AuditAction
@@ -894,7 +963,11 @@ model AuditLog {
   ipAddress String? // IP address of admin
 
   // Timestamps
-  createdAt DateTime @default(now())
+  createdAt   DateTime   @default(now())
+  user        User?      @relation(fields: [userId], references: [id])
+  userId      String?
+  adminUser   AdminUser? @relation(fields: [adminUserId], references: [id])
+  adminUserId String?
 
   @@index([performedById])
   @@index([action])
@@ -943,7 +1016,7 @@ model FlaggedItem {
 
   // Review information (for approved or removed items)
   reviewedById String? // Admin/Moderator who reviewed
-  reviewedBy   User?     @relation("FlagReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedBy   AdminUser? @relation("AdminFlaggedItemReviews", fields: [reviewedById], references: [id], onDelete: SetNull)
   reviewedAt   DateTime? // When it was reviewed
   reviewNotes  String? // Admin notes on the decision
 
@@ -982,7 +1055,7 @@ model FlaggedComment {
 
   // Review information
   reviewedById String? // Admin/Moderator who reviewed
-  reviewedBy   User?     @relation("CommentFlagReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedBy   AdminUser? @relation("AdminFlaggedCommentReviews", fields: [reviewedById], references: [id], onDelete: SetNull)
   reviewedAt   DateTime? // When it was reviewed
   reviewNotes  String? // Admin notes on the decision
 
@@ -1041,7 +1114,7 @@ model SupportChat {
 
   // Assigned support agent (nullable when in queue)
   agentId String?
-  agent   User?   @relation("SupportChatAgent", fields: [agentId], references: [id], onDelete: SetNull)
+  agent   AdminUser? @relation("AdminSupportChats", fields: [agentId], references: [id], onDelete: SetNull)
 
   // Chat details
   status        SupportChatStatus @default(WAITING)
@@ -1076,8 +1149,13 @@ model SupportMessage {
   chat   SupportChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
 
   // Sender (can be user or agent)
-  senderId String
-  sender   User   @relation("SupportMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  // User sender (for customer messages)
+  userSenderId String?
+  userSender   User?   @relation("UserSupportMessages", fields: [userSenderId], references: [id], onDelete: Cascade)
+
+  // Admin sender (for agent messages)
+  adminSenderId String?
+  adminSender   AdminUser? @relation("AdminSupportMessages", fields: [adminSenderId], references: [id], onDelete: Cascade)
 
   // Message content
   message  String
@@ -1087,7 +1165,8 @@ model SupportMessage {
   createdAt DateTime @default(now())
 
   @@index([chatId])
-  @@index([senderId])
+  @@index([userSenderId])
+  @@index([adminSenderId])
   @@index([createdAt])
   @@map("support_messages")
 }

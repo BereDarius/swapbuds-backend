@@ -151,7 +151,7 @@ describe('SupportChatController', () => {
 
   describe('getChat', () => {
     const mockRequest = {
-      user: { id: 'user-1', role: UserRole.USER },
+      user: { id: 'user-1' },
     };
 
     it('should return chat details', async () => {
@@ -163,7 +163,6 @@ describe('SupportChatController', () => {
       expect(mockSupportChatService.getChat).toHaveBeenCalledWith(
         'chat-1',
         'user-1',
-        UserRole.USER,
       );
     });
   });
@@ -174,7 +173,7 @@ describe('SupportChatController', () => {
     };
 
     const mockRequest = {
-      user: { id: 'user-1', role: UserRole.USER },
+      user: { id: 'user-1' },
     };
 
     it('should send message and emit via WebSocket', async () => {
@@ -191,7 +190,6 @@ describe('SupportChatController', () => {
         'chat-1',
         'user-1',
         messageDto,
-        UserRole.USER,
       );
       expect(mockSupportChatGateway.emitMessage).toHaveBeenCalledWith(
         'chat-1',
@@ -202,7 +200,7 @@ describe('SupportChatController', () => {
 
   describe('closeChat', () => {
     const mockRequest = {
-      user: { id: 'user-1', role: UserRole.USER },
+      user: { id: 'user-1' },
     };
 
     it('should close chat and emit via WebSocket', async () => {
@@ -215,7 +213,6 @@ describe('SupportChatController', () => {
       expect(mockSupportChatService.closeChat).toHaveBeenCalledWith(
         'chat-1',
         'user-1',
-        UserRole.USER,
       );
       expect(mockSupportChatGateway.emitChatClosed).toHaveBeenCalledWith(
         'chat-1',
@@ -225,7 +222,7 @@ describe('SupportChatController', () => {
 
   describe('getAgentChats', () => {
     const mockRequest = {
-      user: { id: 'agent-1', role: UserRole.SUPPORT },
+      user: { id: 'agent-1' },
     };
 
     it('should return agent chats', async () => {
@@ -247,7 +244,7 @@ describe('SupportChatController', () => {
     };
 
     const mockRequest = {
-      user: { id: 'agent-1', role: UserRole.SUPPORT },
+      user: { id: 'agent-1' },
     };
 
     it('should resolve chat and emit via WebSocket', async () => {

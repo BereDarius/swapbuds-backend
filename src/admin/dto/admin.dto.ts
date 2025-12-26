@@ -1,6 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { UserRole } from '@prisma/client';
-import { IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsOptional, IsString } from 'class-validator';
 
 export class BanUserDto {
   @ApiProperty({ example: 'Violating community guidelines' })
@@ -10,20 +9,6 @@ export class BanUserDto {
 
 export class UnbanUserDto {
   @ApiProperty({ example: 'Appeal approved' })
-  @IsString()
-  reason: string;
-}
-
-export class ChangeUserRoleDto {
-  @ApiProperty({
-    enum: UserRole,
-    example: UserRole.MODERATOR,
-    description: 'New role for the user',
-  })
-  @IsEnum(UserRole)
-  role: UserRole;
-
-  @ApiProperty({ example: 'Promoted to moderator' })
   @IsString()
   reason: string;
 }
@@ -41,11 +26,6 @@ export class GetUsersQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
-
-  @ApiPropertyOptional({ enum: UserRole })
-  @IsOptional()
-  @IsEnum(UserRole)
-  role?: UserRole;
 
   @ApiPropertyOptional({ example: true })
   @IsOptional()
@@ -75,27 +55,6 @@ export class BulkUnbanUsersDto {
   userIds: string[];
 
   @ApiProperty({ example: 'Appeal approved' })
-  @IsString()
-  reason: string;
-}
-
-export class BulkChangeRoleDto {
-  @ApiProperty({
-    example: ['user-id-1', 'user-id-2'],
-    description: 'Array of user IDs to update',
-  })
-  @IsString({ each: true })
-  userIds: string[];
-
-  @ApiProperty({
-    enum: UserRole,
-    example: UserRole.MODERATOR,
-    description: 'New role for all users',
-  })
-  @IsEnum(UserRole)
-  role: UserRole;
-
-  @ApiProperty({ example: 'Promoted to moderator' })
   @IsString()
   reason: string;
 }

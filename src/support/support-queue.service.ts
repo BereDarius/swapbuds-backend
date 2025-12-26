@@ -1,6 +1,6 @@
 import { PrismaService } from '@/prisma/prisma.service';
 import { Injectable, Logger } from '@nestjs/common';
-import { SupportChatStatus, SupportPriority, UserRole } from '@prisma/client';
+import { SupportChatStatus, SupportPriority } from '@prisma/client';
 
 @Injectable()
 export class SupportQueueService {
@@ -154,14 +154,14 @@ export class SupportQueueService {
   }
 
   /**
-   * Get available support agents (SUPPORT role or ADMIN)
+   * Get available support agents (from admin_users table)
    */
   async getAvailableAgents(): Promise<string[]> {
-    const agents = await this.prisma.user.findMany({
+    const agents = await this.prisma.adminUser.findMany({
       where: {
         isActive: true,
         role: {
-          in: [UserRole.SUPPORT, UserRole.ADMIN],
+          in: ['SUPPORT', 'MODERATOR', 'ADMIN'],
         },
       },
       select: { id: true },

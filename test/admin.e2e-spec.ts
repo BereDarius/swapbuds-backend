@@ -7,6 +7,7 @@ import request = require('supertest');
 /**
  * E2E Tests for Admin Features
  * Tests administrative functions like user management and platform stats
+ * Now uses AdminUser table with separate authentication (/api/admin-auth/login)
  */
 describe('Admin E2E', () => {
   let app: INestApplication;
@@ -46,13 +47,12 @@ describe('Admin E2E', () => {
     expect(johnLogin.status).toBe(200);
     userToken = johnLogin.body.accessToken;
 
-    // Login as admin from seeded data
+    // Login as admin using AdminUser authentication
     const adminLogin = await request(app.getHttpServer())
-      .post('/api/auth/login')
+      .post('/api/admin/auth/login')
       .send({
         email: 'admin@swapbuds.com',
         password: 'Password123!',
-        recaptchaToken: 'test-token',
       });
 
     expect(adminLogin.status).toBe(200);
@@ -97,7 +97,7 @@ describe('Admin E2E', () => {
         .get('/api/admin/stats')
         .set('Authorization', `Bearer ${userToken}`);
 
-      expect(response.status).toBe(403);
+      expect(response.status).toBe(401); // Regular user tokens are not valid for admin endpoints
     });
 
     it('should get daily statistics', async () => {
@@ -142,7 +142,7 @@ describe('Admin E2E', () => {
         .get('/api/admin/users?role=USER')
         .set('Authorization', `Bearer ${adminToken}`);
 
-      expect([200, 403]).toContain(response.status);
+      expect([200, 400, 403]).toContain(response.status); // 400 if USER is not valid for AdminUser filtering
     });
 
     it('should filter users by verification status', async () => {
@@ -238,15 +238,15 @@ describe('Admin E2E', () => {
           reason: 'Test',
         });
 
-      expect(response.status).toBe(403);
+      expect(response.status).toBe(401); // Regular user token is not valid for admin endpoints
     });
 
     it('should prevent self-ban', async () => {
       if (!adminToken) return;
 
-      // Get admin user ID
+      // Get admin user ID from admin profile endpoint
       const adminProfile = await request(app.getHttpServer())
-        .get('/api/auth/me')
+        .get('/api/admin/auth/me')
         .set('Authorization', `Bearer ${adminToken}`);
 
       if (adminProfile.status === 200) {
@@ -259,7 +259,7 @@ describe('Admin E2E', () => {
             reason: 'Self-ban attempt',
           });
 
-        expect([400, 403]).toContain(response.status);
+        expect([400, 403, 404]).toContain(response.status); // 404 because admin ID is in AdminUser table, not User table
       }
     });
   });
@@ -319,7 +319,7 @@ describe('Admin E2E', () => {
         .get('/api/admin/audit-logs')
         .set('Authorization', `Bearer ${userToken}`);
 
-      expect(response.status).toBe(403);
+      expect(response.status).toBe(401); // Regular user token is not valid for admin endpoints
     });
   });
 

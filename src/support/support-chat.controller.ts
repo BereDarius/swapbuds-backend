@@ -1,5 +1,7 @@
+import { AdminRoles } from '@/admin-auth/decorators/admin-roles.decorator';
+import { AdminJwtAuthGuard } from '@/admin-auth/guards/admin-jwt-auth.guard';
+import { AdminRoleGuard } from '@/admin-auth/guards/admin-role.guard';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
-import { SupportGuard } from '@/auth/guards/support.guard';
 import {
   Body,
   Controller,
@@ -21,7 +23,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { SupportPriority } from '@prisma/client';
+import { AdminRole, SupportPriority } from '@prisma/client';
 import { SupportChatGateway } from './support-chat.gateway';
 import { SupportChatService } from './support-chat.service';
 
@@ -107,7 +109,7 @@ export class SupportChatController {
   @ApiResponse({ status: 404, description: 'Chat not found' })
   @ApiResponse({ status: 403, description: 'Access denied' })
   async getChat(@Param('id') chatId: string, @Request() req) {
-    return this.supportChatService.getChat(chatId, req.user.id, req.user.role);
+    return this.supportChatService.getChat(chatId, req.user.id);
   }
 
   /**
@@ -139,7 +141,6 @@ export class SupportChatController {
       chatId,
       req.user.id,
       dto,
-      req.user.role,
     );
 
     // Emit via WebSocket
@@ -160,11 +161,7 @@ export class SupportChatController {
   @ApiResponse({ status: 404, description: 'Chat not found' })
   @ApiResponse({ status: 403, description: 'Access denied' })
   async closeChat(@Param('id') chatId: string, @Request() req) {
-    const chat = await this.supportChatService.closeChat(
-      chatId,
-      req.user.id,
-      req.user.role,
-    );
+    const chat = await this.supportChatService.closeChat(chatId, req.user.id);
 
     // Emit via WebSocket
     this.supportChatGateway.emitChatClosed(chatId);
@@ -176,7 +173,8 @@ export class SupportChatController {
    * Get agent's assigned chats (support agents only)
    */
   @Get('agent/chats')
-  @UseGuards(JwtAuthGuard, SupportGuard)
+  @UseGuards(AdminJwtAuthGuard, AdminRoleGuard)
+  @AdminRoles(AdminRole.SUPPORT, AdminRole.MODERATOR, AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Get agent's assigned chats" })
   @ApiResponse({ status: 200, description: 'Returns agent chats' })
@@ -188,7 +186,8 @@ export class SupportChatController {
    * Resolve a chat (support agents only)
    */
   @Patch('chats/:id/resolve')
-  @UseGuards(JwtAuthGuard, SupportGuard)
+  @UseGuards(AdminJwtAuthGuard, AdminRoleGuard)
+  @AdminRoles(AdminRole.SUPPORT, AdminRole.MODERATOR, AdminRole.ADMIN)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Resolve a support chat' })
@@ -224,7 +223,8 @@ export class SupportChatController {
    * Get support statistics (support agents only)
    */
   @Get('stats')
-  @UseGuards(JwtAuthGuard, SupportGuard)
+  @UseGuards(AdminJwtAuthGuard)
+  @AdminRoles(AdminRole.SUPPORT, AdminRole.MODERATOR, AdminRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get support statistics' })
   @ApiResponse({ status: 200, description: 'Returns support statistics' })

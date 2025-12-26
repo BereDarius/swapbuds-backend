@@ -1,8 +1,10 @@
+import { AdminRoles } from '@/admin-auth/decorators/admin-roles.decorator';
+import { AdminJwtAuthGuard } from '@/admin-auth/guards/admin-jwt-auth.guard';
+import { AdminRoleGuard } from '@/admin-auth/guards/admin-role.guard';
 import {
   CurrentUser,
   RequireVerified,
 } from '@/auth/decorators/auth.decorators';
-import { AdminGuard } from '@/auth/guards/admin.guard';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 import { VerifiedGuard } from '@/auth/guards/verified.guard';
 import {
@@ -22,7 +24,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { DisputeStatus } from '@prisma/client';
+import { AdminRole, DisputeStatus } from '@prisma/client';
 import { DisputesService } from './disputes.service';
 import { CreateDisputeDto } from './dto/create-dispute.dto';
 import { DisputeResponseDto } from './dto/dispute-response.dto';
@@ -33,7 +35,6 @@ import { ResolveDisputeDto } from './dto/resolve-dispute.dto';
  */
 @ApiTags('Disputes')
 @Controller('disputes')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class DisputesController {
   constructor(private readonly disputesService: DisputesService) {}
@@ -46,7 +47,7 @@ export class DisputesController {
    * Requires verification for trust and accountability
    */
   @Post()
-  @UseGuards(VerifiedGuard)
+  @UseGuards(JwtAuthGuard, VerifiedGuard)
   @RequireVerified()
   @ApiOperation({
     summary: 'Create a new dispute',
@@ -76,6 +77,7 @@ export class DisputesController {
    * @returns List of disputes
    */
   @Get('my')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: 'Get user disputes',
     description: 'Retrieve all disputes filed by or against the current user',
@@ -98,6 +100,7 @@ export class DisputesController {
    * @returns Dispute details
    */
   @Get(':id')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({
     summary: 'Get dispute by ID',
     description: 'Retrieve details of a specific dispute',
@@ -122,7 +125,8 @@ export class DisputesController {
    * @returns List of all disputes
    */
   @Get()
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminJwtAuthGuard, AdminRoleGuard)
+  @AdminRoles(AdminRole.ADMIN)
   @ApiOperation({
     summary: 'Get all disputes (Admin only)',
     description: 'Retrieve all disputes with optional status filter',
@@ -152,7 +156,8 @@ export class DisputesController {
    * @returns Updated dispute
    */
   @Patch(':id/assign')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminJwtAuthGuard, AdminRoleGuard)
+  @AdminRoles(AdminRole.ADMIN)
   @ApiOperation({
     summary: 'Assign dispute to admin (Admin only)',
     description: 'Assign a dispute to an admin for review',
@@ -179,7 +184,8 @@ export class DisputesController {
    * @returns Resolved dispute
    */
   @Patch(':id/resolve')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminJwtAuthGuard, AdminRoleGuard)
+  @AdminRoles(AdminRole.ADMIN)
   @ApiOperation({
     summary: 'Resolve dispute (Admin only)',
     description: 'Resolve a dispute with admin notes and resolution details',
@@ -205,7 +211,8 @@ export class DisputesController {
    * @returns Closed dispute
    */
   @Patch(':id/close')
-  @UseGuards(AdminGuard)
+  @UseGuards(AdminJwtAuthGuard, AdminRoleGuard)
+  @AdminRoles(AdminRole.ADMIN)
   @ApiOperation({
     summary: 'Close dispute (Admin only)',
     description: 'Close a dispute without resolution',
